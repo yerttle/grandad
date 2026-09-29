@@ -25,6 +25,16 @@ window.GCS = window.GCS || {};
     return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
   };
   G.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Device ----------
+  // Touch mode for phones and tablets (including iPads, which report themselves as Macs).
+  const ua = navigator.userAgent || '';
+  const mobileUA = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  G.isTouch = mobileUA || window.matchMedia('(pointer: coarse)').matches;
+  G.isPhone = G.isTouch && Math.min(screen.width, screen.height) < 600;
+  document.documentElement.classList.toggle('touch', G.isTouch);
+  document.documentElement.classList.toggle('phone', G.isPhone);
+  G.isPortrait = () => window.innerHeight > window.innerWidth;
   // triangle wave 0..1..0 with the given period (seconds)
   G.tri = (t, period) => { const p = ((t / period) % 1 + 1) % 1; return p < 0.5 ? p * 2 : 2 - p * 2; };
 

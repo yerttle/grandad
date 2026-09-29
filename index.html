@@ -489,6 +489,115 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
   .stats { grid-template-columns: repeat(2, 1fr); }
   .view-tools span { display: none; }
 }
+/* ---------- Phones and tablets (touch) ---------- */
+.t-only { display: none; }
+.sheet-tabs { display: none; }
+html.touch .t-only { display: revert; }
+html.touch .k-only, html.touch kbd { display: none; }
+html.touch button, html.touch .btn, html.touch label { touch-action: manipulation; }
+html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+
+/* Small touch screens: the board fills the screen and the score pad shrinks to a dock of controls.
+   Players, Grandad needs and the Daily Grumble pop up as sheets over the board. */
+@media (max-width: 900px), (orientation: landscape) and (max-height: 500px) {
+  html.touch, html.touch body { height: 100%; overflow: hidden; }
+  html.touch .app {
+    position: relative;
+    height: 100%;
+    gap: 8px;
+    padding: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  }
+  html.touch .stage { height: auto; min-height: 0; border-radius: 12px; }
+  html.touch body.minigame .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  html.touch body.minigame .stage { height: auto; }
+  html.touch .panel { gap: 8px; padding: 0; }
+  html.touch .wordmark { display: none; }
+  html.touch .icon-btn { height: 34px; padding: 0 9px; background: rgb(26 17 11 / .72); border-color: rgb(246 236 210 / .7); }
+  html.touch .icon-btn span { display: none; }
+  html.touch .turn-card { padding: 10px 12px; box-shadow: 3px 3px 0 rgb(0 0 0 / .4); }
+  html.touch .turn-name { font-size: 18px; }
+  html.touch .temp-line { margin-top: 6px; padding: 5px 8px; gap: 2px 8px; }
+  html.touch .temp-line strong { font-size: 18px; }
+  html.touch .rate { font-size: 12px; }
+  html.touch .hint { margin: 6px 0 8px; min-height: 0; font-size: 13px; line-height: 1.3; }
+  html.touch .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  html.touch .actions > .dir-row { display: contents; }
+  html.touch #rollBtn { font-size: 15px; padding: 8px 6px; }
+  html.touch .btn.dir { min-height: 50px; padding: 6px; font-size: 13px; }
+  html.touch .btn.dir .dest { font-size: 11px; }
+  html.touch .btn.dir > span:first-child { hyphens: manual; overflow-wrap: break-word; line-height: 1.1; }
+  html.touch #rerollBtn { grid-column: 1 / -1; padding: 6px 10px; font-size: 13px; }
+  html.touch .pinch { margin-top: 8px; padding: 8px 10px; }
+  html.touch .sheet-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  html.touch .sheet-tabs .tab {
+    padding: 7px 4px;
+    border: 2px solid var(--ink);
+    border-radius: 9px;
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1.15;
+    cursor: pointer;
+  }
+  html.touch .sheet-tabs .tab[aria-pressed="true"] { background: var(--mustard); box-shadow: inset 0 -3px 0 rgb(0 0 0 / .2); }
+  html.touch #team, html.touch .needs, html.touch .news { display: none; }
+  html.touch body[data-sheet="team"] #team,
+  html.touch body[data-sheet="needs"] .needs,
+  html.touch body[data-sheet="news"] .news {
+    display: grid;
+    position: fixed;
+    z-index: 15;
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    top: calc(max(8px, env(safe-area-inset-top, 0px)) + 54px);
+    max-height: 58svh;
+    overflow-y: auto;
+    box-shadow: 0 14px 34px rgb(0 0 0 / .55);
+    rotate: 0deg;
+  }
+  html.touch body[data-sheet="news"] .news { display: block; }
+  html.touch .news ol { max-height: none; }
+  html.touch .bubble { font-size: 13px; max-width: 72%; padding: 8px 11px; }
+  html.touch .view-tools { display: none; }
+  html.touch .dodge { bottom: 12px; padding: 10px 12px 12px; gap: 8px; }
+  html.touch .dodge .dodge-title { font-size: 20px; }
+  html.touch .dodge .btn { width: 100%; font-size: 20px; padding: 14px; }
+  html.touch .toast { font-size: 20px; top: 10%; }
+}
+/* portrait: board on top, controls docked underneath */
+@media (max-width: 900px) and (orientation: portrait) {
+  html.touch .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  html.touch .panel { overflow: visible; }
+  html.touch .brand { position: absolute; z-index: 6; top: calc(max(8px, env(safe-area-inset-top, 0px)) + 8px); right: calc(max(8px, env(safe-area-inset-right, 0px)) + 8px); }
+}
+/* landscape phone: board on the left, a slim dock on the right */
+@media (orientation: landscape) and (max-width: 900px), (orientation: landscape) and (max-height: 500px) {
+  html.touch .app { grid-template-columns: minmax(0, 1fr) 290px; grid-template-rows: minmax(0, 1fr); }
+  html.touch .panel { overflow-y: auto; }
+  html.touch .brand { justify-content: flex-end; }
+  html.touch body[data-sheet="team"] #team,
+  html.touch body[data-sheet="needs"] .needs,
+  html.touch body[data-sheet="news"] .news { top: max(12px, env(safe-area-inset-top, 0px)); right: calc(max(8px, env(safe-area-inset-right, 0px)) + 306px); max-height: calc(100svh - 24px); }
+}
+/* small screens at the fair and on the start screen */
+@media (max-width: 600px), (max-height: 500px) {
+  .mini-top { top: 8px; padding: 6px 12px 8px; gap: 2px; }
+  .mini-title { font-size: 22px; }
+  .mini-prize { font-size: 10px; }
+  .mini-status { font-size: 14px; }
+  .mini-hint { bottom: 8px; padding: 6px 12px; border-radius: 12px; font-size: 12px; }
+  .power { bottom: 50px; }
+  .countdown { font-size: 96px; }
+  .overlay { padding: 10px; }
+  .lid { padding: 18px 16px 20px; }
+  .lid::before { margin: -18px -16px 14px; }
+  .fair-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* keep the Start button in reach while the setup scrolls */
+  .setup-main .lid-actions { position: sticky; bottom: 0; z-index: 2; margin: 12px -16px 0; padding: 10px 16px 12px; background: var(--cream); box-shadow: 0 -10px 14px -10px rgb(0 0 0 / .35); }
+  .setup-main .lid-actions .btn.primary { flex: 1; }
+  .mini-card .tip { font-size: 13px; color: var(--orange); font-weight: 700; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
@@ -500,7 +609,7 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
     <canvas id="view"></canvas>
     <div class="frost" aria-hidden="true"></div>
     <div class="bubble quiet" id="bubble" aria-live="polite"></div>
-    <div class="view-tools"><span>Drag to look around · scroll to zoom</span><button type="button" id="viewBtn">Reset view</button></div>
+    <div class="view-tools"><span class="k-only">Drag to look around · scroll to zoom</span><span class="t-only">Drag to look around · pinch to zoom</span><button type="button" id="viewBtn">Reset view</button></div>
     <div class="dodge" id="dodge" hidden>
       <p class="dodge-title">Grandad's rolling up his paper!</p>
       <div class="meter"><div class="zone" id="zone"></div><div class="marker" id="marker"></div></div>
@@ -548,7 +657,7 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
       <div class="actions">
         <button class="btn primary" id="rollBtn" type="button">Roll the dice <kbd>Space</kbd></button>
         <div class="dir-row">
-          <button class="btn dir" id="acwBtn" type="button" disabled><span><kbd>←</kbd> Anticlockwise</span><span class="dest" id="acwDest">&nbsp;</span></button>
+          <button class="btn dir" id="acwBtn" type="button" disabled><span><kbd>←</kbd> Anti&shy;clockwise</span><span class="dest" id="acwDest">&nbsp;</span></button>
           <button class="btn dir" id="cwBtn" type="button" disabled><span>Clockwise <kbd>→</kbd></span><span class="dest" id="cwDest">&nbsp;</span></button>
         </div>
         <button class="btn ghost" id="rerollBtn" type="button" disabled>Eat a custard cream to re-roll <kbd>R</kbd></button>
@@ -559,6 +668,11 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
           <button class="btn primary" id="pinchYes" type="button">Pinch it! <kbd>Y</kbd></button>
           <button class="btn" id="pinchNo" type="button">Leave it <kbd>N</kbd></button>
         </div>
+      </div>
+      <div class="sheet-tabs" aria-label="More of the score pad">
+        <button class="tab" type="button" data-sheet="team" aria-pressed="false">Players</button>
+        <button class="tab" type="button" data-sheet="needs" aria-pressed="false">Grandad needs</button>
+        <button class="tab" type="button" data-sheet="news" aria-pressed="false">The Daily Grumble</button>
       </div>
     </section>
     <section class="card team" id="team" aria-label="Players"></section>
@@ -609,7 +723,8 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
       <button class="btn primary" id="startBtn" type="submit">Start the game</button>
       <button class="btn" id="resumeBtn" type="button" hidden>Back to the game</button>
     </div>
-    <p class="note">Keys: Space rolls, ← → pick a direction, R re-rolls, M mutes. Drag the board to look around.</p>
+    <p class="note k-only">Keys: Space rolls, ← → pick a direction, R re-rolls, M mutes. Drag the board to look around.</p>
+    <p class="note t-only">Tap a flashing square to move. Drag the board to look around and pinch to zoom.</p>
     </div>
     <div class="setup-side">
     <div class="howto">
@@ -618,7 +733,7 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
         <li>Roll the dice, then choose which way to go round the house: clockwise or anticlockwise.</li>
         <li>Land in a room that still has its prize and you play that room's fairground game. Win it to take Grandad's thing.</li>
         <li>Pass or stop on a yellow <b>Pop in to Grandad</b> door to hand over everything you're carrying.</li>
-        <li>When Grandad swings his paper, press <kbd>Space</kbd> as the marker crosses the green to duck. Get hit and you'll drop something, or miss a go.</li>
+        <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop something, or miss a go.</li>
         <li>Deliver all 8 cosy things before he cools to 35.0°C. Custard creams let you re-roll.</li>
         <li>Grandad keeps score of who's his favourite: points for winning stalls, delivering things and ducking his paper. Playing together? Land on another player's square and you can pinch what they're carrying, if Grandad isn't looking.</li>
       </ol>

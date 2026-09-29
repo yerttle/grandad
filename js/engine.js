@@ -28,7 +28,8 @@
     E.stage = stage;
     E.canvas = canvas;
     const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // phones have very dense screens; capping the pixel ratio keeps the 3D smooth and the battery happy
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, G.isPhone ? 1.5 : 2));
     r.shadowMap.enabled = true;
     r.shadowMap.type = THREE.PCFSoftShadowMap;
     E.renderer = r;
@@ -83,10 +84,23 @@
     ptr.y = e.clientY - r.top;
     ptr.ndc.set((ptr.x / r.width) * 2 - 1, -(ptr.y / r.height) * 2 + 1);
   }
+  const fingers = new Map();
+  let pinch = null;
+  const spread = () => { const [a, b] = [...fingers.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
   function bindPointer() {
     const c = E.canvas;
     c.addEventListener('pointerdown', (e) => {
       if (e.button !== undefined && e.button > 0) return;
+      fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (fingers.size === 2 && E.controller && E.controller.pinch) {
+        // on the board a second finger turns the gesture into a pinch; it never counts as a tap
+        pinch = { d0: spread() };
+        ptr.moved = true;
+        if (E.controller.pinchStart) E.controller.pinchStart();
+        e.preventDefault();
+        return;
+      }
+      if (pinch) return; // at the stalls every finger is a tap of its own
       setPtr(e);
       ptr.down = true;
       ptr.moved = false;
@@ -98,13 +112,21 @@
       e.preventDefault();
     });
     c.addEventListener('pointermove', (e) => {
+      if (fingers.has(e.pointerId)) fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && fingers.size >= 2) {
+        if (E.controller && E.controller.pinch) E.controller.pinch(spread() / pinch.d0);
+        return;
+      }
+      if (ptr.down && e.pointerId !== ptr.id) return;
       const px = ptr.x, py = ptr.y;
       setPtr(e);
       if (ptr.down && Math.hypot(e.clientX - ptr.sx, e.clientY - ptr.sy) > 6) ptr.moved = true;
       if (E.controller && E.controller.pointerMove) E.controller.pointerMove(ptr, e, ptr.x - px, ptr.y - py);
     });
     const up = (e) => {
-      if (!ptr.down) return;
+      fingers.delete(e.pointerId);
+      if (fingers.size < 2) pinch = null;
+      if (!ptr.down || e.pointerId !== ptr.id) return;
       setPtr(e);
       ptr.down = false;
       if (E.controller && E.controller.pointerUp) E.controller.pointerUp(ptr, e);
@@ -167,6 +189,8 @@
         place(o.fitR * o.zoom, az, el);
       },
       reset() { o.goal.az = 0; o.goal.el = 0.95; o.goal.zoom = 1; },
+      pinchStart() { o.pinchZoom = o.goal.zoom; },
+      pinch(ratio) { o.goal.zoom = G.clamp(o.pinchZoom / ratio, 0.55, 1.5); },
       pointerMove(p, e, dx, dy) {
         if (!p.down || !p.moved) return;
         o.goal.az -= dx * 0.006;

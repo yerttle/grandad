@@ -20,6 +20,16 @@ The game works offline: it carries its own copy of the 3D library (`vendor/three
 
 The original flat 2D version is still here as `classic.html`, if you want it.
 
+## Playing on a phone or tablet
+
+Open the game's link (or `index.html`) on your phone and it switches to a touch layout automatically:
+
+- **Held upright:** the board fills the top of the screen and big buttons for rolling and choosing a direction sit underneath. **Players**, **Grandad needs** and **The Daily Grumble** pop up as sheets over the board; tap anywhere else to close them.
+- **Turned sideways:** the board sits on the left with a slim column of controls on the right. The stalls look best this way round.
+- **Touch controls:** tap a flashing square to move, drag the board to look around and pinch to zoom. Every stall has its own touch instructions. For stalls where you aim with your finger (Coconut Shy, Water Pistol Race, Buzz Wire), the aim sits just above your fingertip so your finger doesn't hide the target.
+
+On tablets with a big screen you get the desktop layout, with the same touch controls.
+
 ## How to play
 
 1. **Roll the dice**, then choose which way round the house to go: clockwise or anticlockwise. You can click one of the flashing squares on the board, or press <kbd>←</kbd> / <kbd>→</kbd>.

@@ -150,11 +150,11 @@
       setup: 'Pick your players and how cold it is, then start.',
       roll: 'Roll the dice to take your go.' + (p.carry.length ? " Pass a yellow door to hand over what you're carrying." : ''),
       rolling: 'Rolling...',
-      choose: `You rolled a ${S.roll}. Pick a direction: click a flashing square, or press ← or →.`,
+      choose: G.isTouch ? `You rolled a ${S.roll}. Tap a flashing square, or a direction button.` : `You rolled a ${S.roll}. Pick a direction: click a flashing square, or press ← or →.`,
       moving: 'On the move...',
       fair: 'At the fair...',
       pinch: 'Pinch it, or leave it?',
-      dodge: 'Duck! Press Space when the marker is in the green.',
+      dodge: G.isTouch ? 'Duck! Tap the Duck button when the marker is in the green.' : 'Duck! Press Space when the marker is in the green.',
       over: 'Game over.',
     };
     $('hint').textContent = hints[S.phase] || '';
@@ -546,7 +546,7 @@
       const dodgeEl = $('dodge');
       $('zone').style.left = z0 * 100 + '%';
       $('zone').style.width = w * 100 + '%';
-      $('dodgeMsg').textContent = 'Press Space (or tap Duck) when the marker is in the green.';
+      $('dodgeMsg').textContent = G.isTouch ? 'Tap Duck! when the marker is in the green.' : 'Press Space (or tap Duck) when the marker is in the green.';
       dodgeEl.classList.remove('ok', 'bad');
       dodgeEl.hidden = false;
       const period = D.period * (G.reduceMotion ? 1.6 : 1);
@@ -764,6 +764,17 @@
     $('fairGrid').innerHTML = Object.entries(G.Mini.GAMES).map(([key, g]) => `<button type="button" class="btn fair-btn" data-game="${key}" style="--dc:${g.c1}" title="${esc(g.blurb)}"><b>${g.title}</b></button>`).join('');
     $('shuffleStalls').addEventListener('change', (e) => { settings.shuffle = e.target.checked; G.saveSettings(settings); });
     $('pinchYes').addEventListener('click', () => { if (pinchResolve) pinchResolve(true); });
+    // on small touch screens the players, needs and news cards pop up as sheets over the board
+    const setSheet = (name) => {
+      if (name) document.body.dataset.sheet = name; else delete document.body.dataset.sheet;
+      document.querySelectorAll('.sheet-tabs .tab').forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.sheet === name)));
+    };
+    document.querySelectorAll('.sheet-tabs .tab').forEach((t) => t.addEventListener('click', () => setSheet(document.body.dataset.sheet === t.dataset.sheet ? null : t.dataset.sheet)));
+    document.addEventListener('pointerdown', (e) => {
+      if (document.body.dataset.sheet && !e.target.closest('#team, .needs, .news, .sheet-tabs')) setSheet(null);
+    }, true);
+    // stop iOS Safari zooming the whole page when you pinch the board
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
     $('pinchNo').addEventListener('click', () => { if (pinchResolve) pinchResolve(false); });
     $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
     B.onTileClick = (i) => {

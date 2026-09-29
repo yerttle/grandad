@@ -33,7 +33,7 @@
     key = new THREE.DirectionalLight('#fff1dc', 0.6);
     key.position.set(9, 22, 13);
     key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.mapSize.set(G.isPhone ? 1024 : 2048, G.isPhone ? 1024 : 2048);
     Object.assign(key.shadow.camera, { left: -15, right: 15, top: 15, bottom: -15, near: 1, far: 70 });
     key.shadow.bias = -0.0006;
     scene.add(key);

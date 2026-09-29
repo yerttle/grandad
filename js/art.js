@@ -1045,7 +1045,7 @@
     const key = new THREE.DirectionalLight('#fff0d8', 0.55);
     key.position.set(4, 10, 8);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(G.isPhone ? 512 : 1024, G.isPhone ? 512 : 1024);
     Object.assign(key.shadow.camera, { left: -9, right: 9, top: 9, bottom: -9, near: 1, far: 30 });
     scene.add(key);
     const inner = new THREE.PointLight('#ffcf8a', 0.7, 16, 1.4);

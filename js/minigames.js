@@ -110,14 +110,17 @@
     hud.miniTitle.textContent = def.title;
     hud.miniPrize.textContent = prizeKey ? `Prize: Grandad's ${G.ITEMS[prizeKey].name}` : 'Practice round';
     hud.miniStatus.textContent = '';
-    hud.miniHint.innerHTML = def.keys;
+    const keysText = G.isTouch && def.touch ? def.touch : def.keys;
+    hud.miniHint.innerHTML = keysText;
     hud.power.hidden = true;
     hud.powerZone.hidden = true;
     hud.miniTimerWrap.hidden = true;
     hud.miniHud.hidden = false;
     const game = def.build(ctx);
+    const camBase = { pos: booth.camera.position.clone(), quat: booth.camera.quaternion.clone(), fov: booth.camera.fov };
     let t0 = 0;
     const controller = {
+      resize: () => fitCamera(booth.camera, camBase),
       pointerDown: (ptr, e) => { if (state === 'play' && game.pointerDown) game.pointerDown(ptr, e); },
       pointerMove: (ptr, e) => { if (state === 'play' && game.pointerMove) game.pointerMove(ptr, e); },
       pointerUp: (ptr, e) => { if (state === 'play' && game.pointerUp) game.pointerUp(ptr, e); },
@@ -143,7 +146,8 @@
       ${prizeKey ? (practice ? `<p class="prize-line">In the game, this stall has Grandad's <b>${G.ITEMS[prizeKey].name}</b>.</p>` : `<p class="prize-line">Win Grandad's <b>${G.ITEMS[prizeKey].name}</b></p>`) : ''}
       <p class="goal">${def.goal(p)}</p>
       <p>${def.how}</p>
-      <p class="keys">${def.keys}</p>`, 'Play!');
+      <p class="keys">${keysText}</p>
+      ${G.isTouch && G.isPortrait() ? '<p class="tip">Tip: turn your phone sideways for a bigger view of the stall.</p>' : ''}`, 'Play!');
     await countdown();
     state = 'play';
     t0 = G.E.time;
@@ -187,6 +191,27 @@
     return d;
   }
 
+  // Stalls are framed for a wide screen. On a narrower (or portrait) screen, widen the view and step
+  // the camera back so the whole stall still fits across.
+  function fitCamera(camera, base) {
+    const REF = 1.6;
+    const a = camera.aspect;
+    camera.position.copy(base.pos);
+    camera.fov = base.fov;
+    if (a < REF * 0.95) {
+      const want = Math.tan(base.fov * PI / 360) * REF * (a < 1 ? 0.82 : 1);
+      const tv = Math.min(want / a, Math.tan(72 * PI / 360));
+      camera.fov = Math.max(base.fov, Math.atan(tv) * 360 / PI);
+      const have = Math.tan(camera.fov * PI / 360) * a;
+      const dir = new V3(0, 0, -1).applyQuaternion(base.quat);
+      const F = dir.z < -0.05 ? Math.max(4, (base.pos.z + 3) / -dir.z) : 10;
+      if (have < want) camera.position.addScaledVector(dir, -F * (want / have - 1));
+    }
+    camera.updateProjectionMatrix();
+  }
+  // on touch screens, aim a little above the fingertip so the finger doesn't hide what you're aiming at
+  const lift = (e) => (e && e.pointerType === 'touch' ? 0.65 : 0);
+
   // shared: take the roof and front awning off the booth for stalls that need a clear view
   function openAir(booth) {
     booth.scene.children.forEach((o) => {
@@ -212,6 +237,7 @@
     goal: (p) => `Hook ${p.need} ducks. You get ${p.dips} dips.`,
     how: "Rubber ducks float round the trough. Dip the hook so it drops through a duck's ring just as it passes the white circle. The hook takes a moment to drop, so go a little early.",
     keys: 'Press <kbd>Space</kbd> or click to dip the hook.',
+    touch: 'Tap anywhere to dip the hook.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 7, 7.8);
@@ -336,6 +362,7 @@
     goal: (p) => `Knock ${p.need} coconuts off their posts. You get ${p.balls} balls.`,
     how: "Point at a coconut and click to throw. Your aim wobbles a bit, so wait for the crosshair to drift over the coconut before you let go.",
     keys: 'Move the mouse to aim, click to throw.',
+    touch: 'Put your finger on the screen to aim (the crosshair sits just above it), slide to adjust, and let go to throw.',
     build(ctx) {
       const { scene, p } = ctx;
       const back = mesh(new THREE.PlaneGeometry(11, 5), G.mat('#ffffff', { map: G.tex.burlap() }), 0, 2.5, -4.7, false);
@@ -428,8 +455,9 @@
             }
           }
         },
-        pointerMove() { const h = ctx.rayZ(Z); if (h) aimBase = new V3(G.clamp(h.x, -4, 4), G.clamp(h.y, 0.8, 4.8), Z); },
-        pointerDown() { const h = ctx.rayZ(Z); if (h) aimBase = new V3(G.clamp(h.x, -4, 4), G.clamp(h.y, 0.8, 4.8), Z); throwBall(); },
+        pointerMove(ptr, e) { const h = ctx.rayZ(Z); if (h) aimBase = new V3(G.clamp(h.x, -4, 4), G.clamp(h.y + lift(e), 0.8, 4.8), Z); },
+        pointerDown(ptr, e) { const h = ctx.rayZ(Z); if (h) aimBase = new V3(G.clamp(h.x, -4, 4), G.clamp(h.y + lift(e), 0.8, 4.8), Z); if (!e || e.pointerType !== 'touch') throwBall(); },
+        pointerUp(ptr, e) { if (e && e.pointerType === 'touch') throwBall(); },
       };
     },
   };
@@ -443,6 +471,7 @@
     goal: (p) => `Knock all 6 cans off the shelf. You get ${p.balls} balls.`,
     how: 'A line sweeps side to side: stop it to pick where across you throw. Then a second line sweeps up and down: stop it to pick the height. Hit the bottom row and the cans above come down too.',
     keys: 'Press <kbd>Space</kbd> or click twice: once to set across, once to set height.',
+    touch: 'Tap twice: once to set across, once to set the height.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 3.3, 8.6);
@@ -551,7 +580,7 @@
           const e = t - tStage;
           if (stage === 'x') vLine.position.set(-1.5 + 3 * G.tri(e, p.px), 2.9, Z + 0.4);
           else if (stage === 'y') { vLine.position.x = lockX; hLine.position.set(lockX, 1.95 + 1.95 * G.tri(e, p.py), Z + 0.42); }
-          if (run) ctx.hint(stage === 'x' ? 'Stop the line to set <b>across</b>: <kbd>Space</kbd> or click.' : 'Now stop the line to set the <b>height</b>.');
+          if (run) ctx.hint(stage === 'x' ? (G.isTouch ? 'Tap to stop the line and set <b>across</b>.' : 'Stop the line to set <b>across</b>: <kbd>Space</kbd> or click.') : (G.isTouch ? 'Now tap to set the <b>height</b>.' : 'Now stop the line to set the <b>height</b>.'));
         },
         keyDown(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (!e.repeat) press(); } },
         pointerDown() { press(); },
@@ -568,6 +597,7 @@
     goal: (p) => `Whack ${p.need} moles in ${p.time} seconds.`,
     how: "Moles pop up out of the holes. Whack them before they duck back down. If Tiddles the cat pops up, leave her alone: whacking the cat costs you a mole.",
     keys: 'Click the moles, or use <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> / <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd> for the holes.',
+    touch: 'Tap the moles as they pop up. Two thumbs work well.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 6.4, 6.4);
@@ -604,7 +634,7 @@
         const lab = new THREE.Sprite(new THREE.SpriteMaterial({ map: G.tex.label(KEYS[r * 3 + c].toUpperCase(), { size: 44, bg: '#f6ecd2', fg: '#2b1a10' }), transparent: true }));
         lab.scale.set(0.42, 0.42, 1);
         lab.position.set(x + 0.62, 1.4, z + 0.42);
-        scene.add(lab);
+        if (!G.isTouch) scene.add(lab);
         holes.push({ g, mole, cat, x, z, active: false, type: 'mole', t0: 0, dur: 0, hit: false, y: -0.15 });
       }
       const mallet = new THREE.Group();
@@ -709,6 +739,7 @@
     goal: () => 'Pop your balloon before the other two players pop theirs.',
     how: "Squirt water into the clown's mouth in the middle lane. The balloon above only fills while you're on target, and the clown keeps moving, so follow it.",
     keys: 'Move the mouse to aim. Hold the mouse button (or <kbd>Space</kbd>) to squirt.',
+    touch: 'Hold your finger just below the clown to squirt, and follow it as it moves.',
     build(ctx) {
       const { scene, p } = ctx;
       const Z = -4.2;
@@ -804,8 +835,8 @@
             setTimeout(() => ctx.end(popped === me), 500);
           }
         },
-        pointerMove() { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -4.5, 4.5), G.clamp(h.y, 0.6, 4.6), Z); },
-        pointerDown() { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -4.5, 4.5), G.clamp(h.y, 0.6, 4.6), Z); },
+        pointerMove(ptr, e) { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -4.5, 4.5), G.clamp(h.y + lift(e), 0.6, 4.6), Z); },
+        pointerDown(ptr, e) { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -4.5, 4.5), G.clamp(h.y + lift(e), 0.6, 4.6), Z); },
         keyDown(e) { if (e.key === ' ') { e.preventDefault(); spaceDown = true; } },
         keyUp(e) { if (e.key === ' ') spaceDown = false; },
       };
@@ -821,6 +852,7 @@
     goal: (p) => `Land ${p.need} rings over the pegs. You get ${p.rings} rings.`,
     how: 'Move the mouse left and right to line up with a peg. Hold the button down to charge your throw, and let go when the power is right: more power throws further back.',
     keys: 'Mouse to aim. Hold the mouse button (or <kbd>Space</kbd>) to charge, release to throw.',
+    touch: 'Touch and slide left or right to aim, hold to charge, and let go to throw.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 4.8, 8.2);
@@ -920,6 +952,7 @@
     goal: (p) => `Score ${p.need} points with ${p.corks} corks. Gold ducks score 2.`,
     how: 'Tin ducks sail along two rows. Click to fire a cork at them. Every cork counts, so pick your shots.',
     keys: 'Move the mouse to aim, click to fire.',
+    touch: 'Tap the ducks to fire.',
     build(ctx) {
       const { scene, p } = ctx;
       const Z = -4.1;
@@ -1028,6 +1061,7 @@
     goal: (p) => `Ring the bell at the top. You get ${p.swings} swings.`,
     how: 'The power needle races back and forth. Swing the hammer when it is in the red zone at the far end, and the puck will fly all the way up to the bell.',
     keys: 'Press <kbd>Space</kbd> or click to swing the hammer.',
+    touch: 'Tap to swing the hammer.',
     build(ctx) {
       const { scene, camera, p, booth } = ctx;
       camera.position.set(0, 3.9, 10.6);
@@ -1115,6 +1149,7 @@
     goal: (p) => `Bump ${p.need} of the other cars in ${p.time} seconds.`,
     how: "Your car is the red one. It drives towards wherever you point, so steer it into the other cars. They'll try to get out of your way, and a car needs a moment to recover before you can bump it again.",
     keys: 'Point with the mouse to steer, or drive with the arrow keys.',
+    touch: 'Touch where you want your car to go.',
     build(ctx) {
       const { scene, camera, p, booth } = ctx;
       openAir(booth);
@@ -1252,6 +1287,7 @@
     goal: (p) => `Spin a full stick of candy floss in ${p.time} seconds.`,
     how: "Move the mouse round and round the machine to spin it. Keep the speed in the green: too slow and the sugar won't stick, too fast and the floss flies off the stick.",
     keys: 'Circle the mouse round the machine, or tap <kbd>←</kbd> and <kbd>→</kbd> one after the other.',
+    touch: 'Draw circles round the machine with your finger, at a steady speed.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 6.6, 6.4);
@@ -1328,7 +1364,7 @@
               flyBits.push(b);
             }
             if (t - lastWarn > 1.4) { lastWarn = t; ctx.float('Too fast!', new V3(C.x, 3.6, C.z), 'bad'); }
-          } else ctx.hint(speed > 0.2 ? '<b>Faster!</b> The sugar needs a proper spin.' : 'Circle the mouse round the machine, or tap <kbd>←</kbd> <kbd>→</kbd> in turn.');
+          } else ctx.hint(speed > 0.2 ? '<b>Faster!</b> The sugar needs a proper spin.' : G.isTouch ? 'Draw circles round the machine with your finger.' : 'Circle the mouse round the machine, or tap <kbd>←</kbd> <kbd>→</kbd> in turn.');
           ctx.status(`Candy floss <b>${Math.round(prog * 100)}%</b>`);
           if (prog >= 1) ctx.end(true);
         },
@@ -1360,6 +1396,7 @@
     goal: () => 'Get your duck over the finish line before the other three.',
     how: 'Tap to paddle. A ring shrinks down onto your duck: tap just as it lands for a big push. Tapping too fast only splashes about.',
     keys: 'Tap <kbd>Space</kbd> or click to paddle, in time with the ring.',
+    touch: 'Tap in time with the ring to paddle.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 5.6, 8.4);
@@ -1471,6 +1508,7 @@
     goal: (p) => `Carry the loop from the green post to the gold one in ${p.time} seconds. You can set the buzzer off ${p.buzzes} time${p.buzzes === 1 ? '' : 's'}; one more and you're out.`,
     how: 'Move the mouse onto the loop at the green post to pick it up, then guide it along the twisty wire. Go steady: if the loop touches the wire, the buzzer goes off.',
     keys: 'Move the mouse slowly and steadily. No clicking needed.',
+    touch: 'Drag the loop along the wire. It sits just above your fingertip so you can see it.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 3.4, 8.2);
@@ -1515,7 +1553,7 @@
       ctx.timer(1);
       const status = () => ctx.status(`Buzzes <b>${buzzes}/${p.buzzes}</b> · Along the wire <b>${Math.round(idx / (poly.length - 1) * 100)}%</b>`);
       status();
-      ctx.hint('Move the mouse onto the loop at the <b>green</b> post to pick it up.');
+      ctx.hint(G.isTouch ? 'Put your finger just below the loop at the <b>green</b> post to pick it up.' : 'Move the mouse onto the loop at the <b>green</b> post to pick it up.');
       const nearest = (q, from, span) => {
         let best = from, bd = Infinity;
         for (let k = Math.max(0, from - span); k <= Math.min(poly.length - 1, from + span); k++) {
@@ -1566,8 +1604,8 @@
           status();
           if (idx >= poly.length - 3 && !over) { over = true; ctx.sfx('ding'); ctx.float('Made it!', pos.clone().add(new V3(0, 0.8, 0)), 'good'); setTimeout(() => ctx.end(true), 500); }
         },
-        pointerMove() { const h = ctx.rayZ(Z); if (h) aim = h; },
-        pointerDown() { const h = ctx.rayZ(Z); if (h) aim = h; },
+        pointerMove(ptr, e) { const h = ctx.rayZ(Z); if (h) { h.y += lift(e); aim = h; } },
+        pointerDown(ptr, e) { const h = ctx.rayZ(Z); if (h) { h.y += lift(e); aim = h; } },
       };
     },
   };
@@ -1581,6 +1619,7 @@
     goal: (p) => `Splat ${p.need} of the ${p.rats} rats. You get one swing per rat.`,
     how: "The stall-holder drops a rat down the drainpipe, and you won't know when. It shoots out of the bottom and along the plank: swing the bat when it's on the red target. One swing per rat, so don't jump the gun.",
     keys: 'Press <kbd>Space</kbd> or click to swing the bat.',
+    touch: 'Tap to swing the bat.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 4.2, 8.6);
