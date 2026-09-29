@@ -39,11 +39,13 @@
       roll: null,
       players: Array.from({ length: settings.count }, (_, k) => ({
         name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
-        pos: 0, carry: [], skip: false, biscuits: 2, score: 0, won: 0,
+        pos: 0, carry: [], skip: false, biscuits: 2, score: 0, won: 0, charm: false,
       })),
       dealt: { ...G.dealt },
       leader: null,
       watching: false,
+      nap: false,
+      lastFind: {},
       items: Object.fromEntries(G.ITEM_KEYS.map((k) => [k, { state: 'room', by: null }])),
       delivered: [],
       log: [],
@@ -72,6 +74,7 @@
     news: ['LATEST', ''], fair: ['AT THE FAIR', ''], won: ['WINNER', 'good'], lost: ['NO LUCK', 'bad'], deliver: ['DELIVERED', 'good'],
     thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], biscuit: ['BISCUITS', ''], boiler: ['BOILER', ''],
     cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'], pinch: ['PINCHED', 'bad'],
+    find: ['RUMMAGE', 'good'], dud: ['RUMMAGE', ''], findbad: ['RUMMAGE', 'bad'], charm: ['LUCKY CHARM', 'good'], nap: ['FORTY WINKS', 'good'],
   };
   function log(kind, text) {
     S.log.unshift({ kind, text });
@@ -130,6 +133,7 @@
     if (d) bits.push(`win the ${G.ITEMS[d.item].name}`);
     else if (sp.type === 'corner') bits.push(sp.short);
     else if (G.SPACE_FX[to]) bits.push(G.SPACE_FX[to].short);
+    else if (canRummage(to)) bits.push('rummage');
     if (p.carry.length) for (let s = 1; s <= S.roll; s++) if (G.DOORS.includes(G.wrap(p.pos + dir * s))) { bits.push('hand over'); break; }
     return { to, text: bits.join(' · ') };
   }
@@ -174,7 +178,7 @@
         <span class="pname">${S.leader === j ? CROWN : ''}${esc(q.name)}</span>
         <span class="pscore" title="Favourite points">★ ${q.score}</span>
         <div class="carry">${carry}</div>
-        <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
+        <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
       </div>`;
     }).join('');
     $('needsList').innerHTML = G.DISTRICTS.map((d) => {
@@ -341,23 +345,30 @@
     const k = S.cur;
     S.phase = 'moving';
     render();
-    for (let s = 0; s < S.roll; s++) {
+    await moveSteps(p, k, dir, S.roll);
+    B.placePawns(S.players, S.cur, false);
+    if (allDone()) { busy = false; return win(); }
+    await resolveLanding(p, k, dir);
+    if (S !== g) return;
+    // a rummage can send you on past a door, which might have been the last delivery
+    if (allDone()) { busy = false; return win(); }
+    if (!frozen()) await maybeSwat(p, k);
+    busy = false;
+    endTurn();
+  }
+
+  // hop the pawn along, handing things over at any door on the way; stops once everything's delivered
+  async function moveSteps(p, k, dir, n) {
+    for (let s = 0; s < n; s++) {
       const from = p.pos;
       p.pos = G.wrap(p.pos + dir);
       Sound.play('step');
       await B.hop(S.players, k, from);
       if (G.DOORS.includes(p.pos) && p.carry.length) {
         await deliver(p, k);
-        if (allDone()) break;
+        if (allDone()) return;
       }
     }
-    B.placePawns(S.players, S.cur, false);
-    if (allDone()) { busy = false; return win(); }
-    await resolveLanding(p, k);
-    if (S !== g) return;
-    if (!frozen()) await maybeSwat(p, k);
-    busy = false;
-    endTurn();
   }
 
   // Every delivery is a little cutscene: the camera swoops in, the item puts itself on Grandad and he cheers.
@@ -381,7 +392,7 @@
         if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
         log('deliver', `${p.name} hands Grandad the ${G.ITEMS[key].name}. +${G.ITEMS[key].warmth.toFixed(2)}°C, and he'll cool more slowly now.`);
       });
-      await B.cineWait(j < keys.length - 1 ? 1700 : 2600);
+      await B.cineHold(j < keys.length - 1 ? 1700 : 2600);
       if (S !== g) { Cine.end(); return; }
     }
     // the last thing: win() carries the cutscene on into the fireworks
@@ -480,7 +491,7 @@
     },
   };
 
-  async function resolveLanding(p, k) {
+  async function resolveLanding(p, k, dir, hopped = false) {
     const sp = G.SPACES[p.pos];
     if (sp.type === 'corner') await cornerEffect(p, k, sp);
     else if (sp.type === 'door') log('news', `${p.name} lingers in the doorway. Grandad peers over his paper...`);
@@ -489,8 +500,132 @@
     await maybePinch(p, k);
     const d = prizeAt(p.pos);
     if (d) await playStall(p, k, d);
+    // rummage returns true when it sent you on somewhere else, which has already been dealt with
+    else if (canRummage(p.pos) && await rummage(p, k, dir, hopped)) return;
     render();
   }
+
+  // ---------- Rummaging ----------
+  // Rooms whose prize has already been won always have something to find.
+  const FIND_TONE = { star: 'good', biscuit: 'good', warm: 'good', charm: 'good', nap: 'good', hop: 'good', dud: 'dud', cold: 'bad' };
+  const FIND_ICON = {
+    mystery: '<svg viewBox="0 0 48 48"><path d="M6 18l18-8 18 8-18 8z" fill="#e3b77a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><path d="M6 18v18l18 8V26zM42 18v18l-18 8V26z" fill="#c9985a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><text x="24" y="21.5" text-anchor="middle" font-family="Shrikhand, Georgia, serif" font-size="11" fill="#7a3b1d">?</text><path d="M13 30l4 2M31 32l4-2" stroke="#7a3b1d" stroke-width="2" stroke-linecap="round"/></svg>',
+    star: '<svg viewBox="0 0 48 48"><path d="M24 4l6 13 14 1.5-10.5 9.5 3 14L24 35l-12.5 7 3-14L4 18.5 18 17z" fill="#e0a526" stroke="#2b1a10" stroke-width="2.4" stroke-linejoin="round"/><path d="M18 20l3-1" stroke="#fff3c4" stroke-width="2.5" stroke-linecap="round"/></svg>',
+    biscuit: '<svg viewBox="0 0 48 48"><rect x="6" y="12" width="36" height="24" rx="4" fill="#e8c068" stroke="#2b1a10" stroke-width="2.2"/><rect x="11" y="17" width="26" height="14" rx="3" fill="none" stroke="#b8862c" stroke-width="2"/><path d="M16 24c3-4 5 4 8 0s5 4 8 0" fill="none" stroke="#b8862c" stroke-width="2" stroke-linecap="round"/></svg>',
+    warm: '<svg viewBox="0 0 48 48"><path d="M17 11c-2-3 2-5 0-8M24 11c-2-3 2-5 0-8M31 11c-2-3 2-5 0-8" fill="none" stroke="#c9531f" stroke-width="2" stroke-linecap="round"/><path d="M24 44S7 33 7 23a8.5 8.5 0 0 1 17-2 8.5 8.5 0 0 1 17 2c0 10-17 21-17 21z" fill="#e0667a" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/></svg>',
+    cold: '<svg viewBox="0 0 48 48"><g stroke="#3f8fa0" stroke-width="3.2" stroke-linecap="round"><path d="M24 5v38M7.5 14.5l33 19M7.5 33.5l33-19"/><path d="M19 8l5 4 5-4M19 40l5-4 5 4M8 21l6-1-2-6M40 27l-6 1 2 6M8 27l6 1-2 6M40 21l-6-1 2-6"/></g></svg>',
+    charm: '<svg viewBox="0 0 48 48"><path d="M10 10v14a14 14 0 0 0 28 0V10h-8v14a6 6 0 0 1-12 0V10z" fill="#b9bfc4" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 10h8v4h-8zM30 10h8v4h-8z" fill="#8a9096" stroke="#2b1a10" stroke-width="2"/><g fill="#2b1a10"><circle cx="13" cy="21" r="1.4"/><circle cx="35" cy="21" r="1.4"/><circle cx="16" cy="30" r="1.4"/><circle cx="32" cy="30" r="1.4"/></g></svg>',
+    nap: '<svg viewBox="0 0 48 48"><g font-family="Shrikhand, Georgia, serif" fill="#2a7a8c" stroke="#2b1a10" stroke-width=".8"><text x="6" y="40" font-size="22">Z</text><text x="21" y="28" font-size="16">z</text><text x="33" y="17" font-size="12">z</text></g></svg>',
+    hop: '<svg viewBox="0 0 48 48"><g fill="#c9531f" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"><path d="M6 12l12 12-12 12h9l12-12-12-12z"/><path d="M22 12l12 12-12 12h9l12-12-12-12z"/></g></svg>',
+    dud: '<svg viewBox="0 0 48 48"><path d="M17 4h14v22l-2 4c-2 5-7 12-15 12-5 0-8-4-7-8 1-5 7-6 10-9z" fill="#a9c1d1" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M17 9h14M17 15h14" stroke="#e8432f" stroke-width="3"/><path d="M11 36c1 2 3 3 5 3" fill="none" stroke="#2b1a10" stroke-width="1.6"/></svg>',
+  };
+  let forcedFind = null;
+  // once a room's prize has been won, every square in it without its own effect is a rummage
+  const canRummage = (pos) => {
+    const sp = G.SPACES[pos];
+    return sp.type === 'room' && !G.SPACE_FX[pos] && !prizeAt(pos) && (sp.stall || !!G.RUMMAGE[pos]);
+  };
+  function drawFind(pos, hopped) {
+    const sp = G.SPACES[pos];
+    const table = sp.stall ? G.RUMMAGE_STALL : G.RUMMAGE[pos].finds;
+    // never the same thing twice running on one square, and never two lawnmower chases in a row
+    let options = table.map((f, i) => ({ f, i })).filter(({ f, i }) => !(hopped && f[0] === 'hop') && i !== S.lastFind[pos]);
+    if (forcedFind) { const m = options.filter(({ f }) => f[0] === forcedFind); if (m.length) options = m; }
+    const total = options.reduce((a, o) => a + G.FIND_WEIGHT[o.f[0]], 0);
+    let r = Math.random() * total;
+    const got = options.find((o) => (r -= G.FIND_WEIGHT[o.f[0]]) < 0) || options[0];
+    S.lastFind[pos] = got.i;
+    const [fx, text, pts = 1] = got.f;
+    const title = sp.stall ? G.Mini.GAMES[G.stallOf(districtAt(pos))].title : sp.name;
+    const where = sp.stall ? `You look round the back of the ${title} stall...` : G.RUMMAGE[pos].where;
+    return { fx, text, pts, where, title };
+  }
+  function applyFind(p, k, f) {
+    switch (f.fx) {
+      case 'star': award(k, f.pts); return `+${f.pts} ★ favourite point${f.pts === 1 ? '' : 's'}`;
+      case 'biscuit':
+        if (p.biscuits >= 3) { award(k, 1); return 'Pockets full, so +1 ★ instead'; }
+        p.biscuits++;
+        Sound.play('munch');
+        return '+1 custard cream';
+      case 'warm': setTemp(S.temp + 0.1); Sound.play('warm'); return 'Grandad +0.1°C';
+      case 'cold': setTemp(S.temp - 0.1); return 'Grandad −0.1°C';
+      case 'charm':
+        if (p.charm) { award(k, 1); return 'Already got one, so +1 ★ instead'; }
+        p.charm = true;
+        return 'Lucky charm: his next paper misses';
+      case 'nap': S.nap = true; B.setNap(true); Sound.play('snore'); return 'He nods off: no newspaper';
+      case 'hop': return 'Two squares on!';
+      default: return 'Nothing. Nothing at all.';
+    }
+  }
+  async function rummage(p, k, dir, hopped) {
+    const g = S;
+    const find = drawFind(p.pos, hopped);
+    const tone = FIND_TONE[find.fx];
+    Sound.play('rustle');
+    B.rummage(k);
+    await Reveal.open(find);
+    if (S !== g) return true;
+    const chip = applyFind(p, k, find);
+    Reveal.show(find, chip, tone);
+    B.findFx(k, tone);
+    Sound.play(tone === 'good' ? 'find' : tone === 'bad' ? 'draught' : 'boing');
+    if (find.fx === 'nap') say('Zzzz... hmm? I wasn\'t asleep. Zzzz...', 3000);
+    log(tone === 'good' ? (find.fx === 'charm' ? 'charm' : find.fx === 'nap' ? 'nap' : 'find') : tone === 'bad' ? 'findbad' : 'dud',
+      `${p.name} has a rummage. ${find.where} ${find.text} (${chip.replace(/\.$/, '')})`);
+    render();
+    await Reveal.wait(2200, false);
+    Reveal.close();
+    if (S !== g) return true;
+    if (find.fx !== 'hop' || frozen()) return false;
+    await sleep(G.ms(250));
+    await moveSteps(p, k, dir, 2);
+    B.placePawns(S.players, S.cur, false);
+    if (!allDone()) await resolveLanding(p, k, dir, true);
+    return true;
+  }
+  // the reveal card: a wobbling parcel, then what was inside. A tap or Space hurries it along.
+  const Reveal = {
+    active: false,
+    skip: null,
+    // scale: false for reading time, which reduced motion shouldn't cut short
+    wait(ms, scale = true) {
+      return new Promise((resolve) => {
+        const done = () => { clearTimeout(timer); Reveal.skip = null; resolve(); };
+        const timer = setTimeout(done, scale ? G.ms(ms) : ms);
+        Reveal.skip = done;
+      });
+    },
+    open(find) {
+      this.active = true;
+      const el = $('find');
+      el.className = 'find';
+      $('findBox').innerHTML = FIND_ICON.mystery;
+      $('findKicker').textContent = `Rummage · ${find.title}`;
+      $('findWhere').textContent = find.where;
+      $('findWhat').textContent = '';
+      $('findChip').textContent = '';
+      el.hidden = false;
+      void el.offsetWidth;
+      el.classList.add('in', 'shake');
+      return this.wait(1000);
+    },
+    show(find, chip, tone) {
+      const el = $('find');
+      el.classList.remove('shake');
+      el.classList.add('open', tone);
+      $('findBox').innerHTML = FIND_ICON[find.fx];
+      $('findWhat').textContent = find.text;
+      $('findChip').textContent = chip;
+    },
+    close() {
+      this.active = false;
+      this.skip = null;
+      $('find').classList.remove('in');
+      setTimeout(() => { if (!Reveal.active) $('find').hidden = true; }, 320);
+    },
+  };
 
   async function playStall(p, k, d) {
     const stall = G.stallOf(d);
@@ -598,12 +733,15 @@
   // ---------- The newspaper ----------
   let duckHandler = null;
   async function maybeSwat(p, k) {
+    // forty winks: he can't throw his paper in his sleep
+    if (S.nap) { S.watching = false; return; }
     const D = G.DIFFS[S.diff];
     const cold = clamp((D.start - S.temp) / (D.start - 35), 0, 1);
     const chance = 0.06 + 0.16 * cold + (G.DOORS.includes(p.pos) ? 0.2 : 0) + (S.watching ? 0.35 : 0);
     S.watching = false;
     if (Math.random() >= chance) return;
     S.swats++;
+    if (p.charm) return luckyCharm(p, k);
     S.phase = 'dodge';
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     render();
@@ -637,6 +775,23 @@
       log('thwack', `THWACK! ${p.name} is seeing stars and misses their next go.`);
     }
     S.phase = 'moving';
+    render();
+    await sleep(G.ms(500));
+  }
+
+  // a lucky charm turns the paper away without any ducking needed
+  async function luckyCharm(p, k) {
+    p.charm = false;
+    say(pick(G.SWAT_LINES));
+    Sound.play('grumble');
+    Sound.play('windup');
+    await B.windUp();
+    await B.throwPaper(k, true, () => Sound.play('whoosh'));
+    S.ducks++;
+    toast('Lucky charm!');
+    Sound.play('find');
+    say(pick(["What the...? It went right past you!", 'Blooming lucky charms.', 'I never miss! Well, hardly ever.']));
+    log('charm', `${p.name}'s lucky charm works! The paper sails clean past. The charm's used up now.`);
     render();
     await sleep(G.ms(500));
   }
@@ -691,6 +846,7 @@
     const g = S;
     S.turns++;
     setTemp(S.temp - coolRate());
+    if (S.nap) { S.nap = false; B.setNap(false); }
     render();
     if (frozen()) return lose();
     for (const w of G.COLD_WARNINGS) {
@@ -709,6 +865,8 @@
     const g = S;
     S.turns++;
     S.phase = 'over';
+    S.nap = false;
+    B.setNap(false);
     render();
     if (!Cine.active) await Cine.begin();
     Cine.finale();
@@ -819,6 +977,7 @@
     B.refreshTop();
     B.setCrown(null);
     B.setFrozen(false);
+    B.setNap(false);
     B.setPlayers(S.players);
     log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
     say(S.players.length > 1 ? "May the best grandchild win. I'll be keeping score, mind." : 'Is it me, or is it parky in here?');
@@ -897,6 +1056,11 @@
       if (e.target.closest && e.target.closest('input, textarea, select')) return;
       if (!$('setup').hidden || !$('endOverlay').hidden) return;
       const key = e.key;
+      if (Reveal.active) {
+        if (key === ' ' || key === 'Enter' || key === 'Escape') { e.preventDefault(); if (Reveal.skip) Reveal.skip(); }
+        else if (key === 'm' || key === 'M') toggleMute();
+        return;
+      }
       if (Cine.active) {
         if (key === ' ' || key === 'Enter' || key === 'Escape') { e.preventDefault(); Cine.skip(); }
         else if (key === 'm' || key === 'M') toggleMute();
@@ -934,7 +1098,10 @@
       b.style.left = clamp(p.x, half, Math.max(half, G.E.w - half)) + 'px';
       b.style.top = Math.max(p.y, minTop) + 'px';
     });
-    $('stage').addEventListener('pointerdown', () => { if (Cine.active) Cine.skip(); });
+    $('stage').addEventListener('pointerdown', () => {
+      if (Cine.active) Cine.skip();
+      else if (Reveal.active && Reveal.skip) Reveal.skip();
+    });
   }
 
   // ---------- Boot ----------
@@ -978,6 +1145,8 @@
     autoMini: (v) => { G.Mini.autoResult = v; },
     cine: () => Cine.active,
     skipCine: () => Cine.skip(),
+    forceFind: (fx) => { forcedFind = fx; },
+    reveal: () => Reveal.active,
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

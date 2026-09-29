@@ -229,6 +229,54 @@ body.minigame .frost, body.minigame .bubble, body.minigame .view-tools { display
 .dodge.bad .dodge-msg { color: var(--danger); }
 .dodge .btn { justify-self: center; }
 
+/* ---------- Rummage ---------- */
+.find {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 44px;
+  width: min(450px, calc(100% - 32px));
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-areas: "box text" "box chip";
+  align-items: center;
+  gap: 6px 14px;
+  padding: 12px 16px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 5px 6px 0 var(--ink);
+  pointer-events: none;
+  opacity: 0;
+  scale: .8;
+  translate: -50% 30px;
+  transition: opacity .2s, scale .4s cubic-bezier(.3, 1.6, .5, 1), translate .4s cubic-bezier(.3, 1.4, .5, 1);
+}
+.find.in { opacity: 1; scale: 1; translate: -50% 0; }
+.find-box { grid-area: box; align-self: start; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 12px; background: var(--board); }
+.find-box svg { width: 52px; height: 52px; }
+.find.shake .find-box svg { animation: rumble .3s ease-in-out infinite; }
+@keyframes rumble { 0%, 100% { rotate: 0deg; translate: 0 0; } 25% { rotate: -10deg; translate: -2px 1px; } 75% { rotate: 10deg; translate: 2px -1px; } }
+.find.open .find-box svg { animation: findpop .5s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes findpop { from { scale: 0; rotate: -25deg; } }
+.find.open.good .find-box { background: radial-gradient(circle, #ffe7a6 0 45%, var(--board) 78%); }
+.find.open.bad .find-box { background: radial-gradient(circle, #d6ecf7 0 45%, var(--board) 78%); }
+.find-text { grid-area: text; min-width: 0; }
+.find-kicker { margin: 0; font: 800 11px/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--orange); }
+.find-where { margin: 3px 0 0; font: 400 20px/1.1 var(--font-display); color: var(--brown); }
+.find-what { margin: 5px 0 0; font: 700 15px/1.3 var(--font-body); opacity: 0; translate: 0 6px; transition: opacity .25s, translate .25s; }
+.find.open .find-what { opacity: 1; translate: 0 0; }
+.find-what:empty { display: none; }
+.find-chip { grid-area: chip; justify-self: start; padding: 3px 11px; border-radius: 99px; background: var(--mustard); color: var(--ink); font: 800 13px/1.35 var(--font-body); }
+.find-chip:empty { display: none; }
+.find.open .find-chip { animation: chipin .4s .15s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes chipin { from { opacity: 0; scale: .6; } }
+.find.bad .find-chip { background: var(--frost); }
+.find.dud .find-chip { background: rgb(43 26 16 / .12); }
+.badge.lucky { background: var(--good); }
+body.minigame .find { display: none; }
+
 /* ---------- The fair ---------- */
 .mini-hud { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 .mini-top {
@@ -621,6 +669,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   html.touch .bubble { font-size: 13px; max-width: 72%; padding: 8px 11px; }
   html.touch .view-tools { display: none; }
   html.touch .dodge { bottom: 12px; padding: 10px 12px 12px; gap: 8px; }
+  html.touch .find { bottom: 12px; }
   html.touch .dodge .dodge-title { font-size: 20px; }
   html.touch .dodge .btn { width: 100%; font-size: 20px; padding: 14px; }
   html.touch .toast { font-size: 20px; top: 10%; }
@@ -657,6 +706,13 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   .setup-main .lid-actions { position: sticky; bottom: 0; z-index: 2; margin: 12px -16px 0; padding: 10px 16px 12px; background: var(--cream); box-shadow: 0 -10px 14px -10px rgb(0 0 0 / .35); }
   .setup-main .lid-actions .btn.primary { flex: 1; }
   .mini-card .tip { font-size: 13px; color: var(--orange); font-weight: 700; }
+  .find { width: calc(100% - 20px); grid-template-columns: 46px minmax(0, 1fr); gap: 4px 10px; padding: 8px 10px 10px; box-shadow: 3px 4px 0 var(--ink); }
+  .find-box { width: 46px; height: 46px; border-radius: 10px; }
+  .find-box svg { width: 38px; height: 38px; }
+  .find-kicker { font-size: 10px; }
+  .find-where { font-size: 16px; }
+  .find-what { font-size: 13px; margin-top: 3px; }
+  .find-chip { font-size: 12px; padding: 2px 9px; }
   .cine { --bar: clamp(24px, 8%, 44px); }
   .cine-bar.bottom { padding: 0 10px; }
   .cine-card { bottom: calc(var(--bar) + 6px); width: calc(100% - 20px); grid-template-columns: 42px minmax(0, 1fr); gap: 2px 10px; padding: 7px 10px 8px; border-radius: 12px; box-shadow: 3px 4px 0 var(--ink); }
@@ -698,6 +754,15 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <div class="meter"><div class="zone" id="zone"></div><div class="marker" id="marker"></div></div>
       <p class="dodge-msg" id="dodgeMsg">Press Space when the marker is in the green to duck.</p>
       <button class="btn primary" id="duckBtn" type="button">Duck! <kbd>Space</kbd></button>
+    </div>
+    <div class="find" id="find" role="status" aria-live="polite" hidden>
+      <div class="find-box" id="findBox"></div>
+      <div class="find-text">
+        <p class="find-kicker" id="findKicker"></p>
+        <p class="find-where" id="findWhere"></p>
+        <p class="find-what" id="findWhat"></p>
+      </div>
+      <span class="find-chip" id="findChip"></span>
     </div>
     <div class="mini-hud" id="miniHud" hidden>
       <div class="mini-top">
@@ -831,6 +896,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
         <li>Land in a room that still has its prize and you play that room's fairground game. Win it to take Grandad's thing.</li>
         <li>Pass or stop on a yellow <b>Pop in to Grandad</b> door to hand over everything you're carrying.</li>
         <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop something, or miss a go.</li>
+        <li>Once a room's prize has been won, a parcel floats over its stall: land anywhere in that room and you have a rummage. You might find custard creams, favourite points, a lucky charm... or a sock.</li>
         <li>Deliver all 8 cosy things before he cools to 35.0°C. Custard creams let you re-roll.</li>
         <li>Grandad keeps score of who's his favourite: points for winning stalls, delivering things and ducking his paper. Playing together? Land on another player's square and you can pinch what they're carrying, if Grandad isn't looking.</li>
       </ol>

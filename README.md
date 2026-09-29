@@ -34,12 +34,13 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 
 1. **Roll the dice**, then choose which way round the house to go: clockwise or anticlockwise. You can click one of the flashing squares on the board, or press <kbd>←</kbd> / <kbd>→</kbd>.
 2. **Land in a room that still has its prize** and you play that room's fairground game. Win it and Grandad's thing is yours; it floats above your pawn while you carry it. Lose, and the prize stays on the stall for another try.
-3. **Pass or stop on a yellow "Pop in to Grandad" door** to hand over everything you're carrying. The camera swoops in to watch Grandad put it on, and he cheers. He warms up a bit, and cools down more slowly from then on. Tap, or press <kbd>Space</kbd>, to skip the cutscene.
-4. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop one of your prizes (it flies back to its stall), or you miss a go if your hands are empty. He throws more often as he gets colder, and more often still if you hang about in his doorway.
-5. **Deliver all 8 things before he cools to 35.0°C**, and set off the fireworks.
-6. **Be Grandad's favourite.** He keeps score (see below).
+3. **Once a room's prize has been won, land there again and you have a rummage.** A mystery parcel floats over its stall to show you can. See below for what you might find.
+4. **Pass or stop on a yellow "Pop in to Grandad" door** to hand over everything you're carrying. The camera swoops in to watch Grandad put it on, and he cheers. He warms up a bit, and cools down more slowly from then on. Tap, or press <kbd>Space</kbd>, to skip the cutscene.
+5. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop one of your prizes (it flies back to its stall), or you miss a go if your hands are empty. He throws more often as he gets colder, and more often still if you hang about in his doorway.
+6. **Deliver all 8 things before he cools to 35.0°C**, and set off the fireworks.
+7. **Be Grandad's favourite.** He keeps score (see below).
 
-Custard creams let you re-roll after seeing the dice. You start with two and can find more in the Larder and the Sideboard.
+Custard creams let you re-roll after seeing the dice. You start with two and can find more in the Larder and the Sideboard, or by rummaging.
 
 ### The fair
 
@@ -91,6 +92,23 @@ Everyone's trying to save Grandad, but he keeps score of who's his favourite:
 With two or more players, whoever's ahead wears a crown on their pawn, and Grandad lets everyone know. Land on the same square as another player who's carrying something and you can **pinch** it: you'll get the points when you hand it over. Grandad might spot you doing it, though, and then he's much more likely to throw his paper at you. At the end he names his favourite.
 
 Playing on your own, your points (plus a rescue bonus if you save him) are a score to beat next time.
+
+### Rummaging
+
+When a room's prize has gone, its squares don't go to waste. Land anywhere in that room and you have a rummage: down the back of the sofa, in the wardrobe, under the doormat, behind the stall. A parcel wobbles, then pops open to show what you found:
+
+| Find | What it does |
+| --- | --- |
+| Something Grandad lost (the TV remote, his reading glasses, his teeth...) | +1 or +2 favourite points |
+| A custard cream | +1 re-roll (or +1 ★ if your pockets are full) |
+| Something warm (Nan on the phone, a hot flannel...) | Grandad +0.1°C |
+| A lucky charm | The next newspaper he throws at you misses |
+| Something that sends him to sleep | He nods off: no newspaper this go |
+| The lawnmower (or the postman, or a jack-in-the-box) | You go two more squares on |
+| A sock. Just the one. | Nothing at all |
+| An icy draught | Grandad −0.1°C |
+
+Every room has its own finds, and you won't get the same thing twice in a row. Tap, or press <kbd>Space</kbd>, to hurry it along.
 
 ### Around the board
 

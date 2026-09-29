@@ -9,10 +9,13 @@
   const PAWN_COLORS = ['#e8432f', '#2a9d8f', '#f2c230', '#8e6cc4'];
   B.PAWN_COLORS = PAWN_COLORS;
 
-  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, crown;
+  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, crown, zzz;
+  let napping = false;
   let crownFor = null;
   const props = [];
   const prizes = {};
+  // once a room's prize has gone, a mystery parcel floats over its stall: have a rummage
+  const parcels = {};
   const pawns = [];
   let targets = [];
   let shiverAmp = 0;
@@ -111,6 +114,11 @@
       prize.position.set(c.x, 3.05, c.z - 0.55);
       scene.add(prize);
       prizes[d.item] = { group: prize, model, base: prize.position.clone() };
+      const parcel = makeParcel();
+      parcel.position.copy(prize.position);
+      parcel.visible = false;
+      scene.add(parcel);
+      parcels[d.item] = parcel;
     }
 
     die = G.makeDie();
@@ -134,6 +142,17 @@
     }
     crown.visible = false;
     scene.add(crown);
+
+    // Zzz when Grandad nods off
+    zzz = new THREE.Group();
+    const zTex = G.tex.label('Z', { size: 72, bg: null, fg: '#cfe6ff', font: G.FONT_DISPLAY, weight: '400' });
+    for (let k = 0; k < 3; k++) {
+      const z = new THREE.Sprite(new THREE.SpriteMaterial({ map: zTex, transparent: true, depthWrite: false }));
+      z.scale.set(0.5 * zTex.userData.aspect, 0.5, 1);
+      zzz.add(z);
+    }
+    zzz.visible = false;
+    scene.add(zzz);
 
     // snow
     const NS = 900;
@@ -202,6 +221,11 @@
       const p = prizes[k];
       p.group.position.y = p.base.y + Math.sin(t * 2 + p.base.x) * 0.12;
       p.model.rotation.y = t * 1.3;
+      const pc = parcels[k];
+      if (pc.visible) {
+        pc.position.y = p.base.y - 0.2 + Math.sin(t * 2.4 + p.base.z) * 0.1;
+        pc.children[0].rotation.y = t * 0.9;
+      }
     }
     props.forEach((p) => p.update(t));
     fire.update(t, dt);
@@ -222,6 +246,17 @@
       const s = 1 + Math.sin(t * 5) * 0.08;
       curRing.scale.set(s, s, s);
     }
+    if (zzz.visible) {
+      const h = B.headWorld();
+      zzz.children.forEach((z, k) => {
+        const ph = (t * 0.45 + k / 3) % 1;
+        z.position.set(h.x + 0.6 + ph * 1.1, h.y + 0.2 + ph * 1.8, h.z + 0.3);
+        z.material.opacity = Math.sin(ph * PI);
+        z.scale.setScalar(0.6 + ph * 0.6);
+      });
+    }
+    if (napping) grandad.head.rotation.x += (0.35 - grandad.head.rotation.x) * Math.min(1, dt * 3);
+    else if (grandad.head.rotation.x) grandad.head.rotation.x *= Math.max(0, 1 - dt * 5);
     const leader = crownFor !== null ? pawns[crownFor] : null;
     crown.visible = !!leader;
     if (leader) {
@@ -367,7 +402,12 @@
   };
 
   // ---------- Prizes and cosy things ----------
-  B.setPrizes = (items) => { for (const k in prizes) prizes[k].group.visible = items[k].state === 'room'; };
+  B.setPrizes = (items) => {
+    for (const k in prizes) {
+      prizes[k].group.visible = items[k].state === 'room';
+      parcels[k].visible = items[k].state !== 'room';
+    }
+  };
   async function flyModel(key, from, to, ms, s0, s1, arc = 2.5) {
     const m = G.makeItem(key);
     scene.add(m);
@@ -389,12 +429,57 @@
     fire.setLit(keys.includes('logs'));
   };
 
+  // ---------- Rummaging ----------
+  function makeParcel() {
+    const g = new THREE.Group();
+    const box = new THREE.Group();
+    const ribbon = G.mat('#b3261e');
+    box.add(G.mesh(G.geo.box(0.6, 0.46, 0.6), G.mat('#c9985a'), 0, 0, 0));
+    box.add(G.mesh(G.geo.box(0.64, 0.48, 0.12), ribbon, 0, 0, 0));
+    box.add(G.mesh(G.geo.box(0.12, 0.48, 0.64), ribbon, 0, 0, 0));
+    [-1, 1].forEach((sd) => {
+      const bow = G.mesh(new THREE.TorusGeometry(0.1, 0.035, 6, 14), ribbon, sd * 0.1, 0.3, 0);
+      bow.rotation.y = PI / 2;
+      bow.rotation.x = sd * 0.5;
+      box.add(bow);
+    });
+    g.add(box);
+    const tex = G.tex.label('?', { size: 72, bg: '#e0a526', fg: '#2b1a10', font: G.FONT_DISPLAY, weight: '400' });
+    const q = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    q.scale.set(0.5 * tex.userData.aspect, 0.5, 1);
+    q.position.y = 0.72;
+    g.add(q);
+    return g;
+  }
+  // the pawn has a good root around, kicking up dust
+  B.rummage = (k) => {
+    const pw = pawns[k] && pawns[k].group;
+    if (!pw) return Promise.resolve();
+    const base = pw.position.clone();
+    for (let j = 0; j < 3; j++) setTimeout(() => G.spawnSparkles(scene, base.clone().add(new V3(G.rand(-0.3, 0.3), 0.25, G.rand(-0.3, 0.3))), { n: 5, speed: 0.9, life: 0.7, size: 0.45, color: '#d8c3a0' }), j * 220);
+    return G.tween(G.ms(850), (t) => {
+      const w = Math.sin(t * PI * 9) * (1 - t);
+      pw.rotation.z = w * 0.28;
+      pw.position.y = Math.abs(Math.sin(t * PI * 6)) * 0.18 * (1 - t);
+    }, G.ease.linear).then(() => { pw.rotation.z = 0; pw.position.y = 0; });
+  };
+  // what you found pops out: sparkles for good things, a puff of dust for a dud, frost for a chilly one
+  B.findFx = (k, tone) => {
+    const at = B.pawnWorld(k).add(new V3(0, 0.9, 0));
+    if (tone === 'good') {
+      G.spawnSparkles(scene, at, { n: 22, speed: 2.4, life: 0.9, size: 0.5 });
+      G.spawnConfetti(scene, at, { n: G.isPhone ? 20 : 36, spread: 1.4, up: 4, life: 1.8, size: 0.14 });
+    } else if (tone === 'bad') G.spawnSparkles(scene, at, { n: 18, speed: 1.6, life: 1, size: 0.5, color: '#bfe3ff' });
+    else G.spawnSparkles(scene, at, { n: 10, speed: 0.8, life: 0.8, size: 0.6, color: '#b8a58a' });
+  };
+  B.setNap = (v) => { napping = v; zzz.visible = v; };
+
   // ---------- Cutscenes ----------
   // Cutscene steps run on their own clock, so a tap can skip straight to the end of the scene.
   let skipping = false;
   let saved = null;
-  const cineTween = (ms, fn, ease = G.ease.inOut) => new Promise((resolve) => {
-    const dur = G.ms(ms);
+  const cineTween = (ms, fn, ease = G.ease.inOut, raw = false) => new Promise((resolve) => {
+    const dur = raw ? ms : G.ms(ms);
     if (skipping || dur <= 1) { fn(ease(1)); resolve(); return; }
     const t0 = performance.now();
     const off = G.onFrame(() => {
@@ -404,6 +489,8 @@
     });
   });
   B.cineWait = (ms) => cineTween(ms, () => {});
+  // a pause for reading a card: reduced motion shortens the animations, not the reading time
+  B.cineHold = (ms) => cineTween(ms, () => {}, G.ease.linear, true);
   B.cineSkip = () => { skipping = true; };
   const nearAz = (a) => a + PI * 2 * Math.round((orbit.az - a) / (PI * 2));
   // frame a close-up: far enough back that Grandad and the thing he's getting both fit, whatever the screen shape

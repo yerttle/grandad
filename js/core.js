@@ -154,6 +154,11 @@ window.GCS = window.GCS || {};
         case 'ignite': this.noise(1.1, { vol: 0.4, freq: 200, to: 1600, q: 0.8, swell: true }); this.tone(70, 0.9, { vol: 0.25, to: 140 }); for (let k = 0; k < 5; k++) this.noise(0.04, { vol: 0.3, at: 0.3 + k * 0.12 + Math.random() * 0.08, freq: 3000, q: 4 }); break;
         case 'rocket': this.noise(0.7, { vol: 0.16, freq: 600, to: 4000, q: 4, swell: true }); break;
         case 'firework': this.noise(0.5, { vol: 0.5, freq: 900, type: 'lowpass' }); this.tone(70, 0.4, { vol: 0.3, to: 40 }); for (let k = 0; k < 8; k++) this.noise(0.03, { vol: 0.14, at: 0.15 + k * 0.07 + Math.random() * 0.05, freq: 5000, q: 6 }); break;
+        // rummaging
+        case 'rustle': for (let k = 0; k < 4; k++) this.noise(0.09, { vol: 0.22, at: k * 0.17 + Math.random() * 0.05, freq: 1800 + r(1500), q: 1.2 }); break;
+        case 'find': [784, 988, 1175, 1568].forEach((f, k) => this.tone(f, 0.22, { type: 'triangle', vol: 0.11, at: k * 0.055 })); this.noise(0.08, { vol: 0.3, freq: 3000, type: 'highpass' }); break;
+        case 'boing': this.tone(180, 0.45, { type: 'triangle', vol: 0.12, to: 520 }); this.tone(520, 0.3, { type: 'triangle', vol: 0.08, at: 0.2, to: 160 }); break;
+        case 'snore': this.noise(0.9, { vol: 0.16, freq: 260, q: 2, swell: true }); this.tone(90, 0.8, { type: 'sawtooth', vol: 0.03, to: 70, attack: 0.3 }); break;
         case 'hooray': this.noise(2.4, { vol: 0.24, freq: 1100, q: 0.5, swell: true }); this.noise(2.0, { vol: 0.12, freq: 2400, q: 0.8, swell: true }); break;
       }
     },
@@ -292,6 +297,113 @@ window.GCS = window.GCS || {};
     15: { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', text: 'The conservatory window leaks like a sieve. Grandad −0.1°C.', line: 'I can feel that draught from here!' },
     19: { kind: 'warm', amt: 0.1, mark: 'warm', short: 'warm towel', text: 'A toasty towel from the airing cupboard, draped over Grandad. +0.1°C.', line: "Ooh, that's warm." },
   };
+
+  // ---------- Rummage ----------
+  // Once a room's prize has been won, its squares have something to find. Each find is [effect, text, points]:
+  // star (favourite points), biscuit, warm (+0.1°C), cold (−0.1°C), charm (stops the next newspaper),
+  // nap (Grandad nods off: no newspaper this go), hop (two more squares on), dud (nothing, but a laugh).
+  G.RUMMAGE = {
+    1: { where: 'You lift the doormat...', finds: [
+      ['star', "The spare key! Grandad's been looking for that since 1987."],
+      ['biscuit', 'A custard cream, only slightly trodden on. Still counts.'],
+      ['dud', 'Three catalogues and a leaflet about double glazing.'],
+      ['charm', 'A lucky horseshoe that fell off the front door.'],
+      ['hop', 'The postman barges in and sweeps you two squares along.'],
+      ['cold', 'You shake it out of the front door and let the cold in.'],
+    ] },
+    3: { where: 'You check the telephone table...', finds: [
+      ['warm', "The phone rings. It's Nan! Grandad goes all pink and cheerful."],
+      ['star', "Grandad's little address book. He's chuffed you found it."],
+      ['nap', 'You ring the talking clock for him. Grandad nods off listening.'],
+      ['dud', 'A pencil with no lead and a phone book from 1974.'],
+      ['biscuit', 'The emergency biscuit drawer!'],
+      ['charm', 'A lucky four-leaf clover, pressed in the phone book.'],
+    ] },
+    9: { where: 'Down the back of the sofa...', finds: [
+      ['biscuit', '20p, a hairgrip and a custard cream!'],
+      ['star', "The TV remote! He's been lost without it."],
+      ['charm', 'A lucky penny. Heads up, too.'],
+      ['dud', 'Fluff. So much fluff.'],
+      ['nap', 'You plump the cushions and Grandad dozes off at the very thought.'],
+      ['warm', "Tiddles' heated cushion. You tuck it behind Grandad."],
+    ] },
+    13: { where: 'You poke about in the wicker chair...', finds: [
+      ['star', "Grandad's reading glasses! Now he can do the crossword."],
+      ['dud', 'A wicker splinter. Ow.'],
+      ['hop', 'It creaks, collapses and bounces you two squares along.'],
+      ['biscuit', 'A shortbread tin with one custard cream left in it.'],
+      ['cold', 'You fiddle with the blinds and let the cold in.'],
+      ['charm', 'A lucky pebble from Skegness.'],
+    ] },
+    17: { where: 'You look in the bath...', finds: [
+      ['charm', 'A lucky rubber duck. Squeak!'],
+      ['dud', "A bar of soap. That's it. Just soap."],
+      ['hop', 'You slip on the soap and skid two squares along.'],
+      ['warm', "The hot tap works! A hot flannel for Grandad's forehead."],
+      ['star', "Grandad's false teeth, in a glass. He's delighted to have them back.", 2],
+      ['cold', 'The plughole gurgles up an icy draught.'],
+    ] },
+    21: { where: 'You open the wardrobe...', finds: [
+      ['nap', 'Moth balls! The pong sends Grandad off for a snooze.'],
+      ['star', "Grandad's wedding suit. He goes all misty-eyed.", 2],
+      ['dud', 'A coat hanger falls on your head. Nothing else.'],
+      ['hop', 'You get lost among the coats and come out two squares along.'],
+      ['charm', 'A lucky flat cap.'],
+      ['biscuit', 'A custard cream in the pocket of his best jacket.'],
+    ] },
+    23: { where: 'You rifle through the chest of drawers...', finds: [
+      ['star', 'His old bowls trophy. He puffs up with pride.', 2],
+      ['biscuit', 'The sock drawer is hiding a custard cream.'],
+      ['dud', 'A sock. Just the one.'],
+      ['warm', "Thermal long johns. You don't ask. He puts them on anyway."],
+      ['charm', 'A lucky threepenny bit.'],
+      ['nap', 'His old pyjamas. He yawns just looking at them.'],
+    ] },
+    25: { where: 'You creak open the old trunk...', finds: [
+      ['star', "Grandad's school photo. Look at his hair!"],
+      ['dud', 'A Christmas bauble shaped like a sad walrus.'],
+      ['charm', "A lucky rabbit's foot. Plastic, probably."],
+      ['hop', 'A jack-in-the-box springs out and you jump two squares.'],
+      ['biscuit', 'A biscuit tin full of buttons, and one custard cream.'],
+      ['warm', "A moth-eaten jumper to go over Grandad's knees."],
+    ] },
+    27: { where: 'You lift the lid of the water tank...', finds: [
+      ['cold', 'An icy chill pours out.'],
+      ['dud', 'A very old tennis ball, bobbing about.'],
+      ['warm', 'You lag the pipes and a radiator starts ticking.'],
+      ['hop', 'The pipes clank so loudly you jump two squares.'],
+      ['nap', 'The gurgling sounds like the seaside. Grandad drifts off.'],
+      ['star', "You fix the ballcock. Grandad says you're a proper plumber."],
+    ] },
+    29: { where: 'You dig through the log pile...', finds: [
+      ['biscuit', 'A custard cream the squirrels missed.'],
+      ['hop', 'The pile rolls and carries you two squares along.'],
+      ['charm', 'A lucky conker. A proper tough one.'],
+      ['dud', 'A woodlouse. It waves.'],
+      ['warm', "An old hand-warmer, still working. Straight into Grandad's pocket."],
+      ['star', "Grandad's lost pipe. He won't light it, he just likes holding it."],
+    ] },
+    31: { where: 'You tinker with the lawnmower...', finds: [
+      ['hop', 'It roars into life and chases you two squares on!'],
+      ['dud', 'Grass cuttings. In your hair.'],
+      ['star', "You oil the blades. Grandad says you're a proper handyman."],
+      ['cold', 'You leave the shed door open and the cold creeps in.'],
+      ['charm', 'A lucky garden gnome was hiding behind it.'],
+      ['biscuit', 'A custard cream in the toolbox. Slightly oily.'],
+    ] },
+  };
+  // once a stall's prize has gone, you can still have a root around behind it
+  G.RUMMAGE_STALL = [
+    ['biscuit', 'A dropped custard cream.'],
+    ['star', 'A winner\'s rosette someone left behind.'],
+    ['dud', 'A sticky toffee apple core.'],
+    ['charm', 'A lucky fairground token.'],
+    ['hop', 'The stall-holder shoos you two squares along.'],
+    ['warm', 'The stall-holder sends a cup of cocoa over for Grandad.'],
+    ['nap', 'The organ music is so soothing that Grandad nods off.'],
+  ];
+  // how likely each kind of find is: mostly good, a few duds, the odd chilly one
+  G.FIND_WEIGHT = { star: 24, biscuit: 18, warm: 14, charm: 10, nap: 9, hop: 9, dud: 10, cold: 6 };
 
   G.SPACES = [];
   for (const [i, c] of Object.entries(G.CORNERS)) G.SPACES[+i] = { type: 'corner', ...c };

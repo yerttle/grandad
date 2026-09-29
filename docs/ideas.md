@@ -76,6 +76,26 @@ The last delivery sets off a fireworks finale: rockets over the house, confetti 
 
 Winning a stall now fires confetti cannons too. Every cutscene can be skipped with a tap, <kbd>Space</kbd> or <kbd>Enter</kbd>.
 
+### Rummaging — Built
+
+Once a room's prize has been won, its squares used to do nothing, so the end of a game went flat. Now a mystery parcel floats over the stall, and landing anywhere in that room means a rummage. Every room has its own finds: the TV remote down the back of the sofa, Nan ringing on the telephone table, moth balls in the wardrobe that send Grandad off to sleep, a lawnmower that chases you two squares on, and a single sock. Finds give favourite points, custard creams, a bit of warmth, a lucky charm that stops the next newspaper, or nothing at all, with the odd icy draught.
+
+### Grandad's errands — Idea
+
+Every few turns Grandad asks for something: "Fetch me reading glasses from the Chest of Drawers!" That square lights up, and whoever gets there first earns a bonus and a mini-cutscene of him putting them on. It gives you a reason to aim for particular squares, and players race each other for it.
+
+### Surprise parcels — Idea
+
+Each round a glowing gift box drops onto a random empty square where everyone can see it. Land on it to open it.
+
+### Tiddles roams — Idea
+
+The cat wanders onto a new square each round. Land on her and she either purrs on Grandad's lap (+0.1°C) or scratches you (drop a custard cream).
+
+### Won stalls stay open — Idea
+
+After a stall's prize has gone, it keeps running as a quick game for favourite points.
+
 ### A grand finale — Idea
 
 Once all 8 things are delivered, there's one last challenge. For example, carry a full cup of tea to Grandad without spilling it while he flaps his paper about.
