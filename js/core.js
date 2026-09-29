@@ -154,6 +154,7 @@ window.GCS = window.GCS || {};
         case 'ignite': this.noise(1.1, { vol: 0.4, freq: 200, to: 1600, q: 0.8, swell: true }); this.tone(70, 0.9, { vol: 0.25, to: 140 }); for (let k = 0; k < 5; k++) this.noise(0.04, { vol: 0.3, at: 0.3 + k * 0.12 + Math.random() * 0.08, freq: 3000, q: 4 }); break;
         case 'rocket': this.noise(0.7, { vol: 0.16, freq: 600, to: 4000, q: 4, swell: true }); break;
         case 'firework': this.noise(0.5, { vol: 0.5, freq: 900, type: 'lowpass' }); this.tone(70, 0.4, { vol: 0.3, to: 40 }); for (let k = 0; k < 8; k++) this.noise(0.03, { vol: 0.14, at: 0.15 + k * 0.07 + Math.random() * 0.05, freq: 5000, q: 6 }); break;
+        case 'heartbeat': [0, 0.22, 0.8, 1.02].forEach((at, k) => this.tone(k % 2 ? 62 : 72, 0.16, { vol: 0.35, at, to: 40 })); break;
         // rummaging
         case 'rustle': for (let k = 0; k < 4; k++) this.noise(0.09, { vol: 0.22, at: k * 0.17 + Math.random() * 0.05, freq: 1800 + r(1500), q: 1.2 }); break;
         case 'find': [784, 988, 1175, 1568].forEach((f, k) => this.tone(f, 0.22, { type: 'triangle', vol: 0.11, at: k * 0.055 })); this.noise(0.08, { vol: 0.3, freq: 3000, type: 'highpass' }); break;

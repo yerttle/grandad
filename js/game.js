@@ -97,9 +97,9 @@
     clearTimeout(bubbleTimer);
     bubbleTimer = setTimeout(() => b.classList.add('quiet'), ms);
   }
-  function toast(text) {
+  function toast(text, cls = '') {
     const t = document.createElement('div');
-    t.className = 'toast';
+    t.className = 'toast' + (cls ? ' ' + cls : '');
     t.textContent = text;
     $('stage').appendChild(t);
     setTimeout(() => t.remove(), 1500);
@@ -116,12 +116,14 @@
   }
 
   // ---------- Rendering ----------
+  // judged on the temperature as shown (one decimal place), so the label, colour and number always agree
+  const shownTemp = () => Math.round(S.temp * 10) / 10;
   function tempState() {
-    const t = S.temp;
+    const t = shownTemp();
     if (t >= 36.5) return ['Comfy-ish', ''];
     if (t >= 36.0) return ['Chilly', ''];
     if (t >= 35.6) return ['Shivering', 'cold'];
-    if (t >= 35.3) return ['Freezing', 'cold'];
+    if (t >= 35.3) return ['Freezing', 'danger'];
     return ['Danger!', 'danger'];
   }
   function describeDest(dir) {
@@ -150,6 +152,7 @@
     pill.textContent = label;
     pill.className = 'state-pill' + (tone ? ' ' + tone : '');
     $('rateText').textContent = `losing ${coolRate().toFixed(2)}°C a go`;
+    renderThermo();
     const hints = {
       setup: 'Pick your players and how cold it is, then start.',
       roll: 'Roll the dice to take your go.' + (p.carry.length ? " Pass a yellow door to hand over what you're carrying." : ''),
@@ -189,6 +192,38 @@
       else if (it.state === 'carried') { cls = 'carried'; where = `<span class="dot" style="background:${PAWN_CSS[it.by]}"></span>With ${esc(S.players[it.by].name)}`; }
       return `<li class="${cls}">${ICON[d.item]}<span class="iname">${esc(G.ITEMS[d.item].name)}</span><span class="where">${where}</span></li>`;
     }).join('');
+  }
+
+  // The thermometer: 35.0°C (hypothermia) on the left, 37.0°C on the right, the danger zone below 35.6°C.
+  const THERMO_MIN = 35, THERMO_MAX = 37;
+  G.DANGER_AT = 35.6;
+  const thermoPct = (t) => clamp((t - THERMO_MIN) / (THERMO_MAX - THERMO_MIN), 0, 1) * 100;
+  // goes left before he drops below 35.0°C, counting this one, at today's rate of cooling
+  const goesLeft = () => Math.floor((S.temp - G.LOSE_AT) / coolRate()) + 1;
+  function renderThermo() {
+    const box = $('thermoFill').closest('.temp-box');
+    const over = S.phase === 'over';
+    const rate = coolRate();
+    const now = thermoPct(S.temp);
+    const next = over ? now : thermoPct(S.temp - rate);
+    $('thermoFill').style.width = now + '%';
+    $('thermoLoss').style.left = next + '%';
+    $('thermoLoss').style.width = (now - next) + '%';
+    const t = $('thermo');
+    t.setAttribute('aria-valuenow', S.temp.toFixed(1));
+    const n = goesLeft();
+    const multi = S.players.length > 1;
+    let text;
+    if (over) text = allDone() ? 'Saved! He\'s warming up nicely.' : 'Hypothermia. Time for a blanket and the doctor.';
+    else if (n <= 1) text = 'Last chance! He\'ll be too cold after this go.';
+    else if (n <= 3) text = `Only ${n} goes left${multi ? ' between you' : ''} before hypothermia!`;
+    else text = `About ${n} goes left${multi ? ' between you' : ''} before hypothermia`;
+    $('thermoGoes').textContent = text;
+    t.setAttribute('aria-valuetext', `${S.temp.toFixed(1)}°C. ${text}`);
+    const danger = !over && shownTemp() < G.DANGER_AT;
+    box.classList.toggle('danger', danger || (over && !allDone()));
+    box.classList.toggle('cold', !danger && shownTemp() < 36.0);
+    box.classList.toggle('critical', !over && n <= 2);
   }
 
   function renderBoard() {
@@ -845,7 +880,9 @@
     if (S.phase === 'over') return;
     const g = S;
     S.turns++;
+    const wasSafe = shownTemp() >= G.DANGER_AT;
     setTemp(S.temp - coolRate());
+    if (wasSafe && shownTemp() < G.DANGER_AT && !frozen()) { toast('Danger zone!', 'danger'); Sound.play('heartbeat'); }
     if (S.nap) { S.nap = false; B.setNap(false); }
     render();
     if (frozen()) return lose();
@@ -1146,6 +1183,7 @@
     cine: () => Cine.active,
     skipCine: () => Cine.skip(),
     forceFind: (fx) => { forcedFind = fx; },
+    render: () => render(),
     reveal: () => Reveal.active,
   };
 
