@@ -469,6 +469,8 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .thermo-goes { margin: 5px 0 0; font: 700 13px/1.25 var(--font-body); color: var(--ink); }
 .thermo-goes:empty { display: none; }
 .temp-box.danger .thermo-goes { color: var(--danger); }
+.thermo-goes.note, .temp-box.danger .thermo-goes.note { color: #2f6f99; animation: notepop .35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes notepop { from { opacity: 0; translate: 0 4px; } }
 .temp-box.danger .thermo-tube { animation: tubepulse 1.2s ease-in-out infinite; }
 .temp-box.critical .thermo-tube { animation-duration: .6s; }
 .temp-box.danger .thermo-bulb { animation: bulbshiver .3s ease-in-out infinite; }
@@ -654,7 +656,6 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   html.touch .turn-name { font-size: 18px; }
   html.touch .temp-box { margin-top: 6px; padding: 5px 8px 6px; }
   html.touch .temp-line { gap: 2px 8px; }
-  html.touch .temp-line .rate { display: none; }
   html.touch .thermo { margin-top: 5px; height: 18px; }
   html.touch .thermo-bulb { width: 18px; height: 18px; margin-right: -6px; }
   html.touch .thermo-tube { height: 14px; }
@@ -850,7 +851,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
         <p class="temp-line">
           <strong id="tempText">36.4°C</strong>
           <span class="state-pill" id="tempState">Chilly</span>
-          <span class="rate" id="rateText">losing 0.13°C a go</span>
+          <span class="rate" id="rateText">cools 0.17°C a go</span>
         </p>
         <div class="thermo" id="thermo" role="meter" aria-label="Grandad's temperature" aria-valuemin="35" aria-valuemax="37" aria-valuenow="36.4">
           <span class="thermo-bulb" aria-hidden="true"></span>

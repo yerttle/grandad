@@ -151,7 +151,7 @@
     const pill = $('tempState');
     pill.textContent = label;
     pill.className = 'state-pill' + (tone ? ' ' + tone : '');
-    $('rateText').textContent = `losing ${coolRate().toFixed(2)}°C a go`;
+    $('rateText').textContent = `cools ${coolRate().toFixed(2)}°C a go`;
     renderThermo();
     const hints = {
       setup: 'Pick your players and how cold it is, then start.',
@@ -200,6 +200,13 @@
   const thermoPct = (t) => clamp((t - THERMO_MIN) / (THERMO_MAX - THERMO_MIN), 0, 1) * 100;
   // goes left before he drops below 35.0°C, counting this one, at today's rate of cooling
   const goesLeft = () => Math.floor((S.temp - G.LOSE_AT) / coolRate()) + 1;
+  let coolNoteUntil = 0, coolNoteText = '';
+  function coolNote(amt) {
+    coolNoteText = `❄ −${amt.toFixed(2)}°C · he cools a bit every go`;
+    coolNoteUntil = performance.now() + 2800;
+    renderThermo();
+    setTimeout(() => { if (S) renderThermo(); }, 2900);
+  }
   function renderThermo() {
     const box = $('thermoFill').closest('.temp-box');
     const over = S.phase === 'over';
@@ -218,7 +225,10 @@
     else if (n <= 1) text = 'Last chance! He\'ll be too cold after this go.';
     else if (n <= 3) text = `Only ${n} goes left${multi ? ' between you' : ''} before hypothermia!`;
     else text = `About ${n} goes left${multi ? ' between you' : ''} before hypothermia`;
-    $('thermoGoes').textContent = text;
+    // straight after a go ends, say why the thermometer just dropped
+    const noting = !over && performance.now() < coolNoteUntil;
+    $('thermoGoes').textContent = noting ? coolNoteText : text;
+    $('thermoGoes').classList.toggle('note', noting);
     t.setAttribute('aria-valuetext', `${S.temp.toFixed(1)}°C. ${text}`);
     const danger = !over && shownTemp() < G.DANGER_AT;
     box.classList.toggle('danger', danger || (over && !allDone()));
@@ -913,7 +923,9 @@
     const g = S;
     S.turns++;
     const wasSafe = shownTemp() >= G.DANGER_AT;
-    setTemp(S.temp - coolRate());
+    const chill = coolRate();
+    setTemp(S.temp - chill);
+    coolNote(chill);
     if (wasSafe && shownTemp() < G.DANGER_AT && !frozen()) { toast('Danger zone!', 'danger'); Sound.play('heartbeat'); }
     if (S.nap) { S.nap = false; B.setNap(false); }
     render();

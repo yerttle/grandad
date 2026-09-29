@@ -120,7 +120,7 @@ Every room has its own finds, and you won't get the same thing twice in a row. T
 - **Back Door** and **Leaky Window**: draughts (−0.1°C).
 - **Airing Cupboard**: a warm towel for Grandad (+0.1°C).
 
-The thermometer in the score pad shows how close Grandad is to hypothermia. It runs from 35°C on the left to 37°C on the right, and the striped red zone at the cold end covers 35.5°C and below. The dashed tip of the column is what he'll lose at the end of this go, and underneath it tells you roughly how many goes are left. When he first slips into the red zone you'll hear his heartbeat, and the thermometer starts to pulse.
+The thermometer in the score pad shows how close Grandad is to hypothermia. It runs from 35°C on the left to 37°C on the right, and the striped red zone at the cold end covers 35.5°C and below. He cools a little at the end of every go, whatever square you land on. The dashed tip of the column shows how much, the thermometer says so as it happens, and underneath it tells you roughly how many goes are left. When he first slips into the red zone you'll hear his heartbeat, and the thermometer starts to pulse.
 
 As you deliver things, Grandad puts them on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea lands on the side table, and the logs light the fire. A card shows how many of his 8 things he has so far. As he cools down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
 
