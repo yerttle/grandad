@@ -401,7 +401,7 @@
         if (sp.stall) {
           // the 3D stall stands on the far half of this square; its name goes on the near half
           x.font = `34px ${FONT_DISPLAY}`;
-          const lines = wrapText(x, sp.name, A.w - 20);
+          const lines = wrapText(x, G.spaceName(i), A.w - 20);
           const baseY = A.y + A.h - 30 - (lines.length - 1) * 36;
           lines.forEach((ln, k) => x.fillText(ln, cx, baseY + k * 36));
         } else {

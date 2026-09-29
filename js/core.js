@@ -124,6 +124,13 @@ window.GCS = window.GCS || {};
         case 'tick': this.tone(660, 0.1, { type: 'triangle', vol: 0.12 }); break;
         case 'go': this.tone(990, 0.3, { type: 'triangle', vol: 0.14 }); break;
         case 'wobble': this.tone(260, 0.3, { type: 'triangle', vol: 0.08, to: 200 }); break;
+        case 'buzz': this.tone(110, 0.4, { type: 'square', vol: 0.1 }); this.tone(117, 0.4, { type: 'sawtooth', vol: 0.07 }); break;
+        case 'splat': this.noise(0.18, { vol: 0.5, freq: 700, type: 'lowpass' }); this.tone(90, 0.18, { vol: 0.3, to: 50 }); break;
+        case 'squeak': this.tone(1400, 0.12, { type: 'triangle', vol: 0.08, to: 2200 }); break;
+        case 'paddle': this.noise(0.12, { vol: 0.18, freq: 1200, q: 1.2 }); break;
+        case 'stroke': this.noise(0.18, { vol: 0.3, freq: 800, q: 1 }); this.tone(520, 0.1, { type: 'triangle', vol: 0.06 }); break;
+        case 'whirr': this.tone(180 + r(40), 0.12, { type: 'sawtooth', vol: 0.025 }); break;
+        case 'star': [988, 1319, 1568].forEach((f, k) => this.tone(f, 0.16, { type: 'triangle', vol: 0.09, at: k * 0.06 })); break;
       }
     },
   };
@@ -179,7 +186,7 @@ window.GCS = window.GCS || {};
   G.DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
   const SETTINGS_KEY = 'grandads-cold-snap-settings';
   G.loadSettings = () => {
-    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false };
+    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false, shuffle: true, best: 0 };
     try {
       const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (saved && typeof saved === 'object') {
@@ -187,6 +194,8 @@ window.GCS = window.GCS || {};
         if (Array.isArray(saved.names)) saved.names.slice(0, 4).forEach((n, i) => { if (typeof n === 'string' && n.trim()) base.names[i] = n.slice(0, 18); });
         if (G.DIFFS[saved.diff]) base.diff = saved.diff;
         base.muted = !!saved.muted;
+        if (typeof saved.shuffle === 'boolean') base.shuffle = saved.shuffle;
+        if (Number.isFinite(saved.best)) base.best = Math.max(0, Math.round(saved.best));
       }
     } catch (e) { /* storage unavailable */ }
     return base;
@@ -226,6 +235,24 @@ window.GCS = window.GCS || {};
     { key: 'shed',    name: 'Garden Shed',  color: '#4a6b3a', item: 'logs',     game: 'strength', idx: [29, 30, 31], spaces: ['Log Pile', 'Test Your Strength', 'Lawnmower'] },
   ];
   G.DISTRICT_OF_ITEM = Object.fromEntries(G.DISTRICTS.map((d) => [d.item, d]));
+
+  // Which fairground stall stands in each room. The classic line-up is above; a game can deal
+  // 8 stalls at random from the whole fair instead.
+  G.CLASSIC_STALLS = Object.fromEntries(G.DISTRICTS.map((d) => [d.key, d.game]));
+  G.dealt = { ...G.CLASSIC_STALLS };
+  G.stallOf = (d) => G.dealt[d.key] || d.game;
+  G.shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = G.rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  G.dealStalls = (shuffle) => {
+    if (!shuffle) return { ...G.CLASSIC_STALLS };
+    const keys = G.shuffle(Object.keys(G.Mini.GAMES)).slice(0, G.DISTRICTS.length);
+    return Object.fromEntries(G.DISTRICTS.map((d, k) => [d.key, keys[k]]));
+  };
+  // the name printed on a square (stall squares show whichever stall is there this game)
+  G.spaceName = (i) => {
+    const sp = G.SPACES[i];
+    if (sp.type === 'room' && sp.stall && G.Mini) return G.Mini.GAMES[G.stallOf(G.DISTRICTS[sp.district])].title;
+    return sp.name;
+  };
 
   G.CORNERS = {
     0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Thump it. It might kick in!', short: 'thump the boiler' },

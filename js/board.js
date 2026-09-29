@@ -9,7 +9,8 @@
   const PAWN_COLORS = ['#e8432f', '#2a9d8f', '#f2c230', '#8e6cc4'];
   B.PAWN_COLORS = PAWN_COLORS;
 
-  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing;
+  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, crown;
+  let crownFor = null;
   const props = [];
   const prizes = {};
   const pawns = [];
@@ -121,6 +122,18 @@
     curRing.visible = false;
     scene.add(curRing);
 
+    // Grandad's favourite wears a crown
+    crown = new THREE.Group();
+    const gold = G.shiny('#e0a526', { metalness: 0.35, roughness: 0.3, emissive: '#3a2400' });
+    crown.add(G.mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.16, 16, 1, true), new THREE.MeshStandardMaterial({ color: '#e0a526', metalness: 0.35, roughness: 0.3, emissive: '#3a2400', side: THREE.DoubleSide }), 0, 0, 0));
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * PI * 2;
+      crown.add(G.mesh(new THREE.ConeGeometry(0.06, 0.18, 6), gold, Math.cos(a) * 0.22, 0.16, Math.sin(a) * 0.22));
+      crown.add(G.mesh(G.geo.sph(0.035, 8, 6), G.glow(k % 2 ? '#b3261e' : '#2a9d8f'), Math.cos(a + 0.6) * 0.235, 0.0, Math.sin(a + 0.6) * 0.235, false));
+    }
+    crown.visible = false;
+    scene.add(crown);
+
     // snow
     const NS = 900;
     snowGeo = new THREE.BufferGeometry();
@@ -207,6 +220,12 @@
     if (curRing.visible) {
       const s = 1 + Math.sin(t * 5) * 0.08;
       curRing.scale.set(s, s, s);
+    }
+    const leader = crownFor !== null ? pawns[crownFor] : null;
+    crown.visible = !!leader;
+    if (leader) {
+      crown.position.copy(leader.group.position).add(new V3(0, 1.42 * leader.group.scale.y, 0));
+      crown.rotation.y = t * 1.5;
     }
     targets.forEach((tg, k) => {
       tg.arrow.position.y = 2.1 + Math.sin(t * 5 + k) * 0.18;
@@ -362,6 +381,8 @@
   B.prizeToPawn = (key, k) => { prizes[key].group.visible = false; return flyModel(key, prizes[key].group.position.clone(), B.pawnWorld(k).add(new V3(0, 0.6, 0)), 800, 0.62, 0.34, 2); };
   B.toGrandad = (key, k) => flyModel(key, B.pawnWorld(k).add(new V3(0, 0.6, 0)), new V3(0, 2.4, 0.2), 850, 0.34, 0.9, 3);
   B.backToStall = (key, k) => flyModel(key, B.pawnWorld(k), prizes[key].base.clone(), 900, 0.34, 0.62, 4);
+  B.passItem = (key, from, to) => flyModel(key, B.pawnWorld(from).add(new V3(0, 0.6, 0)), B.pawnWorld(to).add(new V3(0, 0.6, 0)), 700, 0.34, 0.34, 1.6);
+  B.setCrown = (k) => { crownFor = k; };
   B.setWorn = (keys) => {
     grandad.setWorn(keys);
     table.tea.visible = keys.includes('tea');

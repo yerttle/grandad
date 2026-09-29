@@ -22,6 +22,9 @@
   const SPEAKER_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
   const SPEAKER_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
   const PAWN_CSS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
+  const CROWN = '<svg class="crown" viewBox="0 0 24 18" aria-label="Grandad\'s favourite"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11z" fill="#e0a526" stroke="#2b1a10" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="1.8" fill="#b3261e"/></svg>';
+  // favourite points: Grandad keeps score of who's been most helpful
+  const POINTS = { stall: 3, deliver: 2, duck: 1, boiler: 1, warm: 1, hit: -1 };
 
   // ---------- State ----------
   function freshState() {
@@ -36,8 +39,11 @@
       roll: null,
       players: Array.from({ length: settings.count }, (_, k) => ({
         name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
-        pos: 0, carry: [], skip: false, biscuits: 2,
+        pos: 0, carry: [], skip: false, biscuits: 2, score: 0, won: 0,
       })),
+      dealt: { ...G.dealt },
+      leader: null,
+      watching: false,
       items: Object.fromEntries(G.ITEM_KEYS.map((k) => [k, { state: 'room', by: null }])),
       delivered: [],
       log: [],
@@ -65,7 +71,7 @@
   const LOG_TAGS = {
     news: ['LATEST', ''], fair: ['AT THE FAIR', ''], won: ['WINNER', 'good'], lost: ['NO LUCK', 'bad'], deliver: ['DELIVERED', 'good'],
     thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], biscuit: ['BISCUITS', ''], boiler: ['BOILER', ''],
-    cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'],
+    cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'], pinch: ['PINCHED', 'bad'],
   };
   function log(kind, text) {
     S.log.unshift({ kind, text });
@@ -119,7 +125,7 @@
     const p = curP();
     const to = G.wrap(p.pos + dir * S.roll);
     const sp = G.SPACES[to];
-    const bits = [sp.name];
+    const bits = [G.spaceName(to)];
     const d = prizeAt(to);
     if (d) bits.push(`win the ${G.ITEMS[d.item].name}`);
     else if (sp.type === 'corner') bits.push(sp.short);
@@ -147,6 +153,7 @@
       choose: `You rolled a ${S.roll}. Pick a direction: click a flashing square, or press ← or →.`,
       moving: 'On the move...',
       fair: 'At the fair...',
+      pinch: 'Pinch it, or leave it?',
       dodge: 'Duck! Press Space when the marker is in the green.',
       over: 'Game over.',
     };
@@ -164,14 +171,15 @@
       const carry = q.carry.length ? q.carry.map((c) => `<span title="${esc(G.ITEMS[c].name)}">${ICON[c]}</span>`).join('') : '<span>Empty-handed</span>';
       return `<div class="player-row${j === k && S.players.length > 1 ? ' now' : ''}">
         <span class="chip" style="background:${PAWN_CSS[j]}"></span>
-        <span class="pname">${esc(q.name)}</span>
-        <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
+        <span class="pname">${S.leader === j ? CROWN : ''}${esc(q.name)}</span>
+        <span class="pscore" title="Favourite points">★ ${q.score}</span>
         <div class="carry">${carry}</div>
+        <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
       </div>`;
     }).join('');
     $('needsList').innerHTML = G.DISTRICTS.map((d) => {
       const it = S.items[d.item];
-      const game = G.Mini.GAMES[d.game].title;
+      const game = G.Mini.GAMES[G.stallOf(d)].title;
       let cls = '', where = `${game}, ${d.name}`;
       if (it.state === 'done') { cls = 'done'; where = 'Delivered'; }
       else if (it.state === 'carried') { cls = 'carried'; where = `<span class="dot" style="background:${PAWN_CSS[it.by]}"></span>With ${esc(S.players[it.by].name)}`; }
@@ -198,6 +206,87 @@
     renderPanel();
     renderBoard();
     renderTargets();
+  }
+
+  // ---------- Rivalry ----------
+  function floatAt(world, text, cls = '') {
+    const p = G.toScreen(world, B.camera);
+    const el = document.createElement('div');
+    el.className = 'float-text ' + cls;
+    el.textContent = text;
+    el.style.left = p.x + 'px';
+    el.style.top = p.y + 'px';
+    $('stage').appendChild(el);
+    setTimeout(() => el.remove(), 1100);
+  }
+  function currentLeader() {
+    if (S.players.length < 2) return null;
+    const top = Math.max(...S.players.map((q) => q.score));
+    const at = S.players.map((q, j) => (q.score === top ? j : -1)).filter((j) => j >= 0);
+    return top > 0 && at.length === 1 ? at[0] : null;
+  }
+  function award(k, pts) {
+    const p = S.players[k];
+    const before = p.score;
+    p.score = Math.max(0, p.score + pts);
+    const gained = p.score - before;
+    if (gained) {
+      floatAt(B.pawnWorld(k).add(new THREE.Vector3(0, 1.4, 0)), `${gained > 0 ? '+' : ''}${gained} ★`, gained > 0 ? 'good' : 'bad');
+      if (gained > 0) Sound.play('star');
+    }
+    const lead = currentLeader();
+    if (lead !== S.leader) {
+      S.leader = lead;
+      B.setCrown(lead);
+      if (lead !== null) {
+        const n = S.players[lead].name;
+        setTimeout(() => say(pick([`Ooh, ${n}, you're my favourite now.`, `${n}'s top of the list today.`, `Don't tell the others, ${n}, but you're my favourite.`, `${n}! That's my favourite grandchild, that is.`])), 900);
+      }
+    }
+    render();
+  }
+
+  async function maybePinch(p, k) {
+    if (S.players.length < 2) return;
+    const victims = S.players.map((q, j) => ({ q, j })).filter(({ q, j }) => j !== k && q.pos === p.pos && q.carry.length);
+    if (!victims.length) return;
+    const { q: victim, j } = pick(victims);
+    const key = pick(victim.carry);
+    S.phase = 'pinch';
+    render();
+    const yes = await askPinch(`${victim.name} is standing right here holding Grandad's ${G.ITEMS[key].name}. Pinch it? You'll get the points when you hand it over, but Grandad might be watching.`);
+    if (!yes) {
+      log('news', `${p.name} leaves ${victim.name}'s ${G.ITEMS[key].name} alone. Very noble.`);
+      S.phase = 'moving';
+      render();
+      return;
+    }
+    victim.carry.splice(victim.carry.indexOf(key), 1);
+    p.carry.push(key);
+    S.items[key].by = k;
+    B.setCarry(S.players);
+    Sound.play('whoosh');
+    await B.passItem(key, j, k);
+    B.setCarry(S.players);
+    if (Math.random() < 0.5) {
+      S.watching = true;
+      say(pick(['I saw that!', `Oi! Give that back to ${victim.name}!`, 'Cheeky monkey. I had my eye on you.']));
+      log('pinch', `${p.name} pinches the ${G.ITEMS[key].name} off ${victim.name}. Grandad saw everything, and he's reaching for his paper...`);
+    } else {
+      say('Hmm? What are you two whispering about?');
+      log('pinch', `${p.name} pinches the ${G.ITEMS[key].name} off ${victim.name} while Grandad isn't looking.`);
+    }
+    S.phase = 'moving';
+    render();
+    await sleep(G.ms(500));
+  }
+  let pinchResolve = null;
+  function askPinch(text) {
+    return new Promise((resolve) => {
+      $('pinchText').textContent = text;
+      $('pinchBox').hidden = false;
+      pinchResolve = (v) => { pinchResolve = null; $('pinchBox').hidden = true; resolve(v); };
+    });
   }
 
   // ---------- Turn flow ----------
@@ -283,6 +372,7 @@
       B.popWorn(key);
       say(G.ITEMS[key].thanks);
       log('deliver', `${p.name} hands Grandad the ${G.ITEMS[key].name}. +${G.ITEMS[key].warmth.toFixed(2)}°C, and he'll cool more slowly now.`);
+      award(k, POINTS.deliver);
       await sleep(G.ms(400));
     }
   }
@@ -293,20 +383,22 @@
     else if (sp.type === 'door') log('news', `${p.name} lingers in the doorway. Grandad peers over his paper...`);
     else if (G.SPACE_FX[p.pos]) await spaceEffect(p, G.SPACE_FX[p.pos]);
     if (frozen()) return;
+    await maybePinch(p, k);
     const d = prizeAt(p.pos);
     if (d) await playStall(p, k, d);
     render();
   }
 
   async function playStall(p, k, d) {
-    const title = G.Mini.GAMES[d.game].title;
+    const stall = G.stallOf(d);
+    const title = G.Mini.GAMES[stall].title;
     S.phase = 'fair';
     render();
     S.stalls++;
     log('fair', `${p.name} steps up to the ${title} stall in the ${d.name}.`);
     say(pick(['Go on then, win me something.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win me me ' + G.ITEMS[d.item].name.toLowerCase() + '!']));
     await B.focusTile(d.idx[1]);
-    const won = await G.Mini.play(d.game, { diff: S.diff, prizeKey: d.item, playerName: p.name });
+    const won = await G.Mini.play(stall, { diff: S.diff, prizeKey: d.item, playerName: p.name });
     B.unfocus();
     render();
     if (won) {
@@ -317,6 +409,8 @@
       it.state = 'carried';
       it.by = k;
       p.carry.push(d.item);
+      p.won++;
+      award(k, POINTS.stall);
       log('won', `${p.name} wins the ${G.ITEMS[d.item].name} at the ${title} stall! Take it to one of Grandad's doors.`);
       say(pick(['Well done! Now bring it here.', 'Ooh, that looks warm. Hurry up!', 'About time somebody won something.']));
     } else {
@@ -336,6 +430,7 @@
       B.flashBoiler();
       log('boiler', `${p.name} thumps the boiler. It coughs into life for a bit! Grandad +0.3°C.`);
       say('Ooh, is that the radiator ticking?');
+      award(S.players.indexOf(p), POINTS.boiler);
     } else {
       Sound.play('clank');
       log('boiler', `${p.name} thumps the boiler. Clank. Nothing. It's sulking.`);
@@ -391,6 +486,7 @@
       Sound.play('warm');
       log('warm', f.text);
       if (f.line) say(f.line);
+      award(S.players.indexOf(p), POINTS.warm);
     }
     render();
     await sleep(G.ms(500));
@@ -401,7 +497,8 @@
   async function maybeSwat(p, k) {
     const D = G.DIFFS[S.diff];
     const cold = clamp((D.start - S.temp) / (D.start - 35), 0, 1);
-    const chance = 0.06 + 0.16 * cold + (G.DOORS.includes(p.pos) ? 0.2 : 0);
+    const chance = 0.06 + 0.16 * cold + (G.DOORS.includes(p.pos) ? 0.2 : 0) + (S.watching ? 0.35 : 0);
+    S.watching = false;
     if (Math.random() >= chance) return;
     S.swats++;
     S.phase = 'dodge';
@@ -420,7 +517,9 @@
       S.ducks++;
       say(pick(G.DUCK_LINES));
       log('duck', `${p.name} ducked! The paper sails clean over their head.`);
+      award(k, POINTS.duck);
     } else if (p.carry.length) {
+      award(k, POINTS.hit);
       const key = p.carry.splice(rnd(p.carry.length), 1)[0];
       const d = G.DISTRICT_OF_ITEM[key];
       B.setCarry(S.players);
@@ -428,8 +527,9 @@
       const it = S.items[key];
       it.state = 'room';
       it.by = null;
-      log('thwack', `THWACK! ${p.name} drops the ${G.ITEMS[key].name}, and it goes flying back to the ${G.Mini.GAMES[d.game].title} stall in the ${d.name}.`);
+      log('thwack', `THWACK! ${p.name} drops the ${G.ITEMS[key].name}, and it goes flying back to the ${G.Mini.GAMES[G.stallOf(d)].title} stall in the ${d.name}.`);
     } else {
+      award(k, POINTS.hit);
       p.skip = true;
       log('thwack', `THWACK! ${p.name} is seeing stars and misses their next go.`);
     }
@@ -541,8 +641,33 @@
     $('statTurns').textContent = S.turns;
     $('statStalls').textContent = `${S.stallWins}/${S.stalls}`;
     $('statDucks').textContent = `${S.ducks}/${S.swats}`;
+    $('endRivalry').innerHTML = rivalrySummary(won);
     $('endOverlay').hidden = false;
     $('againBtn').focus();
+  }
+
+  function rivalrySummary(won) {
+    if (S.players.length === 1) {
+      const p = S.players[0];
+      const bonus = won ? 5 + Math.round((S.temp - 35) * 5) : 0;
+      const total = p.score + bonus;
+      const best = settings.best || 0;
+      const isBest = total > best;
+      if (isBest) { settings.best = total; G.saveSettings(settings); }
+      return `<p class="fav-kicker">Favourite points</p>
+        <p class="fav-score">★ ${total}</p>
+        <p class="fav-note">${bonus ? `${p.score} from the game + ${bonus} rescue bonus. ` : ''}${isBest ? (best ? `A new best! Your old best was ${best}.` : 'Your first score. Now beat it.') : `Your best is ${best}.`}</p>`;
+    }
+    const ranked = S.players.map((q, j) => ({ q, j })).sort((a, b) => b.q.score - a.q.score);
+    const top = ranked[0].q.score;
+    const winners = ranked.filter((r) => r.q.score === top);
+    const head = top === 0
+      ? '<p class="fav-kicker">Grandad\'s favourite</p><p class="fav-name">Nobody</p><p class="fav-note">Not a single point between you. He says he\'s disappointed in the lot of you.</p>'
+      : winners.length > 1
+        ? `<p class="fav-kicker">Grandad's favourite</p><p class="fav-name">${winners.map((r) => esc(r.q.name)).join(' and ')}</p><p class="fav-note">He can't choose. He says he loves you all the same. (He doesn't.)</p>`
+        : `<p class="fav-kicker">Grandad's favourite</p><p class="fav-name">${CROWN}${esc(winners[0].q.name)}</p><p class="fav-note">${won ? "He'll deny it in front of the others." : 'Even frozen solid, he knows who his favourite is.'}</p>`;
+    const rows = ranked.map((r) => `<li><span class="chip" style="background:${PAWN_CSS[r.j]}"></span><span>${esc(r.q.name)}</span><span class="fav-meta">${r.q.won} stall${r.q.won === 1 ? '' : 's'} won</span><b>★ ${r.q.score}</b></li>`).join('');
+    return head + `<ol class="fav-table">${rows}</ol>`;
   }
 
   // ---------- Setup ----------
@@ -554,6 +679,7 @@
   function syncSetupForm() {
     $('count' + settings.count).checked = true;
     ({ mild: $('diffMild'), chilly: $('diffChilly'), freeze: $('diffFreeze') })[settings.diff].checked = true;
+    $('shuffleStalls').checked = settings.shuffle;
     renderNames();
   }
   function readNames() {
@@ -580,11 +706,14 @@
     btns.forEach((b) => { b.disabled = false; });
     $('setup').hidden = true;
     $('endOverlay').hidden = true;
+    G.dealt = G.dealStalls(settings.shuffle);
     S = freshState();
+    B.refreshTop();
+    B.setCrown(null);
     B.setFrozen(false);
     B.setPlayers(S.players);
     log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
-    say('Is it me, or is it parky in here?');
+    say(S.players.length > 1 ? "May the best grandchild win. I'll be keeping score, mind." : 'Is it me, or is it parky in here?');
     S.phase = 'roll';
     startTurn();
   }
@@ -593,8 +722,7 @@
     readNames();
     G.saveSettings(settings);
     $('setup').hidden = true;
-    const d = G.DISTRICTS.find((q) => q.game === gameKey);
-    await G.Mini.play(gameKey, { diff: settings.diff, prizeKey: d.item, practice: true });
+    await G.Mini.play(gameKey, { diff: settings.diff, prizeKey: null, practice: true });
     openSetup();
   }
 
@@ -633,7 +761,10 @@
       renderNames();
     });
     document.querySelectorAll('input[name="diff"]').forEach((el) => el.addEventListener('change', () => { settings.diff = el.value; }));
-    $('fairGrid').innerHTML = G.DISTRICTS.map((d) => `<button type="button" class="btn fair-btn" data-game="${d.game}" style="--dc:${d.color}"><b>${G.Mini.GAMES[d.game].title}</b><small>${d.name} · ${G.ITEMS[d.item].name}</small></button>`).join('');
+    $('fairGrid').innerHTML = Object.entries(G.Mini.GAMES).map(([key, g]) => `<button type="button" class="btn fair-btn" data-game="${key}" style="--dc:${g.c1}" title="${esc(g.blurb)}"><b>${g.title}</b></button>`).join('');
+    $('shuffleStalls').addEventListener('change', (e) => { settings.shuffle = e.target.checked; G.saveSettings(settings); });
+    $('pinchYes').addEventListener('click', () => { if (pinchResolve) pinchResolve(true); });
+    $('pinchNo').addEventListener('click', () => { if (pinchResolve) pinchResolve(false); });
     $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
     B.onTileClick = (i) => {
       if (!S || S.phase !== 'choose') return;
@@ -649,6 +780,11 @@
       const key = e.key;
       if (S.phase === 'dodge') {
         if (key === ' ' || key === 'Enter') { e.preventDefault(); if (!e.repeat && duckHandler) duckHandler(); }
+        return;
+      }
+      if (S.phase === 'pinch') {
+        if (pinchResolve && (key === 'y' || key === 'Y')) pinchResolve(true);
+        if (pinchResolve && (key === 'n' || key === 'N' || key === 'Escape')) pinchResolve(false);
         return;
       }
       const onButton = e.target.closest && e.target.closest('button');
@@ -688,6 +824,7 @@
         sleep(2500),
       ]);
     }
+    G.dealt = G.dealStalls(settings.shuffle);
     B.init();
     B.show();
     if (document.fonts && document.fonts.addEventListener) {

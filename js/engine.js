@@ -149,6 +149,9 @@
       resize() {
         // pick a distance that keeps the whole board in view at the default angle
         const az = o.az, el = o.el;
+        // measure from the home view, even if the camera is swooped onto a stall right now
+        const tgt = o.target.clone();
+        o.target.copy(o.home);
         let r = 14;
         for (; r < 90; r += 0.5) {
           place(r, 0, 0.95);
@@ -160,6 +163,7 @@
           if (ok) break;
         }
         o.fitR = r;
+        o.target.copy(tgt);
         place(o.fitR * o.zoom, az, el);
       },
       reset() { o.goal.az = 0; o.goal.el = 0.95; o.goal.zoom = 1; },
