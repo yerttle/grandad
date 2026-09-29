@@ -552,6 +552,8 @@
     charm: '<svg viewBox="0 0 48 48"><path d="M10 10v14a14 14 0 0 0 28 0V10h-8v14a6 6 0 0 1-12 0V10z" fill="#b9bfc4" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 10h8v4h-8zM30 10h8v4h-8z" fill="#8a9096" stroke="#2b1a10" stroke-width="2"/><g fill="#2b1a10"><circle cx="13" cy="21" r="1.4"/><circle cx="35" cy="21" r="1.4"/><circle cx="16" cy="30" r="1.4"/><circle cx="32" cy="30" r="1.4"/></g></svg>',
     nap: '<svg viewBox="0 0 48 48"><g font-family="Shrikhand, Georgia, serif" fill="#2a7a8c" stroke="#2b1a10" stroke-width=".8"><text x="6" y="40" font-size="22">Z</text><text x="21" y="28" font-size="16">z</text><text x="33" y="17" font-size="12">z</text></g></svg>',
     hop: '<svg viewBox="0 0 48 48"><g fill="#c9531f" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"><path d="M6 12l12 12-12 12h9l12-12-12-12z"/><path d="M22 12l12 12-12 12h9l12-12-12-12z"/></g></svg>',
+    boiler: '<svg viewBox="0 0 48 48"><rect x="10" y="5" width="28" height="38" rx="3" fill="#e8e2d2" stroke="#2b1a10" stroke-width="2.2"/><rect x="16" y="22" width="16" height="14" rx="2" fill="#2b1a10"/><path d="M24 34c-4 0-5-3-3-6 1 2 2 2 2 0 0-3 2-4 3-5 0 3 3 4 3 7 0 2-2 4-5 4z" fill="#f7a933"/><circle cx="17" cy="12" r="2.5" fill="#c9531f"/><circle cx="24" cy="12" r="2.5" fill="#2a9d8f"/><path d="M29 12h5" stroke="#2b1a10" stroke-width="2"/></svg>',
+    cat: '<svg viewBox="0 0 48 48"><path d="M9 20L8 5l10 8h12l10-8-1 15c3 4 3 10 0 14-3 5-9 8-15 8s-12-3-15-8c-3-4-3-10 0-14z" fill="#e0a526" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 12l2 4M35 12l-2 4" stroke="#b8862c" stroke-width="2"/><ellipse cx="18" cy="25" rx="2.4" ry="3.4" fill="#2b1a10"/><ellipse cx="30" cy="25" rx="2.4" ry="3.4" fill="#2b1a10"/><path d="M22 31h4l-2 2.5z" fill="#e0667a"/><path d="M24 33.5c-1 2-4 2.5-5 1M24 33.5c1 2 4 2.5 5 1M4 29l9 1M4 34l9-1M44 29l-9 1M44 34l-9-1" fill="none" stroke="#2b1a10" stroke-width="1.5" stroke-linecap="round"/></svg>',
     dud: '<svg viewBox="0 0 48 48"><path d="M17 4h14v22l-2 4c-2 5-7 12-15 12-5 0-8-4-7-8 1-5 7-6 10-9z" fill="#a9c1d1" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M17 9h14M17 15h14" stroke="#e8432f" stroke-width="3"/><path d="M11 36c1 2 3 3 5 3" fill="none" stroke="#2b1a10" stroke-width="1.6"/></svg>',
   };
   let forcedFind = null;
@@ -646,6 +648,21 @@
       el.classList.add('in', 'shake');
       return this.wait(1000);
     },
+    // a card for corners and special squares: no parcel to open, it just says what happened
+    event({ icon, kicker, title, text = '', chip = '', tone = 'good' }) {
+      this.active = true;
+      const el = $('find');
+      el.className = 'find';
+      $('findBox').innerHTML = FIND_ICON[icon] || '';
+      $('findKicker').textContent = kicker;
+      $('findWhere').textContent = title;
+      $('findWhat').textContent = text;
+      $('findChip').textContent = chip;
+      el.hidden = false;
+      void el.offsetWidth;
+      el.classList.add('in', 'open', tone);
+      return this.wait(2400, false).then(() => this.close());
+    },
     show(find, chip, tone) {
       const el = $('find');
       el.classList.remove('shake');
@@ -696,20 +713,24 @@
   }
 
   async function boiler(p) {
+    const k = S.players.indexOf(p);
     await sleep(G.ms(300));
     if (Math.random() < 0.5) {
       setTemp(S.temp + 0.3);
       Sound.play('boiler');
       B.flashBoiler();
+      B.findFx(k, 'good');
       log('boiler', `${p.name} thumps the boiler. It coughs into life for a bit! Grandad +0.3°C.`);
       say('Ooh, is that the radiator ticking?');
-      award(S.players.indexOf(p), POINTS.boiler);
+      award(k, POINTS.boiler);
+      render();
+      await Reveal.event({ icon: 'boiler', kicker: 'Boiler Cupboard', title: 'You give the boiler a thump...', text: 'It coughs into life for a bit! The radiators start ticking.', chip: `Grandad +0.3°C · +${POINTS.boiler} ★`, tone: 'good' });
     } else {
       Sound.play('clank');
       log('boiler', `${p.name} thumps the boiler. Clank. Nothing. It's sulking.`);
+      render();
+      await Reveal.event({ icon: 'boiler', kicker: 'Boiler Cupboard', title: 'You give the boiler a thump...', text: "Clank. Nothing. It's sulking. Maybe next time.", chip: 'No luck this time', tone: 'dud' });
     }
-    render();
-    await sleep(G.ms(500));
   }
 
   async function cornerEffect(p, k, sp) {
@@ -718,14 +739,16 @@
         await boiler(p);
         break;
       case 'window':
-        setTemp(S.temp - 0.3);
+        setTemp(S.temp - 0.2);
         Sound.play('draught');
+        B.findFx(k, 'bad');
         say('Who opened that window?! Shut it!');
-        log('draught', `${p.name} finds the window wide open. An icy blast! Grandad −0.3°C.`);
+        log('draught', `${p.name} finds the window wide open. An icy blast! Grandad −0.2°C.`);
         render();
-        await sleep(G.ms(800));
+        await Reveal.event({ icon: 'cold', kicker: 'Open Window', title: 'Brrr! The window is wide open!', text: 'An icy blast blows through the house before you can shut it.', chip: 'Grandad −0.2°C', tone: 'bad' });
         break;
       case 'stairlift': {
+        await Reveal.event({ icon: 'hop', kicker: 'Stairlift', title: "Wheee! Grandad's stairlift!", text: 'It whisks you all the way down to the Boiler Cupboard, where you can give the boiler a thump.', chip: 'Off to the boiler', tone: 'good' });
         Sound.play('stairlift');
         log('ride', `${p.name} rides Grandad's stairlift all the way down to the Boiler Cupboard.`);
         const from = p.pos;
@@ -740,29 +763,38 @@
         log('cat', `${p.name} trips over Tiddles the cat. Miss your next go.`);
         say('Mind the cat!');
         render();
-        await sleep(G.ms(700));
+        await Reveal.event({ icon: 'cat', kicker: "Tiddles' Basket", title: 'You trip over Tiddles!', text: 'Mrrrow! You go flying, and you need a sit down.', chip: 'Miss your next go', tone: 'bad' });
         break;
     }
   }
 
   async function spaceEffect(p, f) {
+    const k = S.players.indexOf(p);
+    const where = G.spaceName(p.pos);
     if (f.kind === 'draught') {
       setTemp(S.temp - f.amt);
       Sound.play('draught');
+      B.findFx(k, 'bad');
       log('draught', f.text);
       if (f.line) say(f.line);
+      render();
+      await Reveal.event({ icon: 'cold', kicker: where, title: 'Draught!', text: f.card, chip: `Grandad −${f.amt}°C`, tone: 'bad' });
     } else if (f.kind === 'biscuit') {
-      if (p.biscuits >= 3) log('biscuit', `${p.name} spots more custard creams, but their pockets are full.`);
-      else { p.biscuits++; Sound.play('munch'); log('biscuit', f.text); }
+      const full = p.biscuits >= 3;
+      if (full) log('biscuit', `${p.name} spots more custard creams, but their pockets are full.`);
+      else { p.biscuits++; Sound.play('munch'); B.findFx(k, 'good'); log('biscuit', f.text); }
+      render();
+      await Reveal.event({ icon: 'biscuit', kicker: where, title: 'Custard creams!', text: f.card, chip: full ? 'Pockets full, so you leave them' : '+1 custard cream (a re-roll)', tone: full ? 'dud' : 'good' });
     } else if (f.kind === 'warm') {
       setTemp(S.temp + f.amt);
       Sound.play('warm');
+      B.findFx(k, 'good');
       log('warm', f.text);
       if (f.line) say(f.line);
-      award(S.players.indexOf(p), POINTS.warm);
+      award(k, POINTS.warm);
+      render();
+      await Reveal.event({ icon: 'warm', kicker: where, title: 'A warm towel!', text: f.card, chip: `Grandad +${f.amt}°C · +${POINTS.warm} ★`, tone: 'good' });
     }
-    render();
-    await sleep(G.ms(500));
   }
 
   // ---------- The newspaper ----------
@@ -897,7 +929,8 @@
     startTurn();
   }
 
-  const stars = () => (S.temp >= 36.4 ? 3 : S.temp >= 35.8 ? 2 : 1);
+  // three stars if he ends up warmer than he started
+  const stars = () => (S.temp >= G.DIFFS[S.diff].start ? 3 : S.temp >= 35.8 ? 2 : 1);
   async function win() {
     const g = S;
     S.turns++;
@@ -939,7 +972,8 @@
         : n === 2 ? 'Snug in his cardigan and slippers. He grumbled a bit, but he always does.'
           : "That was close! His nose is still a bit blue, but he's thawing out nicely.")
       : `His temperature dropped to 35.0°C. Below that is hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of 8 things to him. Try again?`;
-    $('statTemp').textContent = S.temp.toFixed(1) + '°';
+    const change = Math.round((S.temp - G.DIFFS[S.diff].start) * 10) / 10;
+    $('statTemp').innerHTML = `${S.temp.toFixed(1)}°<small class="${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '▲ +' : '▼ −'}${Math.abs(change).toFixed(1)}° since the start</small>`;
     $('statTurns').textContent = S.turns;
     $('statStalls').textContent = `${S.stallWins}/${S.stalls}`;
     $('statDucks').textContent = `${S.ducks}/${S.swats}`;

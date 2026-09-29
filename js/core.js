@@ -237,20 +237,20 @@ window.GCS = window.GCS || {};
   G.DOORS = [4, 12, 20, 28];
   G.LOSE_AT = 35.05; // anything that shows as 35.0°C or lower is hypothermia
   G.DIFFS = {
-    mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.10, zone: 0.30, period: 1150, level: 0 },
-    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.13, zone: 0.22, period: 950,  level: 1 },
-    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.14, zone: 0.16, period: 800,  level: 2 },
+    mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.12, zone: 0.30, period: 1150, level: 0 },
+    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.17, zone: 0.22, period: 950,  level: 1 },
+    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.19, zone: 0.16, period: 800,  level: 2 },
   };
 
   G.ITEMS = {
-    slippers: { name: 'Slippers', warmth: 0.10, ins: 0.10, thanks: 'About time! Me toes were going blue.' },
-    tea:      { name: 'Cup of Tea', warmth: 0.25, ins: 0.08, thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
-    blanket:  { name: 'Tartan Blanket', warmth: 0.10, ins: 0.14, thanks: "That's more like it. Tuck it in, tuck it in." },
-    scarf:    { name: 'Woolly Scarf', warmth: 0.10, ins: 0.10, thanks: 'Your Nan knitted that, you know.' },
-    hwb:      { name: 'Hot Water Bottle', warmth: 0.20, ins: 0.12, thanks: "Ooh, that's lovely. Not too hot, mind." },
-    cardigan: { name: 'Cardigan', warmth: 0.10, ins: 0.12, thanks: 'Me good cardigan! With the patches!' },
-    hat:      { name: 'Bobble Hat', warmth: 0.10, ins: 0.10, thanks: "Does this bobble make me look daft? Don't answer that." },
-    logs:     { name: 'Logs for the Fire', warmth: 0.20, ins: 0.14, thanks: "Now we're cooking. Stand back, I'll light it." },
+    slippers: { name: 'Slippers', warmth: 0.20, ins: 0.10, thanks: 'About time! Me toes were going blue.' },
+    tea:      { name: 'Cup of Tea', warmth: 0.50, ins: 0.08, thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
+    blanket:  { name: 'Tartan Blanket', warmth: 0.20, ins: 0.14, thanks: "That's more like it. Tuck it in, tuck it in." },
+    scarf:    { name: 'Woolly Scarf', warmth: 0.20, ins: 0.10, thanks: 'Your Nan knitted that, you know.' },
+    hwb:      { name: 'Hot Water Bottle', warmth: 0.40, ins: 0.12, thanks: "Ooh, that's lovely. Not too hot, mind." },
+    cardigan: { name: 'Cardigan', warmth: 0.20, ins: 0.12, thanks: 'Me good cardigan! With the patches!' },
+    hat:      { name: 'Bobble Hat', warmth: 0.20, ins: 0.10, thanks: "Does this bobble make me look daft? Don't answer that." },
+    logs:     { name: 'Logs for the Fire', warmth: 0.40, ins: 0.14, thanks: "Now we're cooking. Stand back, I'll light it." },
   };
   G.ITEM_KEYS = Object.keys(G.ITEMS);
 
@@ -286,17 +286,17 @@ window.GCS = window.GCS || {};
 
   G.CORNERS = {
     0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Thump it. It might kick in!', short: 'thump the boiler' },
-    8:  { key: 'window',    name: 'Open Window',     rule: 'Brrr! Grandad −0.3°C',        short: 'brrr! −0.3°C' },
+    8:  { key: 'window',    name: 'Open Window',     rule: 'Brrr! Grandad −0.2°C',        short: 'brrr! −0.2°C' },
     16: { key: 'stairlift', name: 'Stairlift',       rule: 'Ride down to the boiler',     short: 'ride the stairlift' },
     24: { key: 'cat',       name: "Tiddles' Basket", rule: 'Trip over the cat. Miss a go', short: 'miss a go' },
   };
 
   G.SPACE_FX = {
-    5:  { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', text: 'A packet of custard creams in the larder. +1 re-roll.' },
-    7:  { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', text: "The back door's wide open. Draught! Grandad −0.1°C.", line: 'Were you born in a barn? Shut that door!' },
-    11: { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', text: 'The biscuit tin in the sideboard! +1 custard cream.' },
-    15: { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', text: 'The conservatory window leaks like a sieve. Grandad −0.1°C.', line: 'I can feel that draught from here!' },
-    19: { kind: 'warm', amt: 0.1, mark: 'warm', short: 'warm towel', text: 'A toasty towel from the airing cupboard, draped over Grandad. +0.1°C.', line: "Ooh, that's warm." },
+    5:  { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', card: 'A packet of custard creams in the larder!', text: 'A packet of custard creams in the larder. +1 re-roll.' },
+    7:  { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', card: "The back door's been left wide open.", text: "The back door's wide open. Draught! Grandad −0.1°C.", line: 'Were you born in a barn? Shut that door!' },
+    11: { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', card: 'The biscuit tin in the sideboard!', text: 'The biscuit tin in the sideboard! +1 custard cream.' },
+    15: { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', card: 'The conservatory window leaks like a sieve.', text: 'The conservatory window leaks like a sieve. Grandad −0.1°C.', line: 'I can feel that draught from here!' },
+    19: { kind: 'warm', amt: 0.1, mark: 'warm', short: 'warm towel', card: 'A toasty towel from the airing cupboard, draped round Grandad.', text: 'A toasty towel from the airing cupboard, draped over Grandad. +0.1°C.', line: "Ooh, that's warm." },
   };
 
   // ---------- Rummage ----------

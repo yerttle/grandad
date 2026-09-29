@@ -35,7 +35,7 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 1. **Roll the dice**, then choose which way round the house to go: clockwise or anticlockwise. You can click one of the flashing squares on the board, or press <kbd>←</kbd> / <kbd>→</kbd>.
 2. **Land in a room that still has its prize** and you play that room's fairground game. Win it and Grandad's thing is yours; it floats above your pawn while you carry it. Lose, and the prize stays on the stall for another try.
 3. **Once a room's prize has been won, land there again and you have a rummage.** A mystery parcel floats over its stall to show you can. See below for what you might find.
-4. **Pass or stop on a yellow "Pop in to Grandad" door** to hand over everything you're carrying. The camera swoops in to watch Grandad put it on, and he cheers. He warms up a bit, and cools down more slowly from then on. Tap, or press <kbd>Space</kbd>, to skip the cutscene.
+4. **Pass or stop on a yellow "Pop in to Grandad" door** to hand over everything you're carrying. The camera swoops in to watch Grandad put it on, and he cheers. He warms up (+0.2°C for most things, +0.4°C for the hot water bottle and the logs, +0.5°C for a cup of tea), and cools down more slowly from then on. Tap, or press <kbd>Space</kbd>, to skip the cutscene.
 5. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop one of your prizes (it flies back to its stall), or you miss a go if your hands are empty. He throws more often as he gets colder, and more often still if you hang about in his doorway.
 6. **Deliver all 8 things before he cools to 35.0°C**, and set off the fireworks.
 7. **Be Grandad's favourite.** He keeps score (see below).
@@ -113,9 +113,10 @@ Every room has its own finds, and you won't get the same thing twice in a row. T
 ### Around the board
 
 - **Boiler Cupboard** (start): give it a thump. Half the time it kicks in (+0.3°C).
-- **Open Window**: an icy blast (−0.3°C).
+- **Open Window**: an icy blast (−0.2°C).
 - **Stairlift**: ride it all the way down to the Boiler Cupboard.
 - **Tiddles' Basket**: trip over the cat and miss a go.
+- Every corner and special square pops up a card saying exactly what happened, so you always know why his temperature or your points changed.
 - **Back Door** and **Leaky Window**: draughts (−0.1°C).
 - **Airing Cupboard**: a warm towel for Grandad (+0.1°C).
 
