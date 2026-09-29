@@ -1,0 +1,718 @@
+/* Grandad's Cold Snap: the board game rules, turn flow, HUD and start-up. */
+(function (G) {
+  'use strict';
+  const { $, Sound, sleep, rnd, pick, clamp, esc } = G;
+  const B = G.Board;
+
+  let settings = G.loadSettings();
+  Sound.muted = settings.muted;
+  let S = null;
+  let busy = false;
+
+  const ICON = {
+    slippers: '<svg viewBox="0 0 48 48"><g stroke="#2b1a10" stroke-width="2"><path d="M8 40c-3-10 1-26 9-27s9 13 7 27c-1 4-15 4-16 0z" fill="#a8312a"/><path d="M26 40c-2-14 0-28 8-27s10 17 6 27c-2 4-13 4-14 0z" fill="#a8312a"/></g><path d="M9 22h14M9 29h15M27 22h14M27 29h14" stroke="#e0a526" stroke-width="1.6"/><ellipse cx="16" cy="35" rx="5.5" ry="4.5" fill="#f3e6c9" stroke="#2b1a10" stroke-width="1.5"/><ellipse cx="33" cy="35" rx="5.5" ry="4.5" fill="#f3e6c9" stroke="#2b1a10" stroke-width="1.5"/></svg>',
+    tea: '<svg viewBox="0 0 48 48"><path d="M17 12c-3-3 3-5 0-8M25 12c-3-3 3-5 0-8" fill="none" stroke="#8a7a6a" stroke-width="2" stroke-linecap="round"/><path d="M35 21h2.5a6 6 0 0 1 0 12H35" fill="none" stroke="#2b1a10" stroke-width="3"/><path d="M10 16h25v19a7 7 0 0 1-7 7H17a7 7 0 0 1-7-7z" fill="#f3efe4"/><rect x="10" y="24" width="25" height="6" fill="#c9531f"/><path d="M10 16h25v19a7 7 0 0 1-7 7H17a7 7 0 0 1-7-7z" fill="none" stroke="#2b1a10" stroke-width="2"/></svg>',
+    blanket: '<svg viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="27" rx="3" fill="#2f5d3a"/><path d="M6 19h36M6 31h36M16 11v27M32 11v27" stroke="#a8312a" stroke-width="4.5" opacity=".9"/><path d="M6 25h36M24 11v27" stroke="#e0a526" stroke-width="1.4"/><rect x="6" y="11" width="36" height="27" rx="3" fill="none" stroke="#2b1a10" stroke-width="2"/></svg>',
+    scarf: '<svg viewBox="0 0 48 48"><path d="M27 19l5 19h-8l-3-18z" fill="#c9531f" stroke="#2b1a10" stroke-width="2"/><path d="M24.5 26h6.5M25.5 32h7" stroke="#f3e6c9" stroke-width="2.4"/><path d="M8 12q16 8 32 0l1 8q-17 9-34 0z" fill="#c9531f" stroke="#2b1a10" stroke-width="2"/><path d="M15 15.5l-.5 7M24 17v8M33 15.5l.5 7" stroke="#f3e6c9" stroke-width="2.4"/></svg>',
+    hwb: '<svg viewBox="0 0 48 48"><rect x="18" y="4" width="12" height="7" rx="2" fill="#2b1a10"/><path d="M20 10h8v5h5a5 5 0 0 1 5 5v18a6 6 0 0 1-6 6H16a6 6 0 0 1-6-6V20a5 5 0 0 1 5-5h5z" fill="#e0667a" stroke="#2b1a10" stroke-width="2"/><path d="M16 24h16M16 30h16M16 36h16" stroke="#b8475a" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    cardigan: '<svg viewBox="0 0 48 48"><path d="M17 7l7 11 7-11 11 5-3 11-5-2v20H14V21l-5 2-3-11z" fill="#7b4a2a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><path d="M17 7l7 11 7-11z" fill="#a9c1d1" stroke="#2b1a10" stroke-width="1.5" stroke-linejoin="round"/><path d="M24 18v23" stroke="#2b1a10" stroke-width="2"/><circle cx="26.5" cy="24" r="1.6" fill="#e0a526"/><circle cx="26.5" cy="30" r="1.6" fill="#e0a526"/><circle cx="26.5" cy="36" r="1.6" fill="#e0a526"/></svg>',
+    hat: '<svg viewBox="0 0 48 48"><path d="M10 35c0-12 6-20 14-20s14 8 14 20z" fill="#2a7a8c" stroke="#2b1a10" stroke-width="2"/><path d="M12 27q12-5 24 0" fill="none" stroke="#f3e6c9" stroke-width="3"/><rect x="8" y="32" width="32" height="9" rx="3.5" fill="#e0a526" stroke="#2b1a10" stroke-width="2"/><circle cx="24" cy="12" r="6.5" fill="#f3e6c9" stroke="#2b1a10" stroke-width="2"/></svg>',
+    logs: '<svg viewBox="0 0 48 48"><rect x="8" y="28" width="34" height="11" rx="5.5" fill="#8a5a33" stroke="#2b1a10" stroke-width="2"/><rect x="12" y="16" width="30" height="11" rx="5.5" fill="#9c6a3f" stroke="#2b1a10" stroke-width="2"/><circle cx="13.5" cy="33.5" r="5.5" fill="#e3c49a" stroke="#2b1a10" stroke-width="2"/><circle cx="17.5" cy="21.5" r="5.5" fill="#e3c49a" stroke="#2b1a10" stroke-width="2"/></svg>',
+  };
+  const SPEAKER_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+  const SPEAKER_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+  const PAWN_CSS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
+
+  // ---------- State ----------
+  function freshState() {
+    const D = G.DIFFS[settings.diff];
+    return {
+      phase: 'setup',
+      diff: settings.diff,
+      temp: D.start,
+      round: 1,
+      turns: 0,
+      cur: 0,
+      roll: null,
+      players: Array.from({ length: settings.count }, (_, k) => ({
+        name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
+        pos: 0, carry: [], skip: false, biscuits: 2,
+      })),
+      items: Object.fromEntries(G.ITEM_KEYS.map((k) => [k, { state: 'room', by: null }])),
+      delivered: [],
+      log: [],
+      warned: [],
+      swats: 0,
+      ducks: 0,
+      stalls: 0,
+      stallWins: 0,
+    };
+  }
+  const curP = () => S.players[S.cur];
+  const districtAt = (pos) => { const sp = G.SPACES[pos]; return sp.type === 'room' ? G.DISTRICTS[sp.district] : null; };
+  const prizeAt = (pos) => { const d = districtAt(pos); return d && S.items[d.item].state === 'room' ? d : null; };
+  const coldness = () => clamp((36.8 - S.temp) / 1.8, 0, 1);
+  const coolRate = () => {
+    const D = G.DIFFS[S.diff];
+    const ins = S.delivered.reduce((a, k) => a + G.ITEMS[k].ins, 0);
+    return D.cool * (1 - 0.09 * (S.players.length - 1)) * (1 - ins);
+  };
+  const setTemp = (t) => { S.temp = Math.round(clamp(t, 34.5, 37.2) * 1000) / 1000; };
+  const frozen = () => S.temp < G.LOSE_AT;
+  const allDone = () => S.delivered.length === G.ITEM_KEYS.length;
+
+  // ---------- Log, speech, toasts ----------
+  const LOG_TAGS = {
+    news: ['LATEST', ''], fair: ['AT THE FAIR', ''], won: ['WINNER', 'good'], lost: ['NO LUCK', 'bad'], deliver: ['DELIVERED', 'good'],
+    thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], biscuit: ['BISCUITS', ''], boiler: ['BOILER', ''],
+    cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'],
+  };
+  function log(kind, text) {
+    S.log.unshift({ kind, text });
+    if (S.log.length > 40) S.log.length = 40;
+    renderLog();
+  }
+  function renderLog() {
+    $('log').innerHTML = S.log.map((e) => {
+      const [tag, tone] = LOG_TAGS[e.kind] || LOG_TAGS.news;
+      return `<li class="${tone}"><b>${tag}</b>${esc(e.text)}</li>`;
+    }).join('');
+  }
+  let bubbleTimer = null;
+  function say(text, ms = 4200) {
+    const b = $('bubble');
+    b.textContent = text;
+    b.classList.remove('quiet', 'pop');
+    void b.offsetWidth;
+    b.classList.add('pop');
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => b.classList.add('quiet'), ms);
+  }
+  function toast(text) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = text;
+    $('stage').appendChild(t);
+    setTimeout(() => t.remove(), 1500);
+  }
+  function burstAt(world) {
+    const p = G.toScreen(world, B.camera);
+    const b = document.createElement('div');
+    b.className = 'burst';
+    b.innerHTML = '<svg viewBox="0 0 120 90"><polygon points="60,2 72,26 100,10 90,36 118,42 92,54 108,82 76,66 64,88 52,66 20,84 32,56 2,48 30,36 16,10 46,26" fill="#e0a526" stroke="#2b1a10" stroke-width="4" stroke-linejoin="round"/><text x="60" y="53" text-anchor="middle" font-family="Shrikhand, Cooper Black, Georgia, serif" font-size="19" fill="#b3261e">THWACK!</text></svg>';
+    b.style.left = p.x + 'px';
+    b.style.top = p.y + 'px';
+    $('stage').appendChild(b);
+    setTimeout(() => b.remove(), 900);
+  }
+
+  // ---------- Rendering ----------
+  function tempState() {
+    const t = S.temp;
+    if (t >= 36.5) return ['Comfy-ish', ''];
+    if (t >= 36.0) return ['Chilly', ''];
+    if (t >= 35.6) return ['Shivering', 'cold'];
+    if (t >= 35.3) return ['Freezing', 'cold'];
+    return ['Danger!', 'danger'];
+  }
+  function describeDest(dir) {
+    const p = curP();
+    const to = G.wrap(p.pos + dir * S.roll);
+    const sp = G.SPACES[to];
+    const bits = [sp.name];
+    const d = prizeAt(to);
+    if (d) bits.push(`win the ${G.ITEMS[d.item].name}`);
+    else if (sp.type === 'corner') bits.push(sp.short);
+    else if (G.SPACE_FX[to]) bits.push(G.SPACE_FX[to].short);
+    if (p.carry.length) for (let s = 1; s <= S.roll; s++) if (G.DOORS.includes(G.wrap(p.pos + dir * s))) { bits.push('hand over'); break; }
+    return { to, text: bits.join(' · ') };
+  }
+
+  function renderPanel() {
+    const p = curP();
+    const k = S.cur;
+    $('turnChip').style.background = PAWN_CSS[k];
+    $('turnName').textContent = S.phase === 'setup' ? 'New game' : S.players.length > 1 ? `${p.name}'s go` : p.name === G.DEFAULT_NAMES[0] ? 'Your go' : `${p.name}'s go`;
+    $('roundLabel').textContent = `Round ${S.round}`;
+    $('tempText').textContent = S.temp.toFixed(1) + '°C';
+    const [label, tone] = tempState();
+    const pill = $('tempState');
+    pill.textContent = label;
+    pill.className = 'state-pill' + (tone ? ' ' + tone : '');
+    $('rateText').textContent = `losing ${coolRate().toFixed(2)}°C a go`;
+    const hints = {
+      setup: 'Pick your players and how cold it is, then start.',
+      roll: 'Roll the dice to take your go.' + (p.carry.length ? " Pass a yellow door to hand over what you're carrying." : ''),
+      rolling: 'Rolling...',
+      choose: `You rolled a ${S.roll}. Pick a direction: click a flashing square, or press ← or →.`,
+      moving: 'On the move...',
+      fair: 'At the fair...',
+      dodge: 'Duck! Press Space when the marker is in the green.',
+      over: 'Game over.',
+    };
+    $('hint').textContent = hints[S.phase] || '';
+    $('rollBtn').disabled = S.phase !== 'roll';
+    const choosing = S.phase === 'choose';
+    $('cwBtn').disabled = !choosing;
+    $('acwBtn').disabled = !choosing;
+    $('cwDest').textContent = choosing ? describeDest(1).text : ' ';
+    $('acwDest').textContent = choosing ? describeDest(-1).text : ' ';
+    const rr = $('rerollBtn');
+    rr.disabled = !(choosing && p.biscuits > 0);
+    rr.innerHTML = `Eat a custard cream to re-roll (${p.biscuits} left) <kbd>R</kbd>`;
+    $('team').innerHTML = S.players.map((q, j) => {
+      const carry = q.carry.length ? q.carry.map((c) => `<span title="${esc(G.ITEMS[c].name)}">${ICON[c]}</span>`).join('') : '<span>Empty-handed</span>';
+      return `<div class="player-row${j === k && S.players.length > 1 ? ' now' : ''}">
+        <span class="chip" style="background:${PAWN_CSS[j]}"></span>
+        <span class="pname">${esc(q.name)}</span>
+        <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
+        <div class="carry">${carry}</div>
+      </div>`;
+    }).join('');
+    $('needsList').innerHTML = G.DISTRICTS.map((d) => {
+      const it = S.items[d.item];
+      const game = G.Mini.GAMES[d.game].title;
+      let cls = '', where = `${game}, ${d.name}`;
+      if (it.state === 'done') { cls = 'done'; where = 'Delivered'; }
+      else if (it.state === 'carried') { cls = 'carried'; where = `<span class="dot" style="background:${PAWN_CSS[it.by]}"></span>With ${esc(S.players[it.by].name)}`; }
+      return `<li class="${cls}">${ICON[d.item]}<span class="iname">${esc(G.ITEMS[d.item].name)}</span><span class="where">${where}</span></li>`;
+    }).join('');
+  }
+
+  function renderBoard() {
+    const c = coldness();
+    B.setPrizes(S.items);
+    B.setCarry(S.players);
+    B.placePawns(S.players, S.cur, S.phase !== 'setup' && S.phase !== 'over' && S.phase !== 'moving');
+    B.setWorn(S.delivered);
+    const won = S.phase === 'over' && allDone();
+    B.setCold(c, won ? 0 : c > 0.85 ? 3 : c > 0.55 ? 2 : c > 0.3 ? 1 : 0);
+    B.setTemp(S.temp);
+    $('stage').style.setProperty('--cold', c.toFixed(3));
+  }
+  function renderTargets() {
+    if (S.phase !== 'choose') { B.clearTargets(); return; }
+    B.showTargets([1, -1].map((dir) => ({ i: describeDest(dir).to, text: dir === 1 ? 'Clockwise →' : '← Anticlockwise' })));
+  }
+  function render() {
+    renderPanel();
+    renderBoard();
+    renderTargets();
+  }
+
+  // ---------- Turn flow ----------
+  async function startTurn() {
+    if (S.phase === 'over') return;
+    const g = S;
+    const p = curP();
+    S.roll = null;
+    if (S.players.length > 1) { toast(`${p.name}'s go`); Sound.play('turn'); }
+    if (p.skip) {
+      p.skip = false;
+      S.phase = 'moving';
+      render();
+      log('dazed', `${p.name} is still recovering and misses this go.`);
+      await sleep(1300);
+      if (S !== g) return;
+      return endTurn();
+    }
+    S.phase = 'roll';
+    render();
+  }
+
+  async function doRoll(isReroll) {
+    if (busy) return;
+    if (!(S.phase === 'roll' || (isReroll && S.phase === 'choose'))) return;
+    busy = true;
+    S.phase = 'rolling';
+    render();
+    Sound.play('dice');
+    const v = 1 + rnd(6);
+    await B.rollDie(v);
+    S.roll = v;
+    S.phase = 'choose';
+    busy = false;
+    render();
+  }
+
+  function reroll() {
+    const p = curP();
+    if (busy || S.phase !== 'choose' || p.biscuits < 1) return;
+    p.biscuits--;
+    Sound.play('munch');
+    log('biscuit', `${p.name} eats a custard cream and rolls again.`);
+    doRoll(true);
+  }
+
+  async function choose(dir) {
+    if (busy || S.phase !== 'choose') return;
+    busy = true;
+    const g = S;
+    const p = curP();
+    const k = S.cur;
+    S.phase = 'moving';
+    render();
+    for (let s = 0; s < S.roll; s++) {
+      const from = p.pos;
+      p.pos = G.wrap(p.pos + dir);
+      Sound.play('step');
+      await B.hop(S.players, k, from);
+      if (G.DOORS.includes(p.pos) && p.carry.length) await deliver(p, k);
+    }
+    B.placePawns(S.players, S.cur, false);
+    if (allDone()) { busy = false; return win(); }
+    await resolveLanding(p, k);
+    if (S !== g) return;
+    if (!frozen()) await maybeSwat(p, k);
+    busy = false;
+    endTurn();
+  }
+
+  async function deliver(p, k) {
+    const keys = p.carry.splice(0);
+    B.setCarry(S.players);
+    for (const key of keys) {
+      const it = S.items[key];
+      it.state = 'done';
+      it.by = null;
+      S.delivered.push(key);
+      setTemp(S.temp + G.ITEMS[key].warmth);
+      Sound.play('deliver');
+      await B.toGrandad(key, k);
+      render();
+      B.popWorn(key);
+      say(G.ITEMS[key].thanks);
+      log('deliver', `${p.name} hands Grandad the ${G.ITEMS[key].name}. +${G.ITEMS[key].warmth.toFixed(2)}°C, and he'll cool more slowly now.`);
+      await sleep(G.ms(400));
+    }
+  }
+
+  async function resolveLanding(p, k) {
+    const sp = G.SPACES[p.pos];
+    if (sp.type === 'corner') await cornerEffect(p, k, sp);
+    else if (sp.type === 'door') log('news', `${p.name} lingers in the doorway. Grandad peers over his paper...`);
+    else if (G.SPACE_FX[p.pos]) await spaceEffect(p, G.SPACE_FX[p.pos]);
+    if (frozen()) return;
+    const d = prizeAt(p.pos);
+    if (d) await playStall(p, k, d);
+    render();
+  }
+
+  async function playStall(p, k, d) {
+    const title = G.Mini.GAMES[d.game].title;
+    S.phase = 'fair';
+    render();
+    S.stalls++;
+    log('fair', `${p.name} steps up to the ${title} stall in the ${d.name}.`);
+    say(pick(['Go on then, win me something.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win me me ' + G.ITEMS[d.item].name.toLowerCase() + '!']));
+    await B.focusTile(d.idx[1]);
+    const won = await G.Mini.play(d.game, { diff: S.diff, prizeKey: d.item, playerName: p.name });
+    B.unfocus();
+    render();
+    if (won) {
+      S.stallWins++;
+      Sound.play('pickup');
+      await B.prizeToPawn(d.item, k);
+      const it = S.items[d.item];
+      it.state = 'carried';
+      it.by = k;
+      p.carry.push(d.item);
+      log('won', `${p.name} wins the ${G.ITEMS[d.item].name} at the ${title} stall! Take it to one of Grandad's doors.`);
+      say(pick(['Well done! Now bring it here.', 'Ooh, that looks warm. Hurry up!', 'About time somebody won something.']));
+    } else {
+      log('lost', `No luck at the ${title} stall. The ${G.ITEMS[d.item].name} stays there for another go.`);
+      say(pick(['Useless! In my day we won everything.', 'Hmph. Try again, then.', "It's rigged, those stalls."]));
+    }
+    S.phase = 'moving';
+    render();
+    await sleep(G.ms(400));
+  }
+
+  async function boiler(p) {
+    await sleep(G.ms(300));
+    if (Math.random() < 0.5) {
+      setTemp(S.temp + 0.3);
+      Sound.play('boiler');
+      B.flashBoiler();
+      log('boiler', `${p.name} thumps the boiler. It coughs into life for a bit! Grandad +0.3°C.`);
+      say('Ooh, is that the radiator ticking?');
+    } else {
+      Sound.play('clank');
+      log('boiler', `${p.name} thumps the boiler. Clank. Nothing. It's sulking.`);
+    }
+    render();
+    await sleep(G.ms(500));
+  }
+
+  async function cornerEffect(p, k, sp) {
+    switch (sp.key) {
+      case 'boiler':
+        await boiler(p);
+        break;
+      case 'window':
+        setTemp(S.temp - 0.3);
+        Sound.play('draught');
+        say('Who opened that window?! Shut it!');
+        log('draught', `${p.name} finds the window wide open. An icy blast! Grandad −0.3°C.`);
+        render();
+        await sleep(G.ms(800));
+        break;
+      case 'stairlift': {
+        Sound.play('stairlift');
+        log('ride', `${p.name} rides Grandad's stairlift all the way down to the Boiler Cupboard.`);
+        const from = p.pos;
+        p.pos = 0;
+        await B.ride(S.players, k, from);
+        await boiler(p);
+        break;
+      }
+      case 'cat':
+        p.skip = true;
+        Sound.play('meow');
+        log('cat', `${p.name} trips over Tiddles the cat. Miss your next go.`);
+        say('Mind the cat!');
+        render();
+        await sleep(G.ms(700));
+        break;
+    }
+  }
+
+  async function spaceEffect(p, f) {
+    if (f.kind === 'draught') {
+      setTemp(S.temp - f.amt);
+      Sound.play('draught');
+      log('draught', f.text);
+      if (f.line) say(f.line);
+    } else if (f.kind === 'biscuit') {
+      if (p.biscuits >= 3) log('biscuit', `${p.name} spots more custard creams, but their pockets are full.`);
+      else { p.biscuits++; Sound.play('munch'); log('biscuit', f.text); }
+    } else if (f.kind === 'warm') {
+      setTemp(S.temp + f.amt);
+      Sound.play('warm');
+      log('warm', f.text);
+      if (f.line) say(f.line);
+    }
+    render();
+    await sleep(G.ms(500));
+  }
+
+  // ---------- The newspaper ----------
+  let duckHandler = null;
+  async function maybeSwat(p, k) {
+    const D = G.DIFFS[S.diff];
+    const cold = clamp((D.start - S.temp) / (D.start - 35), 0, 1);
+    const chance = 0.06 + 0.16 * cold + (G.DOORS.includes(p.pos) ? 0.2 : 0);
+    if (Math.random() >= chance) return;
+    S.swats++;
+    S.phase = 'dodge';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    render();
+    say(pick(G.SWAT_LINES));
+    Sound.play('grumble');
+    Sound.play('windup');
+    B.windUp();
+    const ducked = await dodgeMeter();
+    await B.throwPaper(k, ducked, () => {
+      if (ducked) Sound.play('whoosh');
+      else { Sound.play('thwack'); burstAt(B.pawnWorld(k)); }
+    });
+    if (ducked) {
+      S.ducks++;
+      say(pick(G.DUCK_LINES));
+      log('duck', `${p.name} ducked! The paper sails clean over their head.`);
+    } else if (p.carry.length) {
+      const key = p.carry.splice(rnd(p.carry.length), 1)[0];
+      const d = G.DISTRICT_OF_ITEM[key];
+      B.setCarry(S.players);
+      await B.backToStall(key, k);
+      const it = S.items[key];
+      it.state = 'room';
+      it.by = null;
+      log('thwack', `THWACK! ${p.name} drops the ${G.ITEMS[key].name}, and it goes flying back to the ${G.Mini.GAMES[d.game].title} stall in the ${d.name}.`);
+    } else {
+      p.skip = true;
+      log('thwack', `THWACK! ${p.name} is seeing stars and misses their next go.`);
+    }
+    S.phase = 'moving';
+    render();
+    await sleep(G.ms(500));
+  }
+
+  function dodgeMeter() {
+    return new Promise((resolve) => {
+      const D = G.DIFFS[S.diff];
+      const w = D.zone;
+      const z0 = 0.12 + Math.random() * (0.76 - w);
+      const dodgeEl = $('dodge');
+      $('zone').style.left = z0 * 100 + '%';
+      $('zone').style.width = w * 100 + '%';
+      $('dodgeMsg').textContent = 'Press Space (or tap Duck) when the marker is in the green.';
+      dodgeEl.classList.remove('ok', 'bad');
+      dodgeEl.hidden = false;
+      const period = D.period * (G.reduceMotion ? 1.6 : 1);
+      const t0 = performance.now() + 350;
+      const limit = period * 2.5;
+      let done = false;
+      let raf = 0;
+      const posAt = (t) => { const ph = (Math.max(0, t - t0) % period) / period; return ph < 0.5 ? ph * 2 : 2 - ph * 2; };
+      const marker = $('marker');
+      const finish = (ok, msg) => {
+        if (done) return;
+        done = true;
+        cancelAnimationFrame(raf);
+        duckHandler = null;
+        dodgeEl.classList.add(ok ? 'ok' : 'bad');
+        $('dodgeMsg').textContent = msg;
+        setTimeout(() => { dodgeEl.hidden = true; resolve(ok); }, 550);
+      };
+      const frame = (t) => {
+        if (done) return;
+        marker.style.left = posAt(t) * 100 + '%';
+        if (t - t0 > limit) finish(false, 'Too slow!');
+        else raf = requestAnimationFrame(frame);
+      };
+      duckHandler = () => {
+        const now = performance.now();
+        if (now < t0) return;
+        const x = posAt(now);
+        marker.style.left = x * 100 + '%';
+        const ok = x >= z0 && x <= z0 + w;
+        finish(ok, ok ? 'Ducked!' : 'Missed the timing!');
+      };
+      raf = requestAnimationFrame(frame);
+    });
+  }
+
+  async function endTurn() {
+    if (S.phase === 'over') return;
+    const g = S;
+    S.turns++;
+    setTemp(S.temp - coolRate());
+    render();
+    if (frozen()) return lose();
+    for (const w of G.COLD_WARNINGS) {
+      if (S.temp <= w.at && !S.warned.includes(w.at)) { S.warned.push(w.at); say(w.line); Sound.play('grumble'); break; }
+    }
+    if (Math.random() < 0.14 && $('bubble').classList.contains('quiet')) say(pick(G.GRUMBLES));
+    S.cur = (S.cur + 1) % S.players.length;
+    if (S.cur === 0) S.round++;
+    await sleep(G.ms(380));
+    if (S !== g) return;
+    startTurn();
+  }
+
+  const stars = () => (S.temp >= 36.4 ? 3 : S.temp >= 35.8 ? 2 : 1);
+  async function win() {
+    const g = S;
+    S.turns++;
+    S.phase = 'over';
+    render();
+    Sound.play('win');
+    say("Well... thank you, love. Now shush, I'm reading.", 9000);
+    await sleep(G.ms(2000));
+    if (S !== g) return;
+    showEnd(true);
+  }
+  async function lose() {
+    const g = S;
+    S.phase = 'over';
+    render();
+    B.setFrozen(true);
+    Sound.play('lose');
+    say('B-b-b-brrrr...', 9000);
+    await sleep(G.ms(2200));
+    if (S !== g) return;
+    showEnd(false);
+  }
+  function showEnd(won) {
+    $('endKicker').textContent = won ? `${G.DIFFS[S.diff].name} · Grandad saved` : `${G.DIFFS[S.diff].name} · Grandad frozen`;
+    const title = $('endTitle');
+    title.textContent = won ? "Grandad's toasty!" : "Grandad's a grandsicle!";
+    title.classList.toggle('cold', !won);
+    const n = won ? stars() : 0;
+    $('stars').innerHTML = won ? [1, 2, 3].map((s) => `<span class="${s <= n ? '' : 'off'}">★</span>`).join('') : '';
+    $('stars').hidden = !won;
+    $('endText').textContent = won
+      ? (n === 3 ? 'Warm as toast, with time to spare. He even said thank you. Then he went straight back to his paper.'
+        : n === 2 ? 'Snug in his cardigan and slippers. He grumbled a bit, but he always does.'
+          : "That was close! His nose is still a bit blue, but he's thawing out nicely.")
+      : `His temperature dropped to 35.0°C. Below that is hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of 8 things to him. Try again?`;
+    $('statTemp').textContent = S.temp.toFixed(1) + '°';
+    $('statTurns').textContent = S.turns;
+    $('statStalls').textContent = `${S.stallWins}/${S.stalls}`;
+    $('statDucks').textContent = `${S.ducks}/${S.swats}`;
+    $('endOverlay').hidden = false;
+    $('againBtn').focus();
+  }
+
+  // ---------- Setup ----------
+  function renderNames() {
+    $('names').innerHTML = Array.from({ length: settings.count }, (_, k) => `
+      <label><span class="chip" style="background:${PAWN_CSS[k]}"></span>
+      <input type="text" id="name${k + 1}" maxlength="18" value="${esc(settings.names[k] || G.DEFAULT_NAMES[k])}" aria-label="Name for player ${k + 1}" autocomplete="off"></label>`).join('');
+  }
+  function syncSetupForm() {
+    $('count' + settings.count).checked = true;
+    ({ mild: $('diffMild'), chilly: $('diffChilly'), freeze: $('diffFreeze') })[settings.diff].checked = true;
+    renderNames();
+  }
+  function readNames() {
+    for (let k = 0; k < settings.count; k++) {
+      const el = $('name' + (k + 1));
+      if (el) settings.names[k] = el.value.trim().slice(0, 18) || G.DEFAULT_NAMES[k];
+    }
+  }
+  function openSetup() {
+    syncSetupForm();
+    $('resumeBtn').hidden = !(S && !['setup', 'over'].includes(S.phase));
+    $('endOverlay').hidden = true;
+    $('setup').hidden = false;
+    $('startBtn').focus();
+  }
+  const settled = () => !busy && ['setup', 'roll', 'choose', 'over'].includes(S.phase);
+  async function beginGame() {
+    Sound.init();
+    readNames();
+    G.saveSettings(settings);
+    const btns = [$('startBtn'), $('againBtn')];
+    btns.forEach((b) => { b.disabled = true; });
+    while (!settled()) await sleep(100);
+    btns.forEach((b) => { b.disabled = false; });
+    $('setup').hidden = true;
+    $('endOverlay').hidden = true;
+    S = freshState();
+    B.setFrozen(false);
+    B.setPlayers(S.players);
+    log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
+    say('Is it me, or is it parky in here?');
+    S.phase = 'roll';
+    startTurn();
+  }
+  async function practice(gameKey) {
+    Sound.init();
+    readNames();
+    G.saveSettings(settings);
+    $('setup').hidden = true;
+    const d = G.DISTRICTS.find((q) => q.game === gameKey);
+    await G.Mini.play(gameKey, { diff: settings.diff, prizeKey: d.item, practice: true });
+    openSetup();
+  }
+
+  // ---------- Controls ----------
+  function setMuteButton() {
+    const b = $('muteBtn');
+    b.innerHTML = (Sound.muted ? SPEAKER_OFF : SPEAKER_ON) + `<span>${Sound.muted ? 'Sound off' : 'Sound on'}</span>`;
+    b.setAttribute('aria-pressed', String(Sound.muted));
+  }
+  function toggleMute() {
+    Sound.muted = !Sound.muted;
+    settings.muted = Sound.muted;
+    G.saveSettings(settings);
+    Sound.init();
+    setMuteButton();
+  }
+
+  function bindControls() {
+    $('rollBtn').addEventListener('click', () => { Sound.init(); doRoll(false); });
+    $('cwBtn').addEventListener('click', () => choose(1));
+    $('acwBtn').addEventListener('click', () => choose(-1));
+    $('rerollBtn').addEventListener('click', reroll);
+    $('duckBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); if (duckHandler) duckHandler(); });
+    $('duckBtn').addEventListener('click', () => { if (duckHandler) duckHandler(); });
+    $('muteBtn').addEventListener('click', toggleMute);
+    $('newBtn').addEventListener('click', openSetup);
+    $('viewBtn').addEventListener('click', () => B.resetView());
+    $('resumeBtn').addEventListener('click', () => { $('setup').hidden = true; });
+    $('againBtn').addEventListener('click', beginGame);
+    $('changeBtn').addEventListener('click', openSetup);
+    $('setupForm').addEventListener('submit', (e) => { e.preventDefault(); beginGame(); });
+    $('countSeg').addEventListener('change', (e) => {
+      if (e.target.name !== 'count') return;
+      readNames();
+      settings.count = +e.target.value;
+      renderNames();
+    });
+    document.querySelectorAll('input[name="diff"]').forEach((el) => el.addEventListener('change', () => { settings.diff = el.value; }));
+    $('fairGrid').innerHTML = G.DISTRICTS.map((d) => `<button type="button" class="btn fair-btn" data-game="${d.game}" style="--dc:${d.color}"><b>${G.Mini.GAMES[d.game].title}</b><small>${d.name} · ${G.ITEMS[d.item].name}</small></button>`).join('');
+    $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
+    B.onTileClick = (i) => {
+      if (!S || S.phase !== 'choose') return;
+      if (i === describeDest(1).to) choose(1);
+      else if (i === describeDest(-1).to) choose(-1);
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (G.Mini.active) { if (G.Mini.keyDown) G.Mini.keyDown(e); if (e.key === ' ') e.preventDefault(); return; }
+      if (!S) return;
+      if (e.target.closest && e.target.closest('input, textarea, select')) return;
+      if (!$('setup').hidden || !$('endOverlay').hidden) return;
+      const key = e.key;
+      if (S.phase === 'dodge') {
+        if (key === ' ' || key === 'Enter') { e.preventDefault(); if (!e.repeat && duckHandler) duckHandler(); }
+        return;
+      }
+      const onButton = e.target.closest && e.target.closest('button');
+      if ((key === ' ' || key === 'Enter') && !onButton) {
+        if (S.phase === 'roll') { e.preventDefault(); Sound.init(); doRoll(false); } else if (key === ' ') e.preventDefault();
+      } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+        if (S.phase === 'choose') { e.preventDefault(); choose(1); }
+      } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+        if (S.phase === 'choose') { e.preventDefault(); choose(-1); }
+      } else if (key === 'r' || key === 'R') reroll();
+      else if (key === 'm' || key === 'M') toggleMute();
+    });
+    window.addEventListener('keyup', (e) => { if (G.Mini.active && G.Mini.keyUp) G.Mini.keyUp(e); });
+
+    // Grandad's speech bubble follows his head around the screen
+    G.onFrame(() => {
+      if (G.Mini.active || G.E.scene !== B.scene) return;
+      const p = G.toScreen(B.headWorld(), B.camera);
+      const b = $('bubble');
+      b.style.left = p.x + 'px';
+      b.style.top = p.y + 'px';
+    });
+  }
+
+  // ---------- Boot ----------
+  async function boot() {
+    const stage = $('stage');
+    try {
+      G.initEngine(stage, $('view'));
+    } catch (e) {
+      $('loading').innerHTML = '<p>This game needs 3D graphics (WebGL), and this browser has it switched off. Try Safari or Chrome.</p>';
+      return;
+    }
+    if (document.fonts && document.fonts.load) {
+      await Promise.race([
+        Promise.all([document.fonts.load(`40px ${G.FONT_DISPLAY}`), document.fonts.load('800 30px Karla'), document.fonts.load('bold 20px "Courier Prime"')]).catch(() => {}),
+        sleep(2500),
+      ]);
+    }
+    B.init();
+    B.show();
+    if (document.fonts && document.fonts.addEventListener) {
+      let refreshed = false;
+      document.fonts.addEventListener('loadingdone', () => { if (!refreshed) { refreshed = true; B.refreshTop(); } });
+    }
+    bindControls();
+    setMuteButton();
+    S = freshState();
+    B.setPlayers(S.players);
+    B.setTemp(S.temp, true);
+    log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
+    render();
+    syncSetupForm();
+    $('loading').hidden = true;
+    $('setup').hidden = false;
+    say('Is it me, or is it parky in here?', 60000);
+  }
+
+  // test hook (used by the automated playthrough; harmless for players)
+  window.GCS_TEST = {
+    state: () => S,
+    autoMini: (v) => { G.Mini.autoResult = v; },
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})(window.GCS);

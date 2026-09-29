@@ -1,0 +1,313 @@
+/* Grandad's Cold Snap: shared helpers, sound, settings, rules and board geometry. */
+window.GCS = window.GCS || {};
+(function (G) {
+  'use strict';
+
+  // ---------- Helpers ----------
+  G.$ = (id) => document.getElementById(id);
+  G.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  G.rnd = (n) => Math.floor(Math.random() * n);
+  G.rand = (a, b) => a + Math.random() * (b - a);
+  G.pick = (a) => a[G.rnd(a.length)];
+  G.clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  G.lerp = (a, b, t) => a + (b - a) * t;
+  G.ease = {
+    linear: (t) => t,
+    out: (t) => 1 - Math.pow(1 - t, 3),
+    in: (t) => t * t * t,
+    inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+    back: (t) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+  };
+  G.esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  G.mixHex = (a, b, t) => {
+    const pa = a.match(/\w\w/g).map((h) => parseInt(h, 16));
+    const pb = b.match(/\w\w/g).map((h) => parseInt(h, 16));
+    return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  };
+  G.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // triangle wave 0..1..0 with the given period (seconds)
+  G.tri = (t, period) => { const p = ((t / period) % 1 + 1) % 1; return p < 0.5 ? p * 2 : 2 - p * 2; };
+
+  // ---------- Sound (all synthesised) ----------
+  const Sound = {
+    ctx: null, out: null, musicOut: null, muted: false,
+    init() {
+      if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AC();
+        this.out = this.ctx.createGain();
+        this.out.gain.value = 0.55;
+        this.out.connect(this.ctx.destination);
+        this.musicOut = this.ctx.createGain();
+        this.musicOut.gain.value = 0.32;
+        this.musicOut.connect(this.out);
+      } catch (e) { this.ctx = null; }
+    },
+    tone(f, d, o = {}) {
+      if (!this.ctx || this.muted) return;
+      const { type = 'sine', vol = 0.2, at = 0, to = null, attack = 0.01, dest = this.out } = o;
+      const t = this.ctx.currentTime + at;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(f, t);
+      if (to) osc.frequency.exponentialRampToValueAtTime(to, t + d);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      osc.connect(g).connect(dest);
+      osc.start(t);
+      osc.stop(t + d + 0.05);
+    },
+    noise(d, o = {}) {
+      if (!this.ctx || this.muted) return;
+      const { vol = 0.2, at = 0, freq = 1000, to = null, q = 1, type = 'bandpass', swell = false } = o;
+      const t = this.ctx.currentTime + at;
+      const len = Math.max(1, Math.floor(this.ctx.sampleRate * d));
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      const f = this.ctx.createBiquadFilter();
+      f.type = type;
+      f.frequency.setValueAtTime(freq, t);
+      if (to) f.frequency.exponentialRampToValueAtTime(to, t + d);
+      f.Q.value = q;
+      const g = this.ctx.createGain();
+      if (swell) {
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(vol, t + d * 0.45);
+      } else g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      src.connect(f).connect(g).connect(this.out);
+      src.start(t);
+      src.stop(t + d);
+    },
+    play(name) {
+      if (!this.ctx || this.muted) return;
+      const r = G.rnd;
+      switch (name) {
+        case 'step': this.tone(480 + r(120), 0.06, { type: 'triangle', vol: 0.07 }); break;
+        case 'dice': for (let k = 0; k < 7; k++) this.noise(0.035, { vol: 0.35, at: k * 0.09 + Math.random() * 0.03, freq: 2200 + r(1800), q: 5 }); break;
+        case 'pickup': [660, 880, 1320].forEach((f, k) => this.tone(f, 0.2, { type: 'triangle', vol: 0.14, at: k * 0.07 })); break;
+        case 'deliver': [392, 494, 587, 784].forEach((f, k) => this.tone(f, 0.7, { vol: 0.1, at: k * 0.06 })); break;
+        case 'thwack': this.noise(0.2, { vol: 0.7, freq: 1100, type: 'lowpass' }); this.tone(170, 0.22, { vol: 0.45, to: 45 }); break;
+        case 'whoosh': this.noise(0.45, { vol: 0.35, freq: 350, to: 3200, q: 2, swell: true }); break;
+        case 'windup': this.tone(200, 0.9, { type: 'triangle', vol: 0.05, to: 420, attack: 0.3 }); break;
+        case 'draught': this.noise(1.3, { vol: 0.2, freq: 500, to: 1400, q: 3, swell: true }); break;
+        case 'grumble': this.tone(118, 0.32, { type: 'sawtooth', vol: 0.06, to: 92 }); this.tone(100, 0.34, { type: 'sawtooth', vol: 0.05, at: 0.3, to: 78 }); break;
+        case 'boiler': this.tone(90, 0.8, { type: 'sawtooth', vol: 0.05, to: 140, attack: 0.2 }); this.noise(0.8, { vol: 0.12, freq: 300, type: 'lowpass', swell: true }); break;
+        case 'clank': this.tone(190, 0.16, { type: 'square', vol: 0.07 }); this.noise(0.12, { vol: 0.25, freq: 3200, q: 9 }); this.tone(150, 0.16, { type: 'square', vol: 0.05, at: 0.18 }); break;
+        case 'meow': this.tone(620, 0.3, { vol: 0.12, to: 980 }); this.tone(900, 0.35, { vol: 0.1, at: 0.28, to: 560 }); break;
+        case 'munch': for (let k = 0; k < 3; k++) this.noise(0.07, { vol: 0.3, at: k * 0.13, freq: 1400, q: 1.5 }); break;
+        case 'warm': [523, 659].forEach((f, k) => this.tone(f, 0.4, { vol: 0.09, at: k * 0.08 })); break;
+        case 'stairlift': this.tone(220, 0.9, { type: 'square', vol: 0.03, to: 180 }); break;
+        case 'win': [523, 659, 784, 1047, 784, 1047].forEach((f, k) => this.tone(f, k === 5 ? 0.8 : 0.18, { type: 'triangle', vol: 0.14, at: k * 0.14 })); break;
+        case 'lose': [392, 370, 349].forEach((f, k) => this.tone(f, 0.38, { type: 'sawtooth', vol: 0.06, at: k * 0.42 })); this.tone(330, 1.2, { type: 'sawtooth', vol: 0.06, at: 1.26, to: 290 }); break;
+        case 'turn': this.tone(880, 0.1, { type: 'triangle', vol: 0.06 }); break;
+        // fairground
+        case 'splash': this.noise(0.35, { vol: 0.35, freq: 900, type: 'lowpass' }); this.tone(300, 0.2, { vol: 0.08, to: 120 }); break;
+        case 'hook': this.tone(900, 0.12, { type: 'triangle', vol: 0.12, to: 1500 }); break;
+        case 'ding': this.tone(1568, 1.6, { vol: 0.2 }); this.tone(2093, 1.3, { vol: 0.12 }); this.tone(3136, 0.8, { vol: 0.05 }); break;
+        case 'pop': this.noise(0.09, { vol: 0.6, freq: 2500, type: 'highpass' }); this.tone(900, 0.1, { vol: 0.15, to: 180 }); break;
+        case 'cork': this.tone(560, 0.07, { type: 'square', vol: 0.08, to: 240 }); this.noise(0.05, { vol: 0.3, freq: 1800, q: 2 }); break;
+        case 'clatter': for (let k = 0; k < 6; k++) this.noise(0.07, { vol: 0.28, at: k * 0.07 + Math.random() * 0.05, freq: 3000 + r(2500), q: 10 }); this.tone(720, 0.1, { type: 'square', vol: 0.04 }); break;
+        case 'thud': this.tone(120, 0.2, { vol: 0.35, to: 55 }); this.noise(0.12, { vol: 0.2, freq: 300, type: 'lowpass' }); break;
+        case 'bonk': this.tone(330, 0.12, { type: 'square', vol: 0.1, to: 170 }); this.noise(0.05, { vol: 0.25, freq: 1200, q: 2 }); break;
+        case 'squirt': this.noise(0.12, { vol: 0.1, freq: 2600, q: 1.4 }); break;
+        case 'throw': this.noise(0.22, { vol: 0.18, freq: 500, to: 1800, q: 1.5, swell: true }); break;
+        case 'strike': this.tone(140, 0.25, { vol: 0.4, to: 60 }); this.noise(0.1, { vol: 0.4, freq: 2400, q: 3 }); break;
+        case 'cheer': this.noise(1.4, { vol: 0.2, freq: 1300, q: 0.6, swell: true }); [784, 988, 1175, 1568].forEach((f, k) => this.tone(f, 0.25, { type: 'triangle', vol: 0.1, at: 0.1 + k * 0.1 })); break;
+        case 'aww': this.tone(440, 0.7, { type: 'sawtooth', vol: 0.05, to: 300 }); this.tone(330, 0.7, { type: 'sawtooth', vol: 0.04, at: 0.1, to: 220 }); break;
+        case 'tick': this.tone(660, 0.1, { type: 'triangle', vol: 0.12 }); break;
+        case 'go': this.tone(990, 0.3, { type: 'triangle', vol: 0.14 }); break;
+        case 'wobble': this.tone(260, 0.3, { type: 'triangle', vol: 0.08, to: 200 }); break;
+      }
+    },
+  };
+  G.Sound = Sound;
+
+  // ---------- Fairground organ (an original little waltz) ----------
+  const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  const freq = (n) => { const m = n.match(/([A-G])(#?)(\d)/); return 440 * Math.pow(2, (NOTE[m[1]] + (m[2] ? 1 : 0) + (+m[3] + 1) * 12 - 69) / 12); };
+  const TUNE = [
+    ['E5', 'G5', 'C6'], ['B5', '-', 'G5'], ['F5', 'G5', 'B5'], ['A5', '-', 'G5'],
+    ['F5', 'D5', 'F5'], ['G5', '-', 'F5'], ['E5', 'D5', 'E5'], ['G5', '-', '-'],
+    ['E5', 'G5', 'C6'], ['E6', '-', 'D6'], ['C6', 'A5', 'F5'], ['A5', '-', 'G5'],
+    ['E5', 'G5', 'E5'], ['D5', 'F5', 'B4'], ['C5', '-', '-'], ['-', 'G4', 'B4'],
+  ];
+  const CHORDS = ['C', 'C', 'G7', 'G7', 'G7', 'G7', 'C', 'C', 'C', 'C', 'F', 'F', 'C', 'G7', 'C', 'G7'];
+  const CHORD_NOTES = { C: ['C3', 'E4', 'G4'], G7: ['G2', 'F4', 'B4'], F: ['F2', 'A4', 'C5'] };
+  const Music = {
+    timer: null, beat: 0, next: 0, spb: 60 / 168,
+    start() {
+      if (!Sound.ctx || this.timer) return;
+      this.beat = 0;
+      this.next = Sound.ctx.currentTime + 0.1;
+      this.timer = setInterval(() => this.schedule(), 90);
+    },
+    stop() { clearInterval(this.timer); this.timer = null; },
+    schedule() {
+      const ctx = Sound.ctx;
+      if (!ctx) return;
+      while (this.next < ctx.currentTime + 0.3) {
+        if (!Sound.muted) {
+          const bar = Math.floor(this.beat / 3) % TUNE.length;
+          const b = this.beat % 3;
+          const at = this.next - ctx.currentTime;
+          const ch = CHORD_NOTES[CHORDS[bar]];
+          if (b === 0) Sound.tone(freq(ch[0]), this.spb * 0.9, { type: 'triangle', vol: 0.16, at, dest: Sound.musicOut });
+          else { Sound.tone(freq(ch[1]), this.spb * 0.5, { type: 'square', vol: 0.025, at, dest: Sound.musicOut }); Sound.tone(freq(ch[2]), this.spb * 0.5, { type: 'square', vol: 0.025, at, dest: Sound.musicOut }); }
+          const n = TUNE[bar][b];
+          if (n !== '-') {
+            let len = 1;
+            while (b + len < 3 && TUNE[bar][b + len] === '-') len++;
+            Sound.tone(freq(n), this.spb * len * 0.92, { type: 'square', vol: 0.045, at, dest: Sound.musicOut });
+            Sound.tone(freq(n) * 2, this.spb * len * 0.6, { type: 'sine', vol: 0.02, at, dest: Sound.musicOut });
+          }
+        }
+        this.next += this.spb;
+        this.beat++;
+      }
+    },
+  };
+  G.Music = Music;
+
+  // ---------- Settings ----------
+  G.DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+  const SETTINGS_KEY = 'grandads-cold-snap-settings';
+  G.loadSettings = () => {
+    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false };
+    try {
+      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      if (saved && typeof saved === 'object') {
+        if ([1, 2, 3, 4].includes(saved.count)) base.count = saved.count;
+        if (Array.isArray(saved.names)) saved.names.slice(0, 4).forEach((n, i) => { if (typeof n === 'string' && n.trim()) base.names[i] = n.slice(0, 18); });
+        if (G.DIFFS[saved.diff]) base.diff = saved.diff;
+        base.muted = !!saved.muted;
+      }
+    } catch (e) { /* storage unavailable */ }
+    return base;
+  };
+  G.saveSettings = (s) => { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch (e) { /* storage unavailable */ } };
+
+  // ---------- Rules ----------
+  G.N = 32;
+  G.DOORS = [4, 12, 20, 28];
+  G.LOSE_AT = 35.05; // anything that shows as 35.0°C or lower is hypothermia
+  G.DIFFS = {
+    mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.10, zone: 0.30, period: 1150, level: 0 },
+    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.13, zone: 0.22, period: 950,  level: 1 },
+    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.14, zone: 0.16, period: 800,  level: 2 },
+  };
+
+  G.ITEMS = {
+    slippers: { name: 'Slippers', warmth: 0.10, ins: 0.10, thanks: 'About time! Me toes were going blue.' },
+    tea:      { name: 'Cup of Tea', warmth: 0.25, ins: 0.08, thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
+    blanket:  { name: 'Tartan Blanket', warmth: 0.10, ins: 0.14, thanks: "That's more like it. Tuck it in, tuck it in." },
+    scarf:    { name: 'Woolly Scarf', warmth: 0.10, ins: 0.10, thanks: 'Your Nan knitted that, you know.' },
+    hwb:      { name: 'Hot Water Bottle', warmth: 0.20, ins: 0.12, thanks: "Ooh, that's lovely. Not too hot, mind." },
+    cardigan: { name: 'Cardigan', warmth: 0.10, ins: 0.12, thanks: 'Me good cardigan! With the patches!' },
+    hat:      { name: 'Bobble Hat', warmth: 0.10, ins: 0.10, thanks: "Does this bobble make me look daft? Don't answer that." },
+    logs:     { name: 'Logs for the Fire', warmth: 0.20, ins: 0.14, thanks: "Now we're cooking. Stand back, I'll light it." },
+  };
+  G.ITEM_KEYS = Object.keys(G.ITEMS);
+
+  G.DISTRICTS = [
+    { key: 'hall',    name: 'Hallway',      color: '#8c5a9e', item: 'slippers', game: 'duck',     idx: [1, 2, 3],    spaces: ['Doormat', 'Hook-a-Duck', 'Telephone Table'] },
+    { key: 'kitchen', name: 'Kitchen',      color: '#e08a2e', item: 'tea',      game: 'coconut',  idx: [5, 6, 7],    spaces: ['Larder', 'Coconut Shy', 'Back Door'], darkText: true },
+    { key: 'living',  name: 'Living Room',  color: '#b8412f', item: 'blanket',  game: 'cans',     idx: [9, 10, 11],  spaces: ['Sofa', 'Tin Can Alley', 'Sideboard'] },
+    { key: 'conserv', name: 'Conservatory', color: '#9bb040', item: 'scarf',    game: 'mole',     idx: [13, 14, 15], spaces: ['Wicker Chair', 'Whack-a-Mole', 'Leaky Window'], darkText: true },
+    { key: 'bath',    name: 'Bathroom',     color: '#3f8fa0', item: 'hwb',      game: 'water',    idx: [17, 18, 19], spaces: ['Bath Tub', 'Water Pistol Race', 'Airing Cupboard'] },
+    { key: 'bed',     name: 'Bedroom',      color: '#c9648c', item: 'cardigan', game: 'hoopla',   idx: [21, 22, 23], spaces: ['Wardrobe', 'Hoopla', 'Chest of Drawers'] },
+    { key: 'loft',    name: 'Loft',         color: '#8a7452', item: 'hat',      game: 'gallery',  idx: [25, 26, 27], spaces: ['Old Trunk', 'Shooting Gallery', 'Water Tank'] },
+    { key: 'shed',    name: 'Garden Shed',  color: '#4a6b3a', item: 'logs',     game: 'strength', idx: [29, 30, 31], spaces: ['Log Pile', 'Test Your Strength', 'Lawnmower'] },
+  ];
+  G.DISTRICT_OF_ITEM = Object.fromEntries(G.DISTRICTS.map((d) => [d.item, d]));
+
+  G.CORNERS = {
+    0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Thump it. It might kick in!', short: 'thump the boiler' },
+    8:  { key: 'window',    name: 'Open Window',     rule: 'Brrr! Grandad −0.3°C',        short: 'brrr! −0.3°C' },
+    16: { key: 'stairlift', name: 'Stairlift',       rule: 'Ride down to the boiler',     short: 'ride the stairlift' },
+    24: { key: 'cat',       name: "Tiddles' Basket", rule: 'Trip over the cat. Miss a go', short: 'miss a go' },
+  };
+
+  G.SPACE_FX = {
+    5:  { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', text: 'A packet of custard creams in the larder. +1 re-roll.' },
+    7:  { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', text: "The back door's wide open. Draught! Grandad −0.1°C.", line: 'Were you born in a barn? Shut that door!' },
+    11: { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', text: 'The biscuit tin in the sideboard! +1 custard cream.' },
+    15: { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', text: 'The conservatory window leaks like a sieve. Grandad −0.1°C.', line: 'I can feel that draught from here!' },
+    19: { kind: 'warm', amt: 0.1, mark: 'warm', short: 'warm towel', text: 'A toasty towel from the airing cupboard, draped over Grandad. +0.1°C.', line: "Ooh, that's warm." },
+  };
+
+  G.SPACES = [];
+  for (const [i, c] of Object.entries(G.CORNERS)) G.SPACES[+i] = { type: 'corner', ...c };
+  for (const i of G.DOORS) G.SPACES[i] = { type: 'door', name: 'Pop in to Grandad' };
+  G.DISTRICTS.forEach((d, di) => d.idx.forEach((i, k) => { G.SPACES[i] = { type: 'room', district: di, name: d.spaces[k], stall: k === 1 }; }));
+
+  G.GRUMBLES = [
+    "It's brass monkeys in here.",
+    'In my day we just put another jumper on.',
+    "Don't you touch that thermostat!",
+    "Coldest night since '63, it says here.",
+    "A funfair? In my house? Whatever next.",
+    "I can't feel me knees.",
+    'Is it me, or is it parky in here?',
+    'Who keeps leaving doors open?',
+    'Turn that organ music down!',
+  ];
+  G.SWAT_LINES = ['Oi! Stop dawdling!', 'Out of me light!', 'Take that, whippersnapper!', "That's for the draught!", 'Stop your fidgeting!'];
+  G.DUCK_LINES = ['Blast. Missed.', 'Hmph. Quick little so-and-so.', "I'll get you next time."];
+  G.COLD_WARNINGS = [
+    { at: 36.0, line: 'Me teeth are starting to chatter...' },
+    { at: 35.6, line: "I c-can't feel me n-nose..." },
+    { at: 35.3, line: 'Is that... an icicle on me nose?' },
+  ];
+
+  // ---------- Board geometry (world units; board is 20 x 20, south edge nearest the camera) ----------
+  G.BOARD = 20;
+  const TRACKS = [1.35, 1, 1, 1, 1, 1, 1, 1, 1.35];
+  const TOTAL = TRACKS.reduce((a, b) => a + b, 0);
+  const starts = [];
+  TRACKS.reduce((s, w, k) => { starts[k] = s; return s + w; }, 0);
+  G.TRACKS = TRACKS;
+  G.trackStart = (k) => starts[k] / TOTAL;           // 0..1
+  G.trackSize = (k) => TRACKS[k] / TOTAL;            // 0..1
+  G.trackMid = (k) => (starts[k] + TRACKS[k] / 2) / TOTAL;
+  G.rc = (i) => {
+    if (i === 0) return [8, 8];
+    if (i < 8) return [8, 8 - i];
+    if (i === 8) return [8, 0];
+    if (i < 16) return [16 - i, 0];
+    if (i === 16) return [0, 0];
+    if (i < 24) return [0, i - 16];
+    if (i === 24) return [0, 8];
+    return [i - 24, 8];
+  };
+  G.sideOf = (i) => (i % 8 === 0 ? 'corner' : i < 8 ? 'bottom' : i < 16 ? 'left' : i < 24 ? 'top' : 'right');
+  const W = G.BOARD;
+  G.tileCentre = (i) => { const [r, c] = G.rc(i); return { x: (G.trackMid(c) - 0.5) * W, z: (G.trackMid(r) - 0.5) * W }; };
+  // direction pointing from a tile towards the middle of the board (unit, axis-aligned)
+  G.inward = (i) => {
+    const s = G.sideOf(i);
+    if (s === 'bottom') return { x: 0, z: -1 };
+    if (s === 'top') return { x: 0, z: 1 };
+    if (s === 'left') return { x: 1, z: 0 };
+    if (s === 'right') return { x: -1, z: 0 };
+    const c = G.tileCentre(i);
+    return { x: -Math.sign(c.x) * 0.7071, z: -Math.sign(c.z) * 0.7071 };
+  };
+  const GRID = {};
+  for (let i = 0; i < G.N; i++) GRID[G.rc(i).join(',')] = i;
+  G.tileAtXZ = (x, z) => {
+    const u = x / W + 0.5;
+    const v = z / W + 0.5;
+    if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+    const find = (f) => { for (let k = 0; k < 9; k++) if (f < G.trackStart(k) + G.trackSize(k)) return k; return 8; };
+    const key = `${find(v)},${find(u)}`;
+    return key in GRID ? GRID[key] : null;
+  };
+  G.wrap = (i) => ((i % G.N) + G.N) % G.N;
+})(window.GCS);
