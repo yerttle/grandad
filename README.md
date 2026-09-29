@@ -34,9 +34,9 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 
 1. **Roll the dice**, then choose which way round the house to go: clockwise or anticlockwise. You can click one of the flashing squares on the board, or press <kbd>←</kbd> / <kbd>→</kbd>.
 2. **Land in a room that still has its prize** and you play that room's fairground game. Win it and Grandad's thing is yours; it floats above your pawn while you carry it. Lose, and the prize stays on the stall for another try.
-3. **Pass or stop on a yellow "Pop in to Grandad" door** to hand over everything you're carrying. Grandad puts it on, warms up a bit, and cools down more slowly from then on.
+3. **Pass or stop on a yellow "Pop in to Grandad" door** to hand over everything you're carrying. The camera swoops in to watch Grandad put it on, and he cheers. He warms up a bit, and cools down more slowly from then on. Tap, or press <kbd>Space</kbd>, to skip the cutscene.
 4. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop one of your prizes (it flies back to its stall), or you miss a go if your hands are empty. He throws more often as he gets colder, and more often still if you hang about in his doorway.
-5. **Deliver all 8 things before he cools to 35.0°C.**
+5. **Deliver all 8 things before he cools to 35.0°C**, and set off the fireworks.
 6. **Be Grandad's favourite.** He keeps score (see below).
 
 Custard creams let you re-roll after seeing the dice. You start with two and can find more in the Larder and the Sideboard.
@@ -101,7 +101,7 @@ Playing on your own, your points (plus a rescue bonus if you save him) are a sco
 - **Back Door** and **Leaky Window**: draughts (−0.1°C).
 - **Airing Cupboard**: a warm towel for Grandad (+0.1°C).
 
-As you deliver things, Grandad puts them on: slippers on his feet, the blanket and hot water bottle on his lap, the hat, scarf and cardigan, a cup of tea on the side table, and the logs light the fire. As he cools down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
+As you deliver things, Grandad puts them on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea lands on the side table, and the logs light the fire. A card shows how many of his 8 things he has so far. As he cools down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
 
 ### How cold is it?
 
@@ -117,7 +117,7 @@ With more players each go chills Grandad a little less, so the challenge stays a
 
 | Key | Does |
 | --- | --- |
-| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice, duck, or take your go at a stall |
+| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice, duck, take your go at a stall, or skip a cutscene |
 | <kbd>←</kbd> / <kbd>→</kbd> | Go anticlockwise / clockwise |
 | <kbd>R</kbd> | Eat a custard cream and re-roll |
 | <kbd>Y</kbd> / <kbd>N</kbd> | Pinch another player's prize, or leave it |

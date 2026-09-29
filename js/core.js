@@ -141,6 +141,20 @@ window.GCS = window.GCS || {};
         case 'stroke': this.noise(0.18, { vol: 0.3, freq: 800, q: 1 }); this.tone(520, 0.1, { type: 'triangle', vol: 0.06 }); break;
         case 'whirr': this.tone(180 + r(40), 0.12, { type: 'sawtooth', vol: 0.025 }); break;
         case 'star': [988, 1319, 1568].forEach((f, k) => this.tone(f, 0.16, { type: 'triangle', vol: 0.09, at: k * 0.06 })); break;
+        // the delivery cutscene
+        case 'rise': this.tone(330, 0.55, { type: 'triangle', vol: 0.07, to: 990, attack: 0.2 }); this.noise(0.55, { vol: 0.08, freq: 2000, to: 6000, q: 3, swell: true }); break;
+        case 'sparkle': for (let k = 0; k < 6; k++) this.tone(1760 + r(1400), 0.12, { type: 'triangle', vol: 0.05, at: k * 0.05 }); break;
+        case 'fanfare': {
+          // a brass-band "ta-da": two pick-ups and a big held chord
+          [[523, 0, 0.12], [659, 0.13, 0.12], [784, 0.26, 0.9]].forEach(([f, at, d]) => { this.tone(f, d, { type: 'sawtooth', vol: 0.07, at }); this.tone(f * 2, d, { type: 'triangle', vol: 0.06, at }); });
+          [392, 523, 659, 1047].forEach((f) => this.tone(f, 1.1, { type: 'triangle', vol: 0.07, at: 0.26 }));
+          this.tone(131, 1.0, { type: 'sine', vol: 0.18, at: 0.26 });
+          break;
+        }
+        case 'ignite': this.noise(1.1, { vol: 0.4, freq: 200, to: 1600, q: 0.8, swell: true }); this.tone(70, 0.9, { vol: 0.25, to: 140 }); for (let k = 0; k < 5; k++) this.noise(0.04, { vol: 0.3, at: 0.3 + k * 0.12 + Math.random() * 0.08, freq: 3000, q: 4 }); break;
+        case 'rocket': this.noise(0.7, { vol: 0.16, freq: 600, to: 4000, q: 4, swell: true }); break;
+        case 'firework': this.noise(0.5, { vol: 0.5, freq: 900, type: 'lowpass' }); this.tone(70, 0.4, { vol: 0.3, to: 40 }); for (let k = 0; k < 8; k++) this.noise(0.03, { vol: 0.14, at: 0.15 + k * 0.07 + Math.random() * 0.05, freq: 5000, q: 6 }); break;
+        case 'hooray': this.noise(2.4, { vol: 0.24, freq: 1100, q: 0.5, swell: true }); this.noise(2.0, { vol: 0.12, freq: 2400, q: 0.8, swell: true }); break;
       }
     },
   };

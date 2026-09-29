@@ -123,6 +123,7 @@ body.minigame .frost, body.minigame .bubble, body.minigame .view-tools { display
   left: 50%;
   top: 30%;
   translate: -50% calc(-100% - 14px);
+  width: max-content;
   max-width: min(280px, 60%);
   padding: 10px 14px;
   background: var(--paper);
@@ -312,6 +313,65 @@ body.minigame .frost, body.minigame .bubble, body.minigame .view-tools { display
 @keyframes floatup { 0% { opacity: 0; translate: -50% -20%; } 15% { opacity: 1; } 100% { opacity: 0; translate: -50% -180%; } }
 .fade { position: absolute; inset: 0; z-index: 10; background: #0b0710; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .fade.on { opacity: 1; pointer-events: auto; }
+
+/* ---------- Delivery cutscene ---------- */
+.cine { --bar: clamp(30px, 10%, 76px); position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.cine-bar { position: absolute; left: 0; right: 0; height: var(--bar); background: #0b0710; transition: translate .5s cubic-bezier(.2, .8, .2, 1); }
+.cine-bar.top { top: 0; translate: 0 -100%; }
+.cine-bar.bottom { bottom: 0; translate: 0 100%; display: flex; align-items: center; justify-content: flex-end; padding: 0 16px; }
+.cine.in .cine-bar { translate: 0 0; }
+.cine-skip { font: 800 11px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: rgb(246 236 210 / .6); opacity: 0; transition: opacity .5s; }
+.cine.hint .cine-skip { opacity: 1; }
+.cine-card {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bar) + 12px);
+  width: min(470px, calc(100% - 32px));
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-areas: "icon text" "slots slots";
+  align-items: center;
+  gap: 4px 14px;
+  padding: 12px 16px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 5px 6px 0 var(--ink);
+  opacity: 0;
+  scale: .7;
+  translate: -50% 40px;
+  transition: opacity .2s, scale .45s cubic-bezier(.3, 1.6, .5, 1), translate .45s cubic-bezier(.3, 1.4, .5, 1);
+}
+.cine-card.show { opacity: 1; scale: 1; translate: -50% 0; }
+/* wide screens: the card sits bottom left, beside Grandad rather than over his knees */
+.cine.side .cine-card { left: 20px; translate: 0 40px; width: min(430px, 46%); transform-origin: left bottom; }
+.cine.side .cine-card.show { translate: 0 0; }
+.cine-icon { grid-area: icon; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle, #ffe7a6 0 42%, rgb(255 231 166 / 0) 70%); }
+.cine-icon svg { width: 52px; height: 52px; }
+.cine-card.show .cine-icon svg { animation: iconin .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes iconin { from { scale: 0; rotate: -40deg; } }
+.cine-text { grid-area: text; min-width: 0; }
+.cine-kicker { margin: 0; font: 800 11px/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--orange); }
+.cine.milestone .cine-kicker { display: inline-block; padding: 3px 9px; border-radius: 99px; background: var(--mustard); color: var(--ink); }
+.cine-title { margin: 3px 0 2px; font: 400 30px/1.02 var(--font-display); color: var(--danger); text-shadow: 2px 2px 0 rgb(224 165 38 / .55); }
+.cine-sub { margin: 0; font: 700 13px/1.3 var(--font-body); color: var(--ink-soft); }
+.cine-sub.quote { font-style: italic; color: var(--paper-ink); }
+.cine-slots { grid-area: slots; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; margin-top: 6px; padding-top: 8px; border-top: 2px dashed rgb(43 26 16 / .22); }
+.cine-slots span { aspect-ratio: 1; display: grid; place-items: center; border-radius: 9px; background: rgb(43 26 16 / .08); }
+.cine-slots svg { width: 78%; height: 78%; filter: grayscale(1) opacity(.28); }
+.cine-slots .got { background: rgb(224 165 38 / .22); }
+.cine-slots .got svg { filter: none; }
+.cine-slots .new { background: #ffe7a6; box-shadow: 0 0 0 2px var(--mustard), 0 0 14px 2px rgb(255 200 90 / .8); animation: slotpop .6s .45s cubic-bezier(.3, 1.8, .5, 1) both; }
+@keyframes slotpop { from { scale: 0; rotate: -30deg; } }
+.cine-slots .dance { animation: slotdance .5s ease-in-out infinite alternate; }
+@keyframes slotdance { from { translate: 0 1px; } to { translate: 0 -5px; } }
+.cine.finale .cine-title { font-size: 36px; }
+.cine.finale .cine-icon svg { width: 46px; height: 46px; }
+.warm-flash { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 50% 45%, rgb(255 196 100 / .5), rgb(255 140 40 / .22) 45%, rgb(255 140 40 / 0) 75%); }
+.warm-flash.on { animation: warmflash 1.4s ease-out; }
+@keyframes warmflash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+body.minigame .cine, body.minigame .warm-flash { display: none; }
 
 /* ---------- Score pad ---------- */
 .panel {
@@ -597,6 +657,29 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   .setup-main .lid-actions { position: sticky; bottom: 0; z-index: 2; margin: 12px -16px 0; padding: 10px 16px 12px; background: var(--cream); box-shadow: 0 -10px 14px -10px rgb(0 0 0 / .35); }
   .setup-main .lid-actions .btn.primary { flex: 1; }
   .mini-card .tip { font-size: 13px; color: var(--orange); font-weight: 700; }
+  .cine { --bar: clamp(24px, 8%, 44px); }
+  .cine-bar.bottom { padding: 0 10px; }
+  .cine-card { bottom: calc(var(--bar) + 6px); width: calc(100% - 20px); grid-template-columns: 42px minmax(0, 1fr); gap: 2px 10px; padding: 7px 10px 8px; border-radius: 12px; box-shadow: 3px 4px 0 var(--ink); }
+  .cine-icon { width: 42px; height: 42px; }
+  .cine-icon svg { width: 34px; height: 34px; }
+  .cine-kicker { font-size: 10px; }
+  .cine.milestone .cine-kicker { padding: 2px 7px; }
+  .cine-title { font-size: 22px; }
+  .cine.finale .cine-title { font-size: 25px; }
+  .cine-sub { font-size: 11px; }
+  .cine-slots { gap: 3px; margin-top: 3px; padding-top: 5px; }
+  .cine-slots span { border-radius: 6px; }
+}
+/* short screens (phones on their side): a slimmer card so Grandad stays in shot */
+@media (max-height: 500px) {
+  .cine-card { width: min(420px, calc(100% - 20px)); grid-template-areas: "icon text" "icon slots"; }
+  .cine.side .cine-card { width: min(400px, 56%); }
+  .cine-icon { align-self: start; }
+  .cine-kicker { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .cine-title { font-size: 20px; }
+  .cine-sub { display: none; }
+  .cine-sub.quote { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cine-slots { max-width: 220px; border-top: 0; padding-top: 2px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -630,6 +713,20 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <div class="mini-hint" id="miniHint"></div>
     </div>
     <div class="mini-card-wrap" id="miniCardWrap" hidden><div class="mini-card lid" id="miniCard"></div></div>
+    <div class="warm-flash" id="warmFlash" aria-hidden="true"></div>
+    <div class="cine" id="cine" hidden>
+      <div class="cine-bar top"></div>
+      <div class="cine-bar bottom"><span class="cine-skip"><span class="k-only">Space to skip</span><span class="t-only">Tap to skip</span></span></div>
+      <div class="cine-card" id="cineCard" role="status" aria-live="polite">
+        <div class="cine-icon" id="cineIcon"></div>
+        <div class="cine-text">
+          <p class="cine-kicker" id="cineKicker"></p>
+          <p class="cine-title" id="cineTitle"></p>
+          <p class="cine-sub" id="cineSub"></p>
+        </div>
+        <div class="cine-slots" id="cineSlots"></div>
+      </div>
+    </div>
     <div class="fade" id="fade"></div>
     <div class="loading" id="loading"><p>Setting up the fair in Grandad's front room...</p></div>
   </main>

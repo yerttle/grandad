@@ -16,6 +16,7 @@
   const pawns = [];
   let targets = [];
   let shiverAmp = 0;
+  let coldNow = 0;
   const labelCache = {};
   // free the geometry of things we add and remove during play (materials and textures are shared)
   const drop = (o) => { scene.remove(o); o.traverse((c) => { if (c.geometry) c.geometry.dispose(); }); };
@@ -203,7 +204,7 @@
       p.model.rotation.y = t * 1.3;
     }
     props.forEach((p) => p.update(t));
-    fire.update(t);
+    fire.update(t, dt);
     table.update(t);
     grandad.man.position.x = shiverAmp ? Math.sin(t * 60) * shiverAmp : 0;
     const n = snowGeo.drawRange.count;
@@ -379,7 +380,6 @@
     drop(m);
   }
   B.prizeToPawn = (key, k) => { prizes[key].group.visible = false; return flyModel(key, prizes[key].group.position.clone(), B.pawnWorld(k).add(new V3(0, 0.6, 0)), 800, 0.62, 0.34, 2); };
-  B.toGrandad = (key, k) => flyModel(key, B.pawnWorld(k).add(new V3(0, 0.6, 0)), new V3(0, 2.4, 0.2), 850, 0.34, 0.9, 3);
   B.backToStall = (key, k) => flyModel(key, B.pawnWorld(k), prizes[key].base.clone(), 900, 0.34, 0.62, 4);
   B.passItem = (key, from, to) => flyModel(key, B.pawnWorld(from).add(new V3(0, 0.6, 0)), B.pawnWorld(to).add(new V3(0, 0.6, 0)), 700, 0.34, 0.34, 1.6);
   B.setCrown = (k) => { crownFor = k; };
@@ -388,13 +388,212 @@
     table.tea.visible = keys.includes('tea');
     fire.setLit(keys.includes('logs'));
   };
-  B.popWorn = (key) => {
-    if (key === 'tea') { const t = table.tea; G.tween(500, (k) => t.scale.setScalar(0.72 * (0.4 + 0.6 * G.ease.back(k)))); }
-    else if (key !== 'logs') grandad.pop(key);
+
+  // ---------- Cutscenes ----------
+  // Cutscene steps run on their own clock, so a tap can skip straight to the end of the scene.
+  let skipping = false;
+  let saved = null;
+  const cineTween = (ms, fn, ease = G.ease.inOut) => new Promise((resolve) => {
+    const dur = G.ms(ms);
+    if (skipping || dur <= 1) { fn(ease(1)); resolve(); return; }
+    const t0 = performance.now();
+    const off = G.onFrame(() => {
+      const k = skipping ? 1 : Math.min(1, (performance.now() - t0) / dur);
+      fn(ease(k));
+      if (k >= 1) { off(); resolve(); }
+    });
+  });
+  B.cineWait = (ms) => cineTween(ms, () => {});
+  B.cineSkip = () => { skipping = true; };
+  const nearAz = (a) => a + PI * 2 * Math.round((orbit.az - a) / (PI * 2));
+  // frame a close-up: far enough back that Grandad and the thing he's getting both fit, whatever the screen shape
+  // On wide screens Grandad sits right of centre, leaving room for the card on the left.
+  B.cineSide = () => camera.aspect > 1.05;
+  function shot(key) {
+    // [target x, y, z, camera angle, shift Grandad right?]: the logs shot takes in the fireplace and Grandad together
+    const [x, y, z, az, shift] = { logs: [2.8, 1.8, -2.4, -0.35, 0], tea: [-1.1, 1.9, 0.1, -0.22, 1] }[key] || [0.25, 2.05, -0.2, 0.3, 1];
+    const tanV = Math.tan((camera.fov * PI) / 360);
+    const wide = B.cineSide();
+    // on upright screens the card sits underneath, so stand back a little and lift Grandad up the frame
+    const dist = wide ? Math.max(13.5, 4.2 / (tanV * camera.aspect)) : Math.max(15.5, 4.6 / (tanV * camera.aspect));
+    const aim = nearAz(az);
+    const side = wide && shift ? 0.4 * dist * tanV * camera.aspect : 0;
+    orbit.goalTarget.set(x - Math.cos(aim) * side, wide ? y : y - 0.7, z + Math.sin(aim) * side);
+    orbit.goal.az = aim;
+    orbit.goal.el = 0.3;
+    orbit.goal.zoom = dist / orbit.fitR;
+  }
+  // with reduced motion the camera cuts between shots instead of gliding
+  function snap() {
+    if (!G.reduceMotion) return;
+    orbit.az = orbit.goal.az;
+    orbit.el = orbit.goal.el;
+    orbit.zoom = orbit.goal.zoom;
+    orbit.target.copy(orbit.goalTarget);
+  }
+  B.cineIn = (key) => {
+    skipping = false;
+    if (!saved) saved = { az: orbit.goal.az, el: orbit.goal.el, zoom: orbit.goal.zoom, target: orbit.goalTarget.clone() };
+    orbit.locked = true;
+    orbit.smooth = 0.02;
+    curRing.visible = false;
+    shot(key);
+    snap();
   };
+  B.cineShot = (key) => { shot(key); snap(); };
+  B.cineOut = () => {
+    skipping = false;
+    if (saved) {
+      orbit.goal.az = nearAz(saved.az);
+      orbit.goal.el = saved.el;
+      orbit.goal.zoom = saved.zoom;
+      orbit.goalTarget.copy(saved.target);
+      saved = null;
+    }
+    snap();
+    orbit.locked = false;
+    // glide back out, then hand the snappy camera back to the player
+    setTimeout(() => { if (!orbit.locked) orbit.smooth = 0.001; }, 1000);
+  };
+
+  function anchorOf(key) {
+    if (key === 'tea') return table.tea.getWorldPosition(new V3());
+    if (key === 'logs') return fire.group.localToWorld(new V3(0, 0.55, 0.5));
+    return grandad.anchor(key);
+  }
+  // The item lifts off the pawn with a trail of sparkles, hovers in front of Grandad glowing,
+  // then puts itself on him. onArrive runs the moment it lands, so the game can update the score.
+  B.deliveryShow = async (key, k, onArrive) => {
+    const from = pawns[k] ? B.pawnWorld(k).add(new V3(0, 0.6, 0)) : new V3(0, 3, 8);
+    // hover in clear air: above the fireplace or the side table, otherwise beside Grandad's head, nearer the camera
+    const az = orbit.goal.az;
+    const hover = key === 'logs' ? fire.group.localToWorld(new V3(0, 3.7, 1.4))
+      : key === 'tea' ? table.group.localToWorld(new V3(0, 2.6, 0.5))
+        : new V3(0, 4.2, 0.2).add(new V3(-Math.cos(az), 0, Math.sin(az)).multiplyScalar(2.1)).add(new V3(Math.sin(az), 0, Math.cos(az)).multiplyScalar(1.2));
+    const holder = new THREE.Group();
+    const m = G.makeItem(key);
+    holder.add(m);
+    const haloMat = new THREE.SpriteMaterial({ map: G.tex.skyGlow(), color: '#ffd27a', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+    const halo = new THREE.Sprite(haloMat);
+    holder.add(halo);
+    holder.position.copy(from);
+    scene.add(holder);
+    G.Sound.play('rise');
+    let nextSpark = 0;
+    await cineTween(1000, (t) => {
+      holder.position.lerpVectors(from, hover, G.ease.inOut(t));
+      holder.position.y += Math.sin(t * PI) * 2.4;
+      m.scale.setScalar(G.lerp(0.34, 0.9, G.ease.out(t)));
+      m.rotation.y = t * PI * 4;
+      haloMat.opacity = t * 0.85;
+      halo.scale.setScalar(0.5 + t * 1.9);
+      const now = performance.now();
+      if (!skipping && now > nextSpark && t < 1) {
+        nextSpark = now + 45;
+        G.spawnSparkles(scene, holder.position, { n: 3, speed: 0.5, life: 0.7, size: 0.4 });
+      }
+    }, G.ease.linear);
+    G.Sound.play('sparkle');
+    await cineTween(700, (t) => {
+      holder.position.set(hover.x, hover.y + Math.sin(t * PI * 2) * 0.14, hover.z);
+      m.rotation.y = PI * 4 + t * PI * 2.5;
+      halo.scale.setScalar(2.4 + Math.sin(t * PI * 4) * 0.3);
+      haloMat.opacity = 0.85;
+    }, G.ease.linear);
+    const to = anchorOf(key);
+    const hp = holder.position.clone();
+    await cineTween(340, (t) => {
+      holder.position.lerpVectors(hp, to, t);
+      m.scale.setScalar(G.lerp(0.9, 0.45, t));
+      m.rotation.y += 0.3;
+      haloMat.opacity = 0.85 * (1 - t);
+    }, G.ease.in);
+    drop(holder);
+    haloMat.dispose();
+    if (onArrive) onArrive();
+    if (key === 'tea') {
+      const tea = table.tea;
+      tea.visible = true;
+      G.tween(G.ms(600), (t) => { tea.position.y = 1.29 + 1.2 * (1 - t); tea.scale.setScalar(0.72 * Math.max(0.01, G.ease.back(t))); }, G.ease.out);
+    } else if (key === 'logs') {
+      fire.ignite();
+      G.Sound.play('ignite');
+      G.spawnSparkles(scene, to, { n: 30, speed: 2.6, life: 1.1, size: 0.5, color: '#ff9a3c' });
+    } else grandad.putOn(key, G.ms(650));
+    G.spawnSparkles(scene, to, { n: 26, speed: 3, life: 0.9, size: 0.55 });
+    // a pop of confetti from each arm of the chair, falling back through the shot
+    [-1, 1].forEach((sd) => G.spawnConfetti(scene, new V3(sd * 1.3, 2.2, 0.3), { n: G.isPhone ? 40 : 70, spread: 2.2, up: 7.5, life: 2.8, size: 0.18 }));
+    grandad.cheer(G.ms(1600));
+  };
+
+  // The last delivery: fireworks over the house, Grandad thaws out and does a little dance, and everyone jumps for joy.
+  B.celebrate = async () => {
+    skipping = false;
+    orbit.locked = true;
+    orbit.smooth = 0.05;
+    orbit.goal.el = 0.55;
+    orbit.goal.zoom = Math.max(0.7, 20 / orbit.fitR);
+    // aim a little up and to one side, so the fireworks fill the sky and Grandad stays clear of the card
+    const tanV = Math.tan((camera.fov * PI) / 360);
+    const side = B.cineSide() ? 0.36 * orbit.fitR * orbit.goal.zoom * tanV * camera.aspect : 0;
+    const aimAt = (a) => orbit.goalTarget.set(-Math.cos(a) * side, 3.4, Math.sin(a) * side);
+    // swing gently from side to side, always keeping Grandad's front to the camera
+    const az0 = nearAz(0);
+    orbit.goal.az = az0;
+    aimAt(az0);
+    snap();
+    const sway = G.reduceMotion ? 0 : 0.75;
+    const c0 = coldNow;
+    G.tween(G.ms(2200), (t) => B.setCold(c0 * (1 - t), 0));
+    const colors = ['#ffd27a', '#ff6b4a', '#4fd1c0', '#b69cff', '#fff0a8', '#b7e36a', '#ffffff'];
+    let running = true;
+    let clock = 0, nextRocket = 0.2, nextRain = 0;
+    let swing = 0;
+    const off = G.onFrame((dt, t) => {
+      swing += dt;
+      orbit.goal.az = az0 + Math.sin(swing * 0.7) * sway;
+      aimAt(orbit.goal.az);
+      if (!G.reduceMotion) pawns.forEach((pw, j) => { pw.group.position.y = Math.abs(Math.sin(t * 6 + j * 1.3)) * 0.55; });
+      hemi.intensity += (0.62 - hemi.intensity) * Math.min(1, dt * 4);
+      if (!running || skipping) return;
+      clock += dt;
+      if (clock > nextRocket) { nextRocket = clock + G.rand(0.28, 0.6); rocket(G.pick(colors)); }
+      if (clock > nextRain) { nextRain = clock + 0.8; G.spawnConfetti(scene, new V3(G.rand(-5, 5), 11, G.rand(-5, 5)), { n: G.isPhone ? 40 : 70, spread: 2.5, up: 0.4, life: 4.2, size: 0.2 }); }
+    });
+    (async () => { while (running && !skipping) await grandad.cheer(G.ms(1300)); })();
+    G.Sound.play('hooray');
+    await B.cineWait(6500);
+    running = false;
+    off();
+    pawns.forEach((pw) => { pw.group.position.y = 0; });
+    hemi.intensity = 0.62;
+    orbit.locked = false;
+    orbit.smooth = 0.001;
+    skipping = false;
+  };
+  function rocket(color) {
+    // launch from the back half of the board, so the bursts fill the sky behind Grandad
+    const a = G.rand(PI * 1.1, PI * 1.9);
+    const r = G.rand(5.5, 9);
+    const from = new V3(Math.cos(a) * r, 0.5, Math.sin(a) * r);
+    const to = new V3(from.x * 0.6, G.rand(5.5, 8), from.z * 0.6 - 1.5);
+    const mat = new THREE.SpriteMaterial({ map: G.tex.skyGlow(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const spark = new THREE.Sprite(mat);
+    spark.scale.setScalar(0.7);
+    scene.add(spark);
+    G.Sound.play('rocket');
+    G.tween(700, (t) => { spark.position.lerpVectors(from, to, t); }, G.ease.out).then(() => {
+      scene.remove(spark);
+      mat.dispose();
+      G.spawnFirework(scene, to, color);
+      G.Sound.play('firework');
+      hemi.intensity = 1.1;
+    });
+  }
 
   // ---------- Cold ----------
   B.setCold = (c, level) => {
+    coldNow = c;
     grandad.setCold(c);
     shiverAmp = G.reduceMotion ? 0 : [0, 0.015, 0.035, 0.06][level];
     hemi.color.set(G.mixHex('#ffe8c8', '#cfe2ff', c));

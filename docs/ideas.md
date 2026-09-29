@@ -68,6 +68,14 @@ Five new stalls:
 
 That makes 13 stalls in all. Each game deals 8 of them to the rooms at random, so the house is different every time. There's an option on the start screen to keep the original line-up.
 
+### Delivery cutscenes — Built
+
+Handing Grandad one of his things is now the big moment of the game. The screen goes letterbox and the camera swoops in on his chair. The item floats over trailing sparkles and puts itself on him: the hat drops onto his head, the slippers slide onto his feet, the blanket unrolls over his knees, the tea lands on the side table, and the logs fly into the grate and the fire roars. Grandad cheers in his chair, confetti pops from the arms of the chair and a brass fanfare plays. A card then shows what you've collected so far, with a new line at the first, the halfway point and the last one.
+
+The last delivery sets off a fireworks finale: rockets over the house, confetti raining down, Grandad thawing out and waving his paper, and everyone's pawns jumping for joy.
+
+Winning a stall now fires confetti cannons too. Every cutscene can be skipped with a tap, <kbd>Space</kbd> or <kbd>Enter</kbd>.
+
 ### A grand finale — Idea
 
 Once all 8 things are delivered, there's one last challenge. For example, carry a full cup of tea to Grandad without spilling it while he flaps his paper about.

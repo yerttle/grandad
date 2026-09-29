@@ -154,6 +154,10 @@
     if (game.start) game.start();
     await done;
     G.Sound.play(won ? 'cheer' : 'aww');
+    if (won) {
+      // a confetti cannon from each side of the stall
+      [-1, 1].forEach((s) => G.spawnConfetti(booth.scene, new V3(s * 3.4, 1.2, 1.5), { n: G.isPhone ? 60 : 110, spread: 1.6, up: 7.5, life: 2.4, size: 0.2 }));
+    }
     await G.sleep(1100);
     G.Music.stop();
     hud.power.hidden = true;

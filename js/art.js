@@ -747,12 +747,6 @@
         const m = keys.includes('cardigan') ? knit : shirt;
         armMeshes.forEach((o) => { o.material = m; });
       },
-      pop(key) {
-        (wear[key] || []).forEach((o) => {
-          const s0 = o.scale.clone();
-          G.tween(500, (t) => o.scale.copy(s0).multiplyScalar(0.4 + 0.6 * G.ease.back(t)));
-        });
-      },
       setCold(c) {
         skin.color.set(G.mixHex('#f2c29b', '#b8d2e6', c));
         noseMat.color.set(G.mixHex('#e0776a', '#86add6', c));
@@ -761,8 +755,126 @@
       },
       handWorld() { return paper.getWorldPosition(new V3()); },
       headWorld() { return head.getWorldPosition(new V3()); },
+      // the middle of where a worn item sits, in world space
+      anchor(key) {
+        const box3 = new THREE.Box3();
+        (wear[key] || []).forEach((o) => box3.expandByObject(o));
+        return box3.isEmpty() ? head.getWorldPosition(new V3()) : box3.getCenter(new V3());
+      },
+      // show a worn item arriving: the hat drops on, slippers slide onto his feet, and so on
+      putOn(key, ms = 700) {
+        const list = wear[key] || [];
+        const from = { hat: [0, 1.3, 0], slippers: [0, 0.1, 0.9], hwb: [0, 1.1, 0.5], blanket: [0, 0.7, 0.8], scarf: [0, 0.6, 0.5], cardigan: [0, 0.2, 0.6] }[key] || [0, 0.6, 0];
+        list.forEach((o) => {
+          o.visible = true;
+          if (!o.userData.p0) { o.userData.p0 = o.position.clone(); o.userData.s0 = o.scale.clone(); }
+        });
+        if (key === 'cardigan') armMeshes.forEach((o) => { o.material = knit; });
+        return G.tween(ms, (t) => {
+          const e = G.ease.back(t);
+          list.forEach((o) => {
+            const { p0, s0 } = o.userData;
+            o.position.set(p0.x + from[0] * (1 - t), p0.y + from[1] * (1 - G.ease.out(t)), p0.z + from[2] * (1 - t));
+            o.scale.copy(s0).multiplyScalar(Math.max(0.01, key === 'blanket' ? 1 : e));
+            if (key === 'blanket') o.scale.y = s0.y * Math.max(0.01, e);
+          });
+        }, G.ease.linear);
+      },
+      // a happy little wiggle in his chair, arm in the air and rosy cheeks
+      cheer(ms = 1500) {
+        return G.tween(ms, (t) => {
+          const fade = 1 - t;
+          man.position.y = Math.abs(Math.sin(t * PI * 5)) * 0.22 * fade;
+          man.rotation.z = Math.sin(t * PI * 6) * 0.07 * fade;
+          head.rotation.z = Math.sin(t * PI * 8) * 0.12 * fade;
+          armPivot.rotation.x = -Math.sin(t * PI) * 1.5;
+          cheekMat.opacity = Math.max(cheekMat.opacity, 0.9 * Math.sin(t * PI));
+        }, G.ease.linear).then(() => { man.position.y = 0; man.rotation.z = 0; head.rotation.z = 0; armPivot.rotation.x = 0; });
+      },
     };
     return api;
+  };
+
+  // ---------- Celebration effects ----------
+  const CONFETTI = ['#e0a526', '#c9531f', '#e8432f', '#2a9d8f', '#8e6cc4', '#f2c230', '#f6ecd2', '#9bb040'];
+  G.spawnConfetti = (scene, origin, o = {}) => {
+    const { n = 80, spread = 3, up = 5, life = 2.6, size = 0.16 } = o;
+    const geo = new THREE.PlaneGeometry(size, size * 0.6);
+    const mats = CONFETTI.map((c) => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide, transparent: true }));
+    const bits = [];
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(geo, mats[i % mats.length]);
+      m.position.copy(origin);
+      m.userData.v = new V3(G.rand(-1, 1) * spread, G.rand(0.4, 1) * up, G.rand(-1, 1) * spread);
+      m.userData.s = new V3(G.rand(-9, 9), G.rand(-9, 9), G.rand(-9, 9));
+      scene.add(m);
+      bits.push(m);
+    }
+    let t = 0;
+    const off = G.onFrame((dt) => {
+      t += dt;
+      for (const m of bits) {
+        const v = m.userData.v;
+        v.y -= 6 * dt;
+        v.multiplyScalar(1 - dt * 1.4);
+        m.position.addScaledVector(v, dt);
+        m.rotation.x += m.userData.s.x * dt;
+        m.rotation.y += m.userData.s.y * dt;
+      }
+      const fade = G.clamp((life - t) / 0.7, 0, 1);
+      mats.forEach((mt) => { mt.opacity = fade; });
+      if (t > life) { off(); bits.forEach((b) => scene.remove(b)); geo.dispose(); mats.forEach((mt) => mt.dispose()); }
+    });
+  };
+  G.spawnSparkles = (scene, origin, o = {}) => {
+    const { n = 14, speed = 2.2, life = 0.9, size = 0.5, color = '#ffe08a' } = o;
+    const mat = new THREE.SpriteMaterial({ map: G.tex.skyGlow(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const bits = [];
+    for (let i = 0; i < n; i++) {
+      const s = new THREE.Sprite(mat);
+      s.position.copy(origin);
+      s.scale.setScalar(size);
+      const a = Math.random() * PI * 2, b = Math.acos(G.rand(-1, 1));
+      s.userData.v = new V3(Math.sin(b) * Math.cos(a), Math.cos(b), Math.sin(b) * Math.sin(a)).multiplyScalar(speed * G.rand(0.5, 1.2));
+      scene.add(s);
+      bits.push(s);
+    }
+    let t = 0;
+    const off = G.onFrame((dt) => {
+      t += dt;
+      const k = G.clamp(1 - t / life, 0, 1);
+      mat.opacity = k;
+      bits.forEach((s) => { s.position.addScaledVector(s.userData.v, dt); s.scale.setScalar(size * (0.4 + k)); });
+      if (t > life) { off(); bits.forEach((s) => scene.remove(s)); mat.dispose(); }
+    });
+  };
+  G.spawnFirework = (scene, pos, color) => {
+    const n = 110;
+    const geo = new THREE.BufferGeometry();
+    const p = new Float32Array(n * 3);
+    const v = [];
+    for (let i = 0; i < n; i++) {
+      p[i * 3] = pos.x; p[i * 3 + 1] = pos.y; p[i * 3 + 2] = pos.z;
+      const a = Math.random() * PI * 2, b = Math.acos(G.rand(-1, 1)), s = G.rand(2.6, 4.4);
+      v.push(new V3(Math.sin(b) * Math.cos(a) * s, Math.cos(b) * s, Math.sin(b) * Math.sin(a) * s));
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(p, 3));
+    const mat = new THREE.PointsMaterial({ color, size: 0.3, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    const pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+    let t = 0;
+    const off = G.onFrame((dt) => {
+      t += dt;
+      for (let i = 0; i < n; i++) {
+        v[i].y -= 2.2 * dt;
+        v[i].multiplyScalar(1 - dt * 0.9);
+        p[i * 3] += v[i].x * dt; p[i * 3 + 1] += v[i].y * dt; p[i * 3 + 2] += v[i].z * dt;
+      }
+      geo.attributes.position.needsUpdate = true;
+      mat.opacity = G.clamp(1.6 - t, 0, 1);
+      mat.size = 0.3 * G.clamp(1.4 - t * 0.5, 0.3, 1);
+      if (t > 1.8) { off(); scene.remove(pts); geo.dispose(); mat.dispose(); }
+    });
   };
 
   // ---------- Front-room furniture ----------
@@ -804,13 +916,17 @@
     g.add(fire);
     fire.visible = false;
     let lit = false;
+    let flare = 0;
     return {
       group: g,
       setLit(v) { lit = v; fire.visible = v; coals.visible = !v; },
-      update(t) {
+      ignite() { lit = true; fire.visible = true; coals.visible = false; flare = 1; },
+      update(t, dt = 0.016) {
         if (!lit) { light.intensity = 0; return; }
-        flames.forEach((f, k) => { f.scale.set(1 - 0.1 * Math.sin(t * 9 + k), 1 + 0.18 * Math.sin(t * 13 + k * 2), 1); });
-        light.intensity = 1.5 + Math.sin(t * 11) * 0.2 + Math.sin(t * 23) * 0.15;
+        flare = Math.max(0, flare - dt * 0.6);
+        const big = 1 + flare * 1.6;
+        flames.forEach((f, k) => { f.scale.set((1 - 0.1 * Math.sin(t * 9 + k)) * (1 + flare * 0.5), (1 + 0.18 * Math.sin(t * 13 + k * 2)) * big, 1); });
+        light.intensity = (1.5 + Math.sin(t * 11) * 0.2 + Math.sin(t * 23) * 0.15) * (1 + flare * 2.5);
       },
     };
   };

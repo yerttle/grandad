@@ -166,6 +166,10 @@
       az: 0, el: 0.95, zoom: 1, fitR: 26,
       goal: { az: 0, el: 0.95, zoom: 1 },
       shake: 0,
+      // how much of the gap to the goal is left after a second; cutscenes glide more slowly
+      smooth: 0.001,
+      // cutscenes lock the camera so a stray drag doesn't spoil the shot
+      locked: false,
       onClick: null,
       fitPoints: opts.fitPoints,
       resize() {
@@ -190,19 +194,20 @@
       },
       reset() { o.goal.az = 0; o.goal.el = 0.95; o.goal.zoom = 1; },
       pinchStart() { o.pinchZoom = o.goal.zoom; },
-      pinch(ratio) { o.goal.zoom = G.clamp(o.pinchZoom / ratio, 0.55, 1.5); },
+      pinch(ratio) { if (!o.locked) o.goal.zoom = G.clamp(o.pinchZoom / ratio, 0.55, 1.5); },
       pointerMove(p, e, dx, dy) {
-        if (!p.down || !p.moved) return;
+        if (!p.down || !p.moved || o.locked) return;
         o.goal.az -= dx * 0.006;
         o.goal.el = G.clamp(o.goal.el + dy * 0.004, 0.42, 1.35);
       },
       wheel(e) {
+        if (o.locked) return;
         const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
         o.goal.zoom = G.clamp(o.goal.zoom * Math.exp(d * 0.0012), 0.55, 1.5);
       },
       click(p) { if (o.onClick) o.onClick(p); },
       update(dt) {
-        const k = 1 - Math.pow(0.001, dt);
+        const k = 1 - Math.pow(o.smooth, dt);
         o.az += (o.goal.az - o.az) * k;
         o.el += (o.goal.el - o.el) * k;
         o.zoom += (o.goal.zoom - o.zoom) * k;

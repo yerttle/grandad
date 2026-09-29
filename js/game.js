@@ -346,7 +346,10 @@
       p.pos = G.wrap(p.pos + dir);
       Sound.play('step');
       await B.hop(S.players, k, from);
-      if (G.DOORS.includes(p.pos) && p.carry.length) await deliver(p, k);
+      if (G.DOORS.includes(p.pos) && p.carry.length) {
+        await deliver(p, k);
+        if (allDone()) break;
+      }
     }
     B.placePawns(S.players, S.cur, false);
     if (allDone()) { busy = false; return win(); }
@@ -357,25 +360,125 @@
     endTurn();
   }
 
+  // Every delivery is a little cutscene: the camera swoops in, the item puts itself on Grandad and he cheers.
   async function deliver(p, k) {
+    const g = S;
     const keys = p.carry.splice(0);
     B.setCarry(S.players);
-    for (const key of keys) {
-      const it = S.items[key];
-      it.state = 'done';
-      it.by = null;
-      S.delivered.push(key);
-      setTemp(S.temp + G.ITEMS[key].warmth);
-      Sound.play('deliver');
-      await B.toGrandad(key, k);
-      render();
-      B.popWorn(key);
-      say(G.ITEMS[key].thanks);
-      log('deliver', `${p.name} hands Grandad the ${G.ITEMS[key].name}. +${G.ITEMS[key].warmth.toFixed(2)}°C, and he'll cool more slowly now.`);
-      award(k, POINTS.deliver);
-      await sleep(G.ms(400));
+    await Cine.begin(keys[0]);
+    for (const [j, key] of keys.entries()) {
+      if (j) { B.cineShot(key); Cine.hideCard(); }
+      await B.deliveryShow(key, k, () => {
+        const it = S.items[key];
+        it.state = 'done';
+        it.by = null;
+        S.delivered.push(key);
+        setTemp(S.temp + G.ITEMS[key].warmth);
+        render();
+        Sound.play('fanfare');
+        Cine.flash();
+        Cine.card(key, p);
+        if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
+        log('deliver', `${p.name} hands Grandad the ${G.ITEMS[key].name}. +${G.ITEMS[key].warmth.toFixed(2)}°C, and he'll cool more slowly now.`);
+      });
+      await B.cineWait(j < keys.length - 1 ? 1700 : 2600);
+      if (S !== g) { Cine.end(); return; }
     }
+    // the last thing: win() carries the cutscene on into the fireworks
+    if (allDone()) { award(k, POINTS.deliver * keys.length); return; }
+    Cine.end();
+    await sleep(G.ms(450));
+    award(k, POINTS.deliver * keys.length);
+    await sleep(G.ms(300));
   }
+
+  // ---------- Cutscenes ----------
+  const TITLES = {
+    slippers: 'Toasty toes!', tea: 'A proper cuppa!', blanket: 'Tucked in!', scarf: 'Wrapped up warm!',
+    hwb: 'Hot water bottle!', cardigan: 'Cardigan on!', hat: 'Bobble hat on!', logs: "The fire's lit!",
+  };
+  const WIN_LINE = "Well... thank you, love. Now shush, I'm reading.";
+  const MILESTONES = { 1: 'The first one!', 4: 'Halfway there!', 7: 'Just one more thing!', 8: "That's everything!" };
+  let barH = 0;
+  const Cine = {
+    active: false,
+    async begin(key) {
+      this.active = true;
+      clearTimeout(this.hintTimer);
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      const el = $('cine');
+      el.hidden = false;
+      el.classList.remove('in', 'finale', 'hint');
+      // wide screens: card beside Grandad and his speech bubble above; upright ones put his words in the card
+      this.side = B.cineSide();
+      this.talk = this.side && G.E.h >= 520;
+      el.classList.toggle('side', this.side);
+      if (!this.talk) $('bubble').classList.add('quiet');
+      $('cineCard').classList.remove('show');
+      void el.offsetWidth;
+      el.classList.add('in');
+      barH = el.querySelector('.cine-bar').offsetHeight;
+      this.hintTimer = setTimeout(() => el.classList.add('hint'), 900);
+      B.cineIn(key);
+      await B.cineWait(450);
+    },
+    card(key, p) {
+      const n = S.delivered.length;
+      const it = G.ITEMS[key];
+      const slower = Math.round(it.ins * 100);
+      const multi = S.players.length > 1;
+      $('cineIcon').innerHTML = ICON[key];
+      $('cineKicker').textContent = MILESTONES[n] || `${n} of ${G.ITEM_KEYS.length} delivered`;
+      $('cineTitle').textContent = TITLES[key] || `${it.name}!`;
+      $('cineSub').textContent = this.talk
+        ? `+${it.warmth.toFixed(2)}°C · he'll cool ${slower}% slower · ★ +${POINTS.deliver}${multi ? ` for ${p.name}` : ''}`
+        : `“${it.thanks}”`;
+      $('cineSub').classList.toggle('quote', !this.talk);
+      $('cineSlots').innerHTML = G.DISTRICTS.map((d) => {
+        const k = d.item;
+        const cls = k === key ? 'got new' : S.delivered.includes(k) ? 'got' : '';
+        return `<span class="${cls}" title="${esc(G.ITEMS[k].name)}">${ICON[k]}</span>`;
+      }).join('');
+      const c = $('cineCard');
+      c.classList.remove('show');
+      void c.offsetWidth;
+      c.classList.add('show');
+      $('cine').classList.toggle('milestone', !!MILESTONES[n]);
+    },
+    hideCard() { $('cineCard').classList.remove('show'); },
+    finale() {
+      const el = $('cine');
+      el.classList.add('finale');
+      $('cineIcon').innerHTML = CROWN;
+      $('cineKicker').textContent = `All ${G.ITEM_KEYS.length} delivered`;
+      $('cineTitle').textContent = "Grandad's saved!";
+      $('cineSub').textContent = this.talk ? `${S.temp.toFixed(1)}°C and warming up nicely` : `“${WIN_LINE}”`;
+      $('cineSub').classList.toggle('quote', !this.talk);
+      $('cineSlots').querySelectorAll('span').forEach((sp, j) => { sp.className = 'got dance'; sp.style.animationDelay = j * 0.08 + 's'; });
+      const c = $('cineCard');
+      c.classList.remove('show');
+      void c.offsetWidth;
+      c.classList.add('show');
+    },
+    flash() {
+      const f = $('warmFlash');
+      f.classList.remove('on');
+      void f.offsetWidth;
+      f.classList.add('on');
+    },
+    skip() { if (this.active) B.cineSkip(); },
+    end() {
+      if (!this.active) return;
+      this.active = false;
+      clearTimeout(this.hintTimer);
+      const el = $('cine');
+      el.classList.remove('in', 'hint');
+      $('cineCard').classList.remove('show');
+      setTimeout(() => { if (!Cine.active) el.hidden = true; }, 450);
+      B.cineOut();
+      render();
+    },
+  };
 
   async function resolveLanding(p, k) {
     const sp = G.SPACES[p.pos];
@@ -607,9 +710,13 @@
     S.turns++;
     S.phase = 'over';
     render();
+    if (!Cine.active) await Cine.begin();
+    Cine.finale();
+    $('stage').style.setProperty('--cold', '0');
     Sound.play('win');
-    say("Well... thank you, love. Now shush, I'm reading.", 9000);
-    await sleep(G.ms(2000));
+    if (Cine.talk) say(WIN_LINE, 9000);
+    await B.celebrate();
+    Cine.end();
     if (S !== g) return;
     showEnd(true);
   }
@@ -702,7 +809,8 @@
     G.saveSettings(settings);
     const btns = [$('startBtn'), $('againBtn')];
     btns.forEach((b) => { b.disabled = true; });
-    while (!settled()) await sleep(100);
+    Cine.skip();
+    while (!settled() || Cine.active) await sleep(100);
     btns.forEach((b) => { b.disabled = false; });
     $('setup').hidden = true;
     $('endOverlay').hidden = true;
@@ -789,6 +897,11 @@
       if (e.target.closest && e.target.closest('input, textarea, select')) return;
       if (!$('setup').hidden || !$('endOverlay').hidden) return;
       const key = e.key;
+      if (Cine.active) {
+        if (key === ' ' || key === 'Enter' || key === 'Escape') { e.preventDefault(); Cine.skip(); }
+        else if (key === 'm' || key === 'M') toggleMute();
+        return;
+      }
       if (S.phase === 'dodge') {
         if (key === ' ' || key === 'Enter') { e.preventDefault(); if (!e.repeat && duckHandler) duckHandler(); }
         return;
@@ -811,13 +924,17 @@
     window.addEventListener('keyup', (e) => { if (G.Mini.active && G.Mini.keyUp) G.Mini.keyUp(e); });
 
     // Grandad's speech bubble follows his head around the screen
+    // (in a close-up his head is near the top, so keep the bubble below the letterbox bar)
     G.onFrame(() => {
       if (G.Mini.active || G.E.scene !== B.scene) return;
       const p = G.toScreen(B.headWorld(), B.camera);
       const b = $('bubble');
-      b.style.left = p.x + 'px';
-      b.style.top = p.y + 'px';
+      const minTop = Cine.active ? barH + b.offsetHeight + 22 : 0;
+      const half = b.offsetWidth / 2 + 8;
+      b.style.left = clamp(p.x, half, Math.max(half, G.E.w - half)) + 'px';
+      b.style.top = Math.max(p.y, minTop) + 'px';
     });
+    $('stage').addEventListener('pointerdown', () => { if (Cine.active) Cine.skip(); });
   }
 
   // ---------- Boot ----------
@@ -859,6 +976,8 @@
   window.GCS_TEST = {
     state: () => S,
     autoMini: (v) => { G.Mini.autoResult = v; },
+    cine: () => Cine.active,
+    skipCine: () => Cine.skip(),
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
