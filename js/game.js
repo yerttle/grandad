@@ -136,9 +136,10 @@
     if (t >= 35.3) return ['Freezing', 'danger'];
     return ['Danger!', 'danger'];
   }
-  function describeDest(dir) {
+  // everyone goes clockwise round the house
+  function describeDest() {
     const p = curP();
-    const to = G.wrap(p.pos + dir * S.roll);
+    const to = G.wrap(p.pos + S.roll);
     const sp = G.SPACES[to];
     const bits = [G.spaceName(to)];
     if (stallAt(to)) bits.push('up to 3 tokens');
@@ -166,7 +167,7 @@
       setup: 'Pick your players and how cold it is, then start.',
       roll: 'Roll the dice to take your go.',
       rolling: 'Rolling...',
-      choose: G.isTouch ? `You rolled a ${S.roll}. Tap a flashing square, or a direction button.` : `You rolled a ${S.roll}. Pick a direction: click a flashing square, or press ← or →.`,
+      choose: curP().biscuits > 0 ? `You rolled a ${S.roll}. ${G.isTouch ? 'Tap' : 'Press'} Go!, or eat a custard cream to roll again.` : `You rolled a ${S.roll}. Off you go!`,
       moving: 'On the move...',
       fair: 'At the fair...',
       pinch: 'Pinch a token, or leave it?',
@@ -177,10 +178,8 @@
     $('hint').textContent = hints[S.phase] || '';
     $('rollBtn').disabled = S.phase !== 'roll';
     const choosing = S.phase === 'choose';
-    $('cwBtn').disabled = !choosing;
-    $('acwBtn').disabled = !choosing;
-    $('cwDest').textContent = choosing ? describeDest(1).text : ' ';
-    $('acwDest').textContent = choosing ? describeDest(-1).text : ' ';
+    $('goBtn').disabled = !choosing;
+    $('goDest').textContent = choosing ? describeDest().text : ' ';
     const rr = $('rerollBtn');
     rr.disabled = !(choosing && p.biscuits > 0);
     rr.innerHTML = `Eat a custard cream to re-roll (${p.biscuits} left) <kbd>R</kbd>`;
@@ -274,7 +273,7 @@
   }
   function renderTargets() {
     if (S.phase !== 'choose') { B.clearTargets(); return; }
-    B.showTargets([1, -1].map((dir) => ({ i: describeDest(dir).to, text: dir === 1 ? 'Clockwise →' : '← Anticlockwise' })));
+    B.showTargets([{ i: describeDest().to, text: 'Go!' }]);
   }
   function render() {
     renderPanel();
@@ -288,10 +287,12 @@
     const el = document.createElement('div');
     el.className = 'float-text ' + cls;
     el.textContent = text;
-    el.style.left = p.x + 'px';
-    el.style.top = p.y + 'px';
     $('stage').appendChild(el);
-    setTimeout(() => el.remove(), 1100);
+    // keep it on screen when the pawn is near the edge
+    const half = el.offsetWidth / 2 + 8;
+    el.style.left = clamp(p.x, half, Math.max(half, G.E.w - half)) + 'px';
+    el.style.top = p.y + 'px';
+    setTimeout(() => el.remove(), cls.includes('slow') ? 1900 : 1100);
   }
   function currentLeader() {
     if (S.players.length < 2) return null;
@@ -395,6 +396,12 @@
     S.phase = 'choose';
     busy = false;
     render();
+    // no custard creams means nothing to decide, so just go
+    if (curP().biscuits < 1) {
+      const g = S;
+      await sleep(1000); // time to see what you rolled
+      if (S === g && S.phase === 'choose') go();
+    }
   }
 
   function reroll() {
@@ -406,8 +413,9 @@
     doRoll(true);
   }
 
-  async function choose(dir) {
+  async function go() {
     if (busy || S.phase !== 'choose') return;
+    const dir = 1;
     busy = true;
     const g = S;
     const p = curP();
@@ -434,7 +442,15 @@
       p.pos = G.wrap(p.pos + dir);
       Sound.play('step');
       await B.hop(S.players, k, from);
+      // walking past the boiler pays a token for getting round the house (landing on it is a thump instead)
+      if (p.pos === 0 && s < n - 1) await passStart(p, k);
     }
+  }
+  async function passStart(p, k) {
+    B.flashBoiler();
+    floatAt(B.pawnWorld(k).add(new THREE.Vector3(0, 2.2, 0)), `+${G.tokenWord(G.LAP_TOKENS)}: round the house!`, 'good slow');
+    log('boiler', `${p.name} goes past the boiler. +${G.tokenWord(G.LAP_TOKENS)} for getting all the way round the house.`);
+    await gainTokens(p, k, G.LAP_TOKENS);
   }
 
   // Every purchase is a little cutscene: the camera swoops in, the thing puts itself on Grandad and he cheers.
@@ -731,7 +747,7 @@
     log(tone === 'good' ? (find.fx === 'charm' ? 'charm' : find.fx === 'nap' ? 'nap' : 'find') : tone === 'bad' ? 'findbad' : 'dud',
       `${p.name} has a rummage. ${find.where} ${find.text} (${chip.replace(/\.$/, '')})`);
     render();
-    await Reveal.wait(2200, false);
+    await Reveal.hold();
     Reveal.close();
     if (S !== g) return true;
     if (find.fx !== 'hop' || frozen()) return false;
@@ -745,6 +761,18 @@
   const Reveal = {
     active: false,
     skip: null,
+    holding: false,
+    // stays up until you close it: the OK button, Space, Enter or Escape
+    hold() {
+      return new Promise((resolve) => {
+        this.holding = true;
+        const btn = $('findOk');
+        const done = () => { Reveal.holding = false; Reveal.skip = null; btn.onclick = null; resolve(); };
+        Reveal.skip = done;
+        btn.onclick = done;
+        setTimeout(() => { if (Reveal.holding) btn.focus({ preventScroll: true }); }, 60);
+      });
+    },
     // scale: false for reading time, which reduced motion shouldn't cut short
     wait(ms, scale = true) {
       return new Promise((resolve) => {
@@ -780,7 +808,7 @@
       el.hidden = false;
       void el.offsetWidth;
       el.classList.add('in', 'open', tone);
-      return this.wait(2400, false).then(() => this.close());
+      return this.hold().then(() => this.close());
     },
     show(find, chip, tone) {
       const el = $('find');
@@ -1192,8 +1220,7 @@
 
   function bindControls() {
     $('rollBtn').addEventListener('click', () => { Sound.init(); doRoll(false); });
-    $('cwBtn').addEventListener('click', () => choose(1));
-    $('acwBtn').addEventListener('click', () => choose(-1));
+    $('goBtn').addEventListener('click', go);
     $('rerollBtn').addEventListener('click', reroll);
     $('duckBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); if (duckHandler) duckHandler(); });
     $('duckBtn').addEventListener('click', () => { if (duckHandler) duckHandler(); });
@@ -1232,8 +1259,7 @@
     $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
     B.onTileClick = (i) => {
       if (!S || S.phase !== 'choose') return;
-      if (i === describeDest(1).to) choose(1);
-      else if (i === describeDest(-1).to) choose(-1);
+      if (i === describeDest().to) go();
     };
 
     window.addEventListener('keydown', (e) => {
@@ -1271,11 +1297,11 @@
       }
       const onButton = e.target.closest && e.target.closest('button');
       if ((key === ' ' || key === 'Enter') && !onButton) {
-        if (S.phase === 'roll') { e.preventDefault(); Sound.init(); doRoll(false); } else if (key === ' ') e.preventDefault();
-      } else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
-        if (S.phase === 'choose') { e.preventDefault(); choose(1); }
-      } else if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
-        if (S.phase === 'choose') { e.preventDefault(); choose(-1); }
+        if (S.phase === 'roll') { e.preventDefault(); Sound.init(); doRoll(false); }
+        else if (S.phase === 'choose') { e.preventDefault(); if (!e.repeat) go(); }
+        else if (key === ' ') e.preventDefault();
+      } else if (key === 'ArrowRight' || key === 'g' || key === 'G') {
+        if (S.phase === 'choose') { e.preventDefault(); go(); }
       } else if (key === 'r' || key === 'R') reroll();
       else if (key === 'm' || key === 'M') toggleMute();
     });
@@ -1294,7 +1320,7 @@
     });
     $('stage').addEventListener('pointerdown', () => {
       if (Cine.active) Cine.skip();
-      else if (Reveal.active && Reveal.skip) Reveal.skip();
+      else if (Reveal.active && Reveal.skip && !Reveal.holding) Reveal.skip();
     });
   }
 
@@ -1345,6 +1371,7 @@
     leaveShop: () => { if (Shop.resolve) Shop.resolve(null); },
     render: () => render(),
     reveal: () => Reveal.active,
+    closeCard: () => { if (Reveal.skip) Reveal.skip(); },
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

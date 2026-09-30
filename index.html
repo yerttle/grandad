@@ -271,6 +271,9 @@ body.minigame .frost, body.minigame .bubble, body.minigame .view-tools { display
 .find-what:empty { display: none; }
 .find-chip { grid-area: chip; justify-self: start; padding: 3px 11px; border-radius: 99px; background: var(--mustard); color: var(--ink); font: 800 13px/1.35 var(--font-body); }
 .find-chip:empty { display: none; }
+/* the card waits for you: OK closes it */
+.find-ok { grid-column: 1 / -1; justify-self: end; margin-top: 4px; padding: 8px 22px; pointer-events: auto; }
+.find:not(.open) .find-ok { display: none; }
 .find.open .find-chip { animation: chipin .4s .15s cubic-bezier(.3, 1.8, .5, 1) both; }
 @keyframes chipin { from { opacity: 0; scale: .6; } }
 .find.bad .find-chip { background: var(--frost); }
@@ -373,6 +376,7 @@ svg.token { width: 1.15em; height: 1.15em; vertical-align: -0.2em; }
 }
 .float-text.good { color: #bff29f; }
 .float-text.bad { color: #ffbcae; }
+.float-text.slow { animation-duration: 1.8s; }
 @keyframes floatup { 0% { opacity: 0; translate: -50% -20%; } 15% { opacity: 1; } 100% { opacity: 0; translate: -50% -180%; } }
 .fade { position: absolute; inset: 0; z-index: 10; background: #0b0710; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .fade.on { opacity: 1; pointer-events: auto; }
@@ -511,6 +515,9 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .btn.primary:hover:not(:disabled) { background: var(--danger); }
 .btn.dir { flex-direction: column; gap: 2px; padding: 8px 10px; min-height: 58px; }
 .btn.dir .dest { font-weight: 600; font-size: 12px; color: var(--ink-soft); text-align: center; line-height: 1.2; }
+.btn.go:not(:disabled) { background: var(--mustard); }
+.btn.go:hover:not(:disabled) { background: var(--orange); color: var(--cream); }
+.btn.go:hover:not(:disabled) .dest { color: var(--cream); }
 .btn.ghost { background: transparent; box-shadow: none; border-style: dashed; font-weight: 700; font-size: 14px; }
 .btn.ghost:hover:not(:disabled) { background: var(--board); }
 .team { display: grid; gap: 8px; padding-block: 12px; }
@@ -737,8 +744,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   html.touch .temp-line strong { font-size: 18px; }
   html.touch .rate { font-size: 12px; }
   html.touch .hint { margin: 6px 0 8px; min-height: 0; font-size: 13px; line-height: 1.3; }
-  html.touch .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  html.touch .actions > .dir-row { display: contents; }
+  html.touch .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   html.touch #rollBtn { font-size: 15px; padding: 8px 6px; }
   html.touch .btn.dir { min-height: 50px; padding: 6px; font-size: 13px; }
   html.touch .btn.dir .dest { font-size: 11px; }
@@ -833,6 +839,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   .find-where { font-size: 16px; }
   .find-what { font-size: 13px; margin-top: 3px; }
   .find-chip { font-size: 12px; padding: 2px 9px; }
+  .find-ok { justify-self: stretch; padding: 10px; font-size: 16px; }
   .cine { --bar: clamp(24px, 8%, 44px); }
   .cine-bar.bottom { padding: 0 10px; }
   .cine-card { bottom: calc(var(--bar) + 6px); width: calc(100% - 20px); grid-template-columns: 42px minmax(0, 1fr); gap: 2px 10px; padding: 7px 10px 8px; border-radius: 12px; box-shadow: 3px 4px 0 var(--ink); }
@@ -883,6 +890,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
         <p class="find-what" id="findWhat"></p>
       </div>
       <span class="find-chip" id="findChip"></span>
+      <button class="btn primary find-ok" id="findOk" type="button">OK <kbd>Space</kbd></button>
     </div>
     <div class="mini-hud" id="miniHud" hidden>
       <div class="mini-top">
@@ -953,10 +961,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <p class="hint" id="hint">Roll the dice to take your go.</p>
       <div class="actions">
         <button class="btn primary" id="rollBtn" type="button">Roll the dice <kbd>Space</kbd></button>
-        <div class="dir-row">
-          <button class="btn dir" id="acwBtn" type="button" disabled><span><kbd>←</kbd> Anti&shy;clockwise</span><span class="dest" id="acwDest">&nbsp;</span></button>
-          <button class="btn dir" id="cwBtn" type="button" disabled><span>Clockwise <kbd>→</kbd></span><span class="dest" id="cwDest">&nbsp;</span></button>
-        </div>
+        <button class="btn dir go" id="goBtn" type="button" disabled><span>Go! <kbd>Space</kbd></span><span class="dest" id="goDest">&nbsp;</span></button>
         <button class="btn ghost" id="rerollBtn" type="button" disabled>Eat a custard cream to re-roll <kbd>R</kbd></button>
       </div>
       <div class="pinch" id="pinchBox" hidden>
@@ -1031,18 +1036,18 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <button class="btn primary" id="startBtn" type="submit">Start the game</button>
       <button class="btn" id="resumeBtn" type="button" hidden>Back to the game</button>
     </div>
-    <p class="note k-only">Keys: Space rolls, ← → pick a direction, R re-rolls, M mutes. Drag the board to look around.</p>
-    <p class="note t-only">Tap a flashing square to move. Drag the board to look around and pinch to zoom.</p>
+    <p class="note k-only">Keys: Space rolls and moves, R re-rolls, M mutes. Space or Enter closes a card. Drag the board to look around.</p>
+    <p class="note t-only">Tap Go! or the flashing square to move. Drag the board to look around and pinch to zoom.</p>
     </div>
     <div class="setup-side">
     <div class="howto">
       <h3>How to play</h3>
       <ol>
-        <li>Roll the dice, then choose which way to go round the house: clockwise or anticlockwise.</li>
+        <li>Roll the dice and move clockwise round the house. Don't like where you'll land? Eat a custard cream to re-roll.</li>
         <li>Land on a fairground stall (the gold token floats over it) and play for <b>tokens</b>: up to 3 each go, depending on how well you do.</li>
         <li>At the end of your go, if you've got 3 tokens, you're off to the <b>Fair Shop</b> to buy Grandad something warm. Buy the number of things you picked at the start and he's saved.</li>
-        <li>Other squares win or lose you tokens, and every square says exactly what happened. Grandad's doors, the boiler and the airing cupboard pay a token. The open window, draughts and Tiddles cost you tokens, and more on the harder settings. Magnifying-glass squares are a rummage.</li>
-        <li>Grandad cools a little at the end of every go, and each thing you buy warms him up. Keep him out of the red zone and above 35.0°C. Custard creams let you re-roll.</li>
+        <li>Other squares win or lose you tokens, and every square says exactly what happened. Grandad's doors, the boiler and the airing cupboard pay a token, and so does walking past the boiler on your way round. The open window, draughts and Tiddles cost you tokens, and more on the harder settings. Magnifying-glass squares are a rummage.</li>
+        <li>Grandad cools a little at the end of every go, and each thing you buy warms him up. Keep him out of the red zone and above 35.0°C.</li>
         <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop tokens, or miss a go if you've none.</li>
         <li>Grandad keeps score of who's his favourite: points for tokens you win, things you buy him and ducking his paper. Playing together? Land on another player's square and you can pinch a token, if Grandad isn't looking.</li>
       </ol>

@@ -24,24 +24,24 @@ The original flat 2D version is still here as `classic.html`, if you want it.
 
 Open the game's link (or `index.html`) on your phone and it switches to a touch layout automatically:
 
-- **Held upright:** the board fills the top of the screen and big buttons for rolling and choosing a direction sit underneath. **Players**, **Grandad needs** and **The Daily Grumble** pop up as sheets over the board; tap anywhere else to close them.
+- **Held upright:** the board fills the top of the screen and big buttons for rolling and moving sit underneath. **Players**, **Grandad needs** and **The Daily Grumble** pop up as sheets over the board; tap anywhere else to close them.
 - **Turned sideways:** the board sits on the left with a slim column of controls on the right. The stalls look best this way round.
-- **Touch controls:** tap a flashing square to move, drag the board to look around and pinch to zoom. Every stall has its own touch instructions. For stalls where you aim with your finger (Coconut Shy, Water Pistol Race, Buzz Wire), the aim sits just above your fingertip so your finger doesn't hide the target.
+- **Touch controls:** tap **Go!** (or the flashing square) to move, drag the board to look around and pinch to zoom. Every stall has its own touch instructions. For stalls where you aim with your finger (Coconut Shy, Water Pistol Race, Buzz Wire), the aim sits just above your fingertip so your finger doesn't hide the target.
 
 On tablets with a big screen you get the desktop layout, with the same touch controls.
 
 ## How to play
 
 1. **Pick how many things Grandad needs** on the start screen: 3 for a quick game, 6 for a standard one, 9, or 12 for a marathon.
-2. **Roll the dice**, then choose which way round the house to go: clockwise or anticlockwise. You can click one of the flashing squares on the board, or press <kbd>←</kbd> / <kbd>→</kbd>.
+2. **Roll the dice and go.** Everyone moves clockwise round the house. The **Go!** button tells you where you'll land and what's there; press it (or <kbd>Space</kbd>, or click the flashing square) to move. If you've no custard creams left, your pawn sets off by itself.
 3. **Land on a fairground stall** (a gold token spins above each one) and play for **tokens**: up to 3 each time, depending on how well you do. The stalls never close, so you can play them again and again.
 4. **Go to the Fair Shop.** At the end of your go, if you've got 3 tokens, you're taken to the Fair Shop to buy Grandad something. Everything costs 3 tokens, and each thing warms him up and makes him cool more slowly from then on. The camera swoops in to watch him put it on. Buy the number of things you picked at the start and he's saved. You can also save your tokens for later.
-5. **Every other square wins or loses you tokens**, and each one pops up a card saying exactly what happened (see "Around the board" below).
+5. **Every other square wins or loses you tokens**, and each one pops up a card saying exactly what happened (see "Around the board" below). The card stays up until you press **OK** (or <kbd>Space</kbd>).
 6. **Watch the thermometer.** Grandad cools a little at the end of every go, and the only things that warm him up are the things you buy him. Keep him out of the red zone and above 35.0°C.
 7. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop tokens, or you miss a go if you've none. He throws more often as he gets colder, and more often still if you hang about in his doorway.
 8. **Be Grandad's favourite.** He keeps score (see below).
 
-Custard creams let you re-roll after seeing the dice. You start with two and can find more in the Larder and the Sideboard, or by rummaging.
+Custard creams let you re-roll if you don't like where you'll land. You start with two and can find more in the Larder and the Sideboard, or by rummaging.
 
 ### The Fair Shop
 
@@ -95,7 +95,7 @@ Every square does something you can see, and each one pops up a card saying what
 | Square | What happens | Mild / Chilly / Big Freeze |
 | --- | --- | --- |
 | Pop in to Grandad (the yellow doors) | He slips you a token from his cardigan pocket, but he's grumpier with you hanging about | +1 token |
-| Boiler Cupboard (start) | Give it a thump and a token rattles out | +1 token |
+| Boiler Cupboard (start) | Give it a thump and a token rattles out. Walk past it on your way round the house and you get a token too | +1 token |
 | Stairlift | Ride it down to the Boiler Cupboard, then thump the boiler | +1 token |
 | Airing Cupboard | Fold the warm towels and Grandad gives you a token | +1 token |
 | Larder and Sideboard | Custard creams | +1 re-roll |
@@ -149,19 +149,18 @@ Everything you buy him goes on in a little cutscene: the hat drops onto his head
 | Setting | Starts at | Cools each go | What else changes |
 | --- | --- | --- | --- |
 | Mild Autumn | 36.6°C | 0.12°C | Friendlier stalls, small token losses, wide ducking window. Good for little ones. |
-| Chilly Winter | 36.4°C | 0.19°C | The proper game. |
-| The Big Freeze | 36.2°C | 0.20°C | Stalls need more for each token, bigger token losses, tight ducking window. |
+| Chilly Winter | 36.4°C | 0.15°C | The proper game. |
+| The Big Freeze | 36.2°C | 0.155°C | Stalls need more for each token, bigger token losses, tight ducking window. |
 
-Every thing you buy slows his cooling a little more. With more players each go chills Grandad a little less, so the challenge stays about the same whether you play alone or with the whole family. In simulated games, Chilly Winter is won about 9 times in 10 by a steady player, and the Big Freeze about 6 times in 10, whichever number of things you pick. Picking more things just makes a longer game: roughly 9 goes for 3 things, 19 for 6, 28 for 9 and 38 for 12.
+Every thing you buy slows his cooling a little more. With more players each go chills Grandad a little less, so the challenge stays about the same whether you play alone or with the whole family. In simulated games, a steady player wins Chilly Winter about 85–90% of the time, whichever number of things you pick. The Big Freeze is won about half to two-thirds of the time, and it gets harder the more things you pick. Picking more things makes a longer game: roughly 11 goes for 3 things, 23 for 6, 36 for 9 and 48 for 12.
 
 ### Keys
 
 | Key | Does |
 | --- | --- |
-| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice, duck, take your go at a stall, or skip a cutscene |
+| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice, go, duck, take your go at a stall, close a card, or skip a cutscene |
 | <kbd>1</kbd>–<kbd>9</kbd> | Buy something at the Fair Shop |
 | <kbd>Esc</kbd> | Leave the Fair Shop and save your tokens |
-| <kbd>←</kbd> / <kbd>→</kbd> | Go anticlockwise / clockwise |
 | <kbd>R</kbd> | Eat a custard cream and re-roll |
 | <kbd>Y</kbd> / <kbd>N</kbd> | Pinch another player's prize, or leave it |
 | <kbd>M</kbd> | Sound on or off |

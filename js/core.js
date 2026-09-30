@@ -244,8 +244,8 @@ window.GCS = window.GCS || {};
   G.LOSE_AT = 35.05; // anything that shows as 35.0°C or lower is hypothermia
   G.DIFFS = {
     mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.12, zone: 0.30, period: 1150, level: 0, loss: { window: 1, draught: 1, cat: 1, find: 1, paper: 1 } },
-    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.19, zone: 0.22, period: 950,  level: 1, loss: { window: 2, draught: 1, cat: 2, find: 1, paper: 1 } },
-    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.20, zone: 0.16, period: 800,  level: 2, loss: { window: 3, draught: 2, cat: 2, find: 2, paper: 2 } },
+    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.15, zone: 0.22, period: 950,  level: 1, loss: { window: 2, draught: 1, cat: 2, find: 1, paper: 1 } },
+    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.155, zone: 0.16, period: 800,  level: 2, loss: { window: 3, draught: 2, cat: 2, find: 2, paper: 2 } },
   };
 
   G.ITEMS = {
@@ -295,7 +295,7 @@ window.GCS = window.GCS || {};
   };
 
   G.CORNERS = {
-    0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Thump it: +1 token',          short: '+1 token' },
+    0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Pass or thump it: +1 token',  short: '+1 token' },
     8:  { key: 'window',    name: 'Open Window',     rule: 'Brrr! Tokens blow away',      short: 'lose tokens' },
     16: { key: 'stairlift', name: 'Stairlift',       rule: 'Ride down to the boiler',     short: 'ride to the boiler' },
     24: { key: 'cat',       name: "Tiddles' Basket", rule: 'Tiddles pinches tokens!',     short: 'lose tokens' },
@@ -316,6 +316,7 @@ window.GCS = window.GCS || {};
   G.GOALS = [3, 6, 9, 12];
   G.MAX_TOKENS = 3;
   G.DOOR_TOKENS = 1; // popping in to Grandad: he slips you a token from his cardigan pocket
+  G.LAP_TOKENS = 1; // walking past the boiler (START) on the way round the house
   G.TOKEN_SVG = '<svg class="token" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="#e0a526" stroke="#2b1a10" stroke-width="1.6"/><circle cx="12" cy="12" r="7.6" fill="none" stroke="#9a6a14" stroke-width="1.1"/><path d="M12 6.9l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z" fill="#fff3c4" stroke="#8a5a12" stroke-width=".6" stroke-linejoin="round"/></svg>';
   G.tokenWord = (n) => `${n} token${n === 1 ? '' : 's'}`;
 
