@@ -905,12 +905,13 @@
   // ======================================================================
   GAMES.hoopla = {
     title: 'Hoopla', c1: '#c9648c', c2: '#f6ecd2', blurb: 'Throw rings over the pegs.',
-    params: (L) => ({ per: 1, rings: L(7, 7, 6), pegR: L(0.3, 0.25, 0.21), scatter: L(0.05, 0.08, 0.11), period: L(1.6, 1.3, 1.05) }),
+    // rise: seconds for the landing target to slide from the front of the table to the back
+    params: (L) => ({ per: 1, rings: L(6, 5, 5), pegR: L(0.32, 0.26, 0.24), scatter: L(0.04, 0.06, 0.08), rise: L(1.6, 1.2, 1.0) }),
     unit: plural('ringer', 'ringers'),
     goal: (p) => `A token for every ring you land over a peg, up to 3 tokens. You get ${p.rings} rings.`,
-    how: 'Move the mouse left and right to line up with a peg. Hold the button down to charge your throw, and let go when the power is right: more power throws further back.',
-    keys: 'Mouse to aim. Hold the mouse button (or <kbd>Space</kbd>) to charge, release to throw.',
-    touch: 'Touch and slide left or right to aim, hold to charge, and let go to throw.',
+    how: 'Move left and right to line up with a peg. Hold the button down and a target slides across the table showing where your ring will land. Let go when it lights up over a peg.',
+    keys: 'Mouse (or <kbd>←</kbd> <kbd>→</kbd>) to aim. Hold the mouse button (or <kbd>Space</kbd>) and let go when the target is over a peg.',
+    touch: 'Slide left or right to aim, hold, and let go when the target lights up over a peg.',
     build(ctx) {
       const { scene, camera, p } = ctx;
       camera.position.set(0, 4.8, 8.2);
@@ -929,6 +930,17 @@
       const aimLine = new THREE.Mesh(box(0.05, 0.02, 5.4), G.glow('#ffffff', { transparent: true, opacity: 0.5 }));
       aimLine.position.set(0, 0.92, -2.4);
       scene.add(aimLine);
+      // where the ring will land: slides away from you while you hold, and lights up over a peg
+      const markM = G.glow('#f6ecd2', { transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+      const marker = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.4, 32), markM);
+      marker.rotation.x = -PI / 2;
+      marker.visible = false;
+      scene.add(marker);
+      const landZ = (pw) => 0.6 - pw * 5.6;
+      const pegUnder = (x, z) => pegs.find((pg) => Math.hypot(x - pg.x, z - pg.z) < p.pegR);
+      // timed from the real clock, so a slow frame rate doesn't throw your timing off
+      const now = () => performance.now() / 1000;
+      const powerAt = () => G.tri(now() - chargeT0, p.rise * 2);
       const ringM = [G.shiny('#f2c230'), G.shiny('#2a9d8f'), G.shiny('#e8432f')];
       let aimX = 0;
       let charging = false;
@@ -948,8 +960,10 @@
         flying = true;
         left--;
         status();
-        const pw = power;
-        const land = new V3(aimX + G.rand(-1, 1) * p.scatter * 3, 0.92, 0.6 - pw * 5.6 + G.rand(-1, 1) * p.scatter * 2);
+        const pw = powerAt();
+        power = pw;
+        marker.visible = false;
+        const land = new V3(aimX + G.rand(-1, 1) * p.scatter * 2, 0.92, landZ(pw) + G.rand(-1, 1) * p.scatter * 1.5);
         const ring = mesh(new THREE.TorusGeometry(0.36, 0.055, 8, 24), ringM[left % 3], 0, 2.2, 5);
         scene.add(ring);
         ctx.sfx('throw');
@@ -985,13 +999,21 @@
         if (ctx.full()) setTimeout(() => ctx.end(), 500);
         else if (left <= 0) setTimeout(() => ctx.end(), 600);
       };
-      const press = () => { if (!flying && left > 0 && ctx.running()) { charging = true; chargeT0 = G.E.time; } };
+      const press = () => { if (!flying && left > 0 && ctx.running()) { charging = true; chargeT0 = now(); } };
       return {
         always(dt, t) {
           aimLine.position.x = aimX;
-          if (charging) power = G.tri(t - chargeT0, p.period);
+          if (charging) power = powerAt();
           else if (!flying) power = 0;
           ctx.power.set(power);
+          marker.visible = charging;
+          if (charging) {
+            const z = landZ(power);
+            marker.position.set(aimX, 0.935, z);
+            const over = pegUnder(aimX, z);
+            markM.color.set(over ? '#7ee07e' : '#f6ecd2');
+            marker.scale.setScalar(over ? 1.12 : 1);
+          }
         },
         pointerMove() { const h = ctx.rayY(0.92); if (h) aimX = G.clamp(h.x, -2.6, 2.6); },
         pointerDown() { const h = ctx.rayY(0.92); if (h) aimX = G.clamp(h.x, -2.6, 2.6); press(); },

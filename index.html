@@ -580,8 +580,9 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .needs .where svg.token { width: 14px; height: 14px; }
 .goal-field { grid-column: 1 / -1; }
 .goal-field .note { margin: 0; }
-.goal-seg span { width: 74px; height: 50px; gap: 2px; align-content: center; }
-.goal-seg span small { font: 800 10px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; }
+.seg.goal-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 380px; }
+.seg.goal-seg span { width: auto; height: 50px; padding: 0 4px; gap: 2px; align-content: center; }
+.goal-seg span small { font: 800 10px/1 var(--font-body); letter-spacing: .03em; text-transform: uppercase; white-space: nowrap; }
 .shop-lid { width: min(840px, 100%); }
 .shop-lid::before { height: 22px; background: repeating-linear-gradient(90deg, var(--orange) 0 26px, var(--cream) 26px 52px); }
 .shop-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 12px; border-radius: 10px; background: var(--board); font-weight: 800; }
@@ -813,6 +814,9 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   /* keep the Start button in reach while the setup scrolls */
   .setup-main .lid-actions { position: sticky; bottom: 0; z-index: 2; margin: 12px -16px 0; padding: 10px 16px 12px; background: var(--cream); box-shadow: 0 -10px 14px -10px rgb(0 0 0 / .35); }
   .setup-main .lid-actions .btn.primary { flex: 1; }
+  /* while you type a name, let the Start button scroll away so it can't cover the box you're typing in */
+  .setup-lid.typing .setup-main .lid-actions { position: static; box-shadow: none; }
+  .setup-lid { scroll-padding-bottom: 96px; }
   .mini-card .tip { font-size: 13px; color: var(--orange); font-weight: 700; }
   .shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
   /* keep "Save my tokens" in reach while the shop scrolls */
@@ -822,7 +826,6 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   .si-icon svg { width: 34px; height: 34px; }
   .si-name { font-size: 13px; }
   .si-fx { font-size: 11px; }
-  .goal-seg span { width: 64px; }
   .find { width: calc(100% - 20px); grid-template-columns: 46px minmax(0, 1fr); gap: 4px 10px; padding: 8px 10px 10px; box-shadow: 3px 4px 0 var(--ink); }
   .find-box { width: 46px; height: 46px; border-radius: 10px; }
   .find-box svg { width: 38px; height: 38px; }

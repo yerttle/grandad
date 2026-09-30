@@ -1096,7 +1096,7 @@
   function renderNames() {
     $('names').innerHTML = Array.from({ length: settings.count }, (_, k) => `
       <label><span class="chip" style="background:${PAWN_CSS[k]}"></span>
-      <input type="text" id="name${k + 1}" maxlength="18" value="${esc(settings.names[k] || G.DEFAULT_NAMES[k])}" aria-label="Name for player ${k + 1}" autocomplete="off"></label>`).join('');
+      <input type="text" id="name${k + 1}" maxlength="18" value="${esc(settings.names[k] || G.DEFAULT_NAMES[k])}" aria-label="Name for player ${k + 1}" autocomplete="off" enterkeyhint="${k + 1 < settings.count ? 'next' : 'done'}"></label>`).join('');
   }
   function syncSetupForm() {
     $('count' + settings.count).checked = true;
@@ -1176,6 +1176,24 @@
     $('againBtn').addEventListener('click', beginGame);
     $('changeBtn').addEventListener('click', openSetup);
     $('setupForm').addEventListener('submit', (e) => { e.preventDefault(); beginGame(); });
+    // typing a name on a phone: keep the box in view above the keyboard, and Enter moves on rather than starting the game
+    const form = $('setupForm');
+    form.addEventListener('focusin', (e) => {
+      if (!e.target.matches('#names input')) return;
+      form.classList.add('typing');
+      // still "Player 2"? select it, so typing replaces it
+      const box = e.target;
+      if (G.DEFAULT_NAMES.includes(box.value)) setTimeout(() => { if (document.activeElement === box) box.setSelectionRange(0, box.value.length); }, 0);
+      setTimeout(() => { if (document.activeElement === e.target) e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
+    });
+    form.addEventListener('focusout', (e) => { if (e.target.matches('#names input')) setTimeout(() => { if (!form.contains(document.activeElement) || !document.activeElement.matches('#names input')) form.classList.remove('typing'); }, 0); });
+    form.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || !e.target.matches('#names input')) return;
+      e.preventDefault();
+      const next = $('name' + (+e.target.id.slice(4) + 1));
+      // the last name: on a phone Enter just closes the keyboard; at a computer it starts the game as before
+      if (next) next.focus(); else if (G.isTouch) e.target.blur(); else form.requestSubmit();
+    });
     $('countSeg').addEventListener('change', (e) => {
       if (e.target.name !== 'count') return;
       readNames();

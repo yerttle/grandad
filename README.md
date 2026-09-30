@@ -75,7 +75,7 @@ Every stall pays up to 3 tokens. On the harder settings you need to do more to e
 | Tin Can Alley | Living Room | Stop the sweeping line twice, once to set across and once for height, to throw. | Every 1 / 2 / 2 cans |
 | Whack-a-Mole | Conservatory | Click the moles or use <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> / <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd>. Don't whack Tiddles the cat. | Every 3 / 4 / 4 moles |
 | Water Pistol Race | Bathroom | Hold the mouse button (or <kbd>Space</kbd>) to squirt, and keep the jet on the moving clown's mouth. | 3 for popping your balloon first, otherwise one for each third you filled |
-| Hoopla | Bedroom | Aim left and right with the mouse, then hold and release to set the throw distance. | Every ring over a peg |
+| Hoopla | Bedroom | Aim left and right with the mouse, then hold: a target slides across the table showing where your ring will land. Let go when it lights up over a peg. 6 / 5 / 5 rings. | Every ring over a peg |
 | Shooting Gallery | Loft | Click to fire corks at the tin ducks. Gold ducks score 2. | Every 2 / 3 / 4 points |
 | Test Your Strength | Garden Shed | Swing the hammer (<kbd>Space</kbd>/click) when the power needle is in the red to ring the bell. | Every ring of the bell |
 | Dodgems | | Your red car drives towards the mouse (or use the arrow keys). Bump the other cars before time runs out. | Every 1 / 2 / 4 bumps |
