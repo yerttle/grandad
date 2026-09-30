@@ -224,6 +224,8 @@ window.GCS = window.GCS || {};
       if (saved && typeof saved === 'object') {
         if ([1, 2, 3, 4].includes(saved.count)) base.count = saved.count;
         if (Array.isArray(saved.names)) saved.names.slice(0, 4).forEach((n, i) => { if (typeof n === 'string' && n.trim()) base.names[i] = n.slice(0, 18); });
+        // an older version left "Player 1" in the box, so typing "Mark" gave "Player 1Mark": keep just the typed part
+        base.names = base.names.map((n) => { const m = n.match(/^Player [1-4](\S.*)$/); return m ? m[1] : n; });
         if (G.DIFFS[saved.diff]) base.diff = saved.diff;
         base.muted = !!saved.muted;
         if (typeof saved.shuffle === 'boolean') base.shuffle = saved.shuffle;

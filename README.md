@@ -120,6 +120,8 @@ The thermometer in the score pad is a countdown. It starts full and drops a notc
 
 How many rounds you get depends on the mode, the number of players and the number of things. The start screen tells you before you begin.
 
+When you win, you get stars for the rounds you had to spare: 1 star for winning at all, 2 for finishing with about an eighth of the rounds left, and 3 for about a third. The end screen tells you exactly how many rounds the next star needed.
+
 | Things | Solo | Co-op, 2 / 3 / 4 players | Versus, 2 / 3 / 4 players |
 | --- | --- | --- | --- |
 | 3 | 15 | 9 / 6 / 5 | 11 / 10 / 9 |

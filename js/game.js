@@ -1088,6 +1088,14 @@
     const n = won ? stars() : 0;
     $('stars').innerHTML = won ? [1, 2, 3].map((s) => `<span class="${s <= n ? '' : 'off'}">★</span>`).join('') : '';
     $('stars').hidden = !won;
+    // the stars are for rounds to spare: say so, and what the next star needs
+    const need2 = Math.ceil(S.rounds * 0.12), need3 = Math.ceil(S.rounds * 0.3);
+    const got = S.spare || 0;
+    $('starsNote').textContent = !won ? ''
+      : n === 3 ? `3 stars for finishing with ${need3} or more rounds to spare.`
+        : n === 2 ? `Stars are for rounds to spare. Finish with ${need3} or more to spare for 3 stars.`
+          : `Stars are for rounds to spare${got ? '' : ', and that was the last round'}. Finish with ${need2} to spare for 2 stars, or ${need3} for 3.`;
+    $('starsNote').hidden = !won;
     const spare = S.spare || 0;
     const spareText = spare ? `with ${spare} round${spare === 1 ? '' : 's'} to spare` : 'in the very last round';
     $('endText').textContent = champ
@@ -1135,7 +1143,7 @@
   function renderNames() {
     $('names').innerHTML = Array.from({ length: settings.count }, (_, k) => `
       <label><span class="chip" style="background:${PAWN_CSS[k]}"></span>
-      <input type="text" id="name${k + 1}" maxlength="18" value="${esc(settings.names[k] || G.DEFAULT_NAMES[k])}" aria-label="Name for player ${k + 1}" autocomplete="off" enterkeyhint="${k + 1 < settings.count ? 'next' : 'done'}"></label>`).join('');
+      <input type="text" id="name${k + 1}" maxlength="18" value="${settings.names[k] && settings.names[k] !== G.DEFAULT_NAMES[k] ? esc(settings.names[k]) : ''}" placeholder="${G.DEFAULT_NAMES[k]}" aria-label="Name for player ${k + 1}" autocomplete="off" enterkeyhint="${k + 1 < settings.count ? 'next' : 'done'}"></label>`).join('');
   }
   // the Co-op / Versus choice only matters with two or more players; and say how many rounds Grandad can last
   function renderSetupInfo() {
@@ -1232,9 +1240,6 @@
     form.addEventListener('focusin', (e) => {
       if (!e.target.matches('#names input')) return;
       form.classList.add('typing');
-      // still "Player 2"? select it, so typing replaces it
-      const box = e.target;
-      if (G.DEFAULT_NAMES.includes(box.value)) setTimeout(() => { if (document.activeElement === box) box.setSelectionRange(0, box.value.length); }, 0);
       setTimeout(() => { if (document.activeElement === e.target) e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350);
     });
     form.addEventListener('focusout', (e) => { if (e.target.matches('#names input')) setTimeout(() => { if (!form.contains(document.activeElement) || !document.activeElement.matches('#names input')) form.classList.remove('typing'); }, 0); });

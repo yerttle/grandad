@@ -682,6 +682,7 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
 .end-lid { text-align: center; width: min(600px, 100%); }
 .stars { font-size: 40px; letter-spacing: 8px; color: var(--mustard); text-shadow: 2px 2px 0 var(--ink); }
 .stars .off { color: rgb(43 26 16 / .18); text-shadow: none; }
+.stars-note { margin: 2px auto 8px; max-width: 42ch; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
 .end-text { margin: 6px auto 16px; max-width: 46ch; font-size: 16px; }
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 6px; }
 .stats div { padding: 10px 6px; background: var(--board); border-radius: 10px; }
@@ -1084,6 +1085,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <p class="kicker" id="endKicker">Game over</p>
     <h2 class="logo" id="endTitle">Grandad's toasty!</h2>
     <div class="stars" id="stars" aria-hidden="true"></div>
+    <p class="stars-note" id="starsNote" hidden></p>
     <p class="end-text" id="endText"></p>
     <div class="fav" id="endRivalry"></div>
     <dl class="stats">
