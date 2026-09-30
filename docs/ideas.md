@@ -6,6 +6,7 @@ A running list of things we could add. Each one has a status so we can see what'
 | --- | --- |
 | **Built** | In the game now |
 | **Idea** | Not started yet |
+| **Removed** | Tried, then taken out |
 
 ## Top three
 
@@ -32,7 +33,7 @@ That gives you choices on every go, and a bad stall still leaves you with someth
 A few squares draw a newspaper headline that shakes things up:
 
 - **"POWER CUT":** every stall is shut for a round.
-- **"NAN RINGS":** everyone gets a custard cream.
+- **"NAN RINGS":** everyone gets a token.
 - **"GRANDAD NODS OFF":** no newspaper for two goes.
 - **"TIDDLES STEALS A PRIZE":** the cat runs off with one and you chase her.
 - **"BLIZZARD":** double cooling this round.
@@ -41,16 +42,13 @@ These fit the newspaper theme and make each game play differently.
 
 ## More ideas
 
-### Rivalry: Grandad's favourite grandchild — Built
+### Rivalry: Grandad's favourite grandchild — Removed
 
-Everyone still works together to save Grandad, but you each score favourite points for:
+Favourite points for winning stalls, buying things and ducking his paper, with a crown for the leader and Grandad naming his favourite at the end. In play they didn't add anything, so they've gone. Pinching a token off another player by landing on their square is still in. The end screen now shows what each player won and bought, and on your own it shows how many goes the rescue took, with a record to beat.
 
-- winning stalls
-- delivering his things
-- ducking his paper
-- warming him up
+### Custard creams — Removed
 
-The leader wears a crown on their pawn. In a game with several players you can pinch a prize off another player by landing on their square, although Grandad might spot you doing it. At the end Grandad names his favourite. Playing alone, your points are a score to beat next time.
+You started with two custard creams and could eat one to re-roll. It didn't feel like a real choice, so they've gone too. The Larder and the Sideboard, which used to give custard creams, are now stalls, and everyone simply rolls and moves clockwise.
 
 ### Head-to-head stalls — Idea
 
@@ -78,7 +76,7 @@ Winning a stall now fires confetti cannons too. Every cutscene can be skipped wi
 
 ### Rummaging — Built
 
-Once a room's prize has been won, its squares used to do nothing, so the end of a game went flat. Now a mystery parcel floats over the stall, and landing anywhere in that room means a rummage. Every room has its own finds: the TV remote down the back of the sofa, Nan ringing on the telephone table, moth balls in the wardrobe that send Grandad off to sleep, a lawnmower that chases you two squares on, and a single sock. Finds give favourite points, custard creams, a bit of warmth, a lucky charm that stops the next newspaper, or nothing at all, with the odd icy draught.
+Once a room's prize has been won, its squares used to do nothing, so the end of a game went flat. Now a mystery parcel floats over the stall, and landing anywhere in that room means a rummage. Every room has its own finds: the TV remote down the back of the sofa, Nan ringing on the telephone table, moth balls in the wardrobe that send Grandad off to sleep, a lawnmower that chases you two squares on, and a single sock. Finds give tokens (Grandad pays you for finding his lost things), a lucky charm that stops the next newspaper, forty winks, or nothing at all, with the odd lost token.
 
 ### Tokens and the Fair Shop — Built
 
@@ -94,11 +92,11 @@ Each round a glowing gift box drops onto a random empty square where everyone ca
 
 ### Tiddles roams — Idea
 
-The cat wanders onto a new square each round. Land on her and she either purrs on Grandad's lap (+0.1°C) or scratches you (drop a custard cream).
+The cat wanders onto a new square each round. Land on her and she either purrs on Grandad's lap (+0.1°C) or scratches you (drop a token).
 
-### Won stalls stay open — Idea
+### Stalls swap when they pay out — Built
 
-After a stall's prize has gone, it keeps running as a quick game for favourite points.
+There are 13 games and 10 stall squares, so 3 games wait in reserve. When a stall pays out tokens, it squashes down into the board and one from the reserve pops up in its place, with its name on the square. You keep meeting different games instead of playing the same one over and over.
 
 ### A grand finale — Idea
 
@@ -121,12 +119,12 @@ More reactions:
 
 Choose your pawn from the grandkids, the dog, Tiddles or Nan. Each has a small special ability, such as:
 
-- Nan starts with extra custard creams.
+- Nan starts with an extra token.
 - The dog moves one extra square.
 
 ### High scores — Idea
 
-Fastest rescue, best score at each stall, and Grandad's all-time favourite, kept in one leaderboard that the whole family shares across devices.
+Fastest rescue and best score at each stall, kept in one leaderboard that the whole family shares across devices.
 
 ### Little ones' mode — Idea
 

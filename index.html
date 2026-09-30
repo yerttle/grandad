@@ -513,11 +513,6 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .btn:disabled { opacity: .38; cursor: not-allowed; box-shadow: none; }
 .btn.primary { background: var(--orange); color: var(--cream); font-size: 17px; padding: 12px 16px; }
 .btn.primary:hover:not(:disabled) { background: var(--danger); }
-.btn.dir { flex-direction: column; gap: 2px; padding: 8px 10px; min-height: 58px; }
-.btn.dir .dest { font-weight: 600; font-size: 12px; color: var(--ink-soft); text-align: center; line-height: 1.2; }
-.btn.go:not(:disabled) { background: var(--mustard); }
-.btn.go:hover:not(:disabled) { background: var(--orange); color: var(--cream); }
-.btn.go:hover:not(:disabled) .dest { color: var(--cream); }
 .btn.ghost { background: transparent; box-shadow: none; border-style: dashed; font-weight: 700; font-size: 14px; }
 .btn.ghost:hover:not(:disabled) { background: var(--board); }
 .team { display: grid; gap: 8px; padding-block: 12px; }
@@ -526,7 +521,6 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .pname { font-weight: 800; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pmeta { grid-column: 2 / 4; font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
 .pscore { font: 700 15px/1 var(--font-news); color: var(--brown); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.crown { width: 20px; height: 15px; margin-right: 5px; vertical-align: -2px; }
 .pinch { margin-top: 10px; padding: 10px 12px; background: var(--board); border: 2px dashed var(--orange); border-radius: 10px; display: grid; gap: 8px; }
 .pinch p { margin: 0; font-size: 14px; }
 .check { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; margin-top: 14px; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); cursor: pointer; }
@@ -536,7 +530,6 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .fav { margin: 4px auto 14px; padding: 12px 16px; background: var(--board); border-radius: 12px; max-width: 460px; }
 .fav-kicker { margin: 0; font: 800 11px/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
 .fav-name, .fav-score { margin: 4px 0 2px; font: 400 30px/1.05 var(--font-display); color: var(--brown); }
-.fav-name .crown { width: 30px; height: 22px; margin-right: 8px; }
 .fav-note { margin: 0 0 6px; font-size: 14px; color: var(--ink-soft); }
 .fav-table { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; text-align: left; }
 .fav-table li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 4px 0; border-top: 1px dashed rgb(43 26 16 / .2); }
@@ -549,7 +542,9 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .needs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .needs li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px dashed rgb(43 26 16 / .2); }
 .needs li:last-child { border-bottom: 0; }
-.needs li svg { width: 28px; height: 28px; display: block; }
+.needs li > svg { width: 28px; height: 28px; display: block; }
+.needs li .where { white-space: nowrap; }
+.needs li .where svg.token { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; }
 .needs .iname { font-weight: 700; font-size: 14px; }
 .needs .where { font-size: 12px; color: var(--ink-soft); text-align: right; }
 .needs li.done .iname { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--ink-soft); }
@@ -744,12 +739,8 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   html.touch .temp-line strong { font-size: 18px; }
   html.touch .rate { font-size: 12px; }
   html.touch .hint { margin: 6px 0 8px; min-height: 0; font-size: 13px; line-height: 1.3; }
-  html.touch .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-  html.touch #rollBtn { font-size: 15px; padding: 8px 6px; }
-  html.touch .btn.dir { min-height: 50px; padding: 6px; font-size: 13px; }
-  html.touch .btn.dir .dest { font-size: 11px; }
-  html.touch .btn.dir > span:first-child { hyphens: manual; overflow-wrap: break-word; line-height: 1.1; }
-  html.touch #rerollBtn { grid-column: 1 / -1; padding: 6px 10px; font-size: 13px; }
+  html.touch .actions { gap: 6px; }
+  html.touch #rollBtn { font-size: 16px; padding: 12px 6px; }
   html.touch .pinch { margin-top: 8px; padding: 8px 10px; }
   html.touch .sheet-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
   html.touch .sheet-tabs .tab {
@@ -961,8 +952,6 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <p class="hint" id="hint">Roll the dice to take your go.</p>
       <div class="actions">
         <button class="btn primary" id="rollBtn" type="button">Roll the dice <kbd>Space</kbd></button>
-        <button class="btn dir go" id="goBtn" type="button" disabled><span>Go! <kbd>Space</kbd></span><span class="dest" id="goDest">&nbsp;</span></button>
-        <button class="btn ghost" id="rerollBtn" type="button" disabled>Eat a custard cream to re-roll <kbd>R</kbd></button>
       </div>
       <div class="pinch" id="pinchBox" hidden>
         <p id="pinchText"></p>
@@ -1030,26 +1019,26 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     </div>
     <label class="check" for="shuffleStalls">
       <input type="checkbox" id="shuffleStalls" checked>
-      <span><b>Shuffle the stalls</b><small>Deal 8 of the 13 fairground stalls to the rooms at random, so the house is different every game. Untick for the classic line-up.</small></span>
+      <span><b>Shuffle the stalls</b><small>Deal 10 of the 13 fairground stalls onto the board at random, so the house is different every game. Untick for the classic line-up. Either way, a stall that pays out swaps for another.</small></span>
     </label>
     <div class="lid-actions">
       <button class="btn primary" id="startBtn" type="submit">Start the game</button>
       <button class="btn" id="resumeBtn" type="button" hidden>Back to the game</button>
     </div>
-    <p class="note k-only">Keys: Space rolls and moves, R re-rolls, M mutes. Space or Enter closes a card. Drag the board to look around.</p>
-    <p class="note t-only">Tap Go! or the flashing square to move. Drag the board to look around and pinch to zoom.</p>
+    <p class="note k-only">Keys: Space rolls the dice, M mutes. Space or Enter closes a card. Drag the board to look around.</p>
+    <p class="note t-only">Tap Roll to take your go. Drag the board to look around and pinch to zoom.</p>
     </div>
     <div class="setup-side">
     <div class="howto">
       <h3>How to play</h3>
       <ol>
-        <li>Roll the dice and move clockwise round the house. Don't like where you'll land? Eat a custard cream to re-roll.</li>
-        <li>Land on a fairground stall (the gold token floats over it) and play for <b>tokens</b>: up to 3 each go, depending on how well you do.</li>
+        <li>Roll the dice and you move clockwise round the house.</li>
+        <li>Land on a fairground stall (the gold token floats over it) and play for <b>tokens</b>: up to 3 each go, depending on how well you do. When a stall pays out, it packs up and a different game from the fair takes its place.</li>
         <li>At the end of your go, if you've got 3 tokens, you're off to the <b>Fair Shop</b> to buy Grandad something warm. Buy the number of things you picked at the start and he's saved.</li>
         <li>Other squares win or lose you tokens, and every square says exactly what happened. Grandad's doors, the boiler and the airing cupboard pay a token, and so does walking past the boiler on your way round. The open window, draughts and Tiddles cost you tokens, and more on the harder settings. Magnifying-glass squares are a rummage.</li>
         <li>Grandad cools a little at the end of every go, and each thing you buy warms him up. Keep him out of the red zone and above 35.0°C.</li>
         <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop tokens, or miss a go if you've none.</li>
-        <li>Grandad keeps score of who's his favourite: points for tokens you win, things you buy him and ducking his paper. Playing together? Land on another player's square and you can pinch a token, if Grandad isn't looking.</li>
+        <li>Playing together? You're all on the same side, saving Grandad. But land on another player's square and you can pinch a token, if Grandad isn't looking.</li>
       </ol>
     </div>
     <div class="fair">

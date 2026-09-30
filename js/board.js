@@ -9,9 +9,18 @@
   const PAWN_COLORS = ['#e8432f', '#2a9d8f', '#f2c230', '#8e6cc4'];
   B.PAWN_COLORS = PAWN_COLORS;
 
-  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, crown, zzz, heater;
+  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, zzz, heater;
   let napping = false;
-  let crownFor = null;
+  const stalls = {};
+  function buildStall(i) {
+    if (stalls[i]) scene.remove(stalls[i]);
+    const c = G.tileCentre(i);
+    const stall = G.makeStall(G.Mini.GAMES[G.dealt[i]].c1);
+    stall.position.set(c.x, 0, c.z - 0.5);
+    scene.add(stall);
+    stalls[i] = stall;
+    return stall;
+  }
   const props = [];
   // a gold token spins over every stall: that's what you win there
   const prizes = {};
@@ -102,13 +111,10 @@
       if (sp.key === 'boiler') B.boiler = p;
     }
 
-    // a fairground stall in every room, with its prize floating above
-    for (const d of G.DISTRICTS) {
-      const i = d.idx[1];
+    // a fairground stall on every stall square, in its game's colours, with its prize floating above
+    for (const i of G.STALL_SQUARES) {
       const c = G.tileCentre(i);
-      const stall = G.makeStall(d.color);
-      stall.position.set(c.x, 0, c.z - 0.5);
-      scene.add(stall);
+      buildStall(i);
       const prize = new THREE.Group();
       const model = G.makeToken();
       model.scale.setScalar(0.75);
@@ -130,18 +136,6 @@
     curRing.rotation.x = -PI / 2;
     curRing.visible = false;
     scene.add(curRing);
-
-    // Grandad's favourite wears a crown
-    crown = new THREE.Group();
-    const gold = G.shiny('#e0a526', { metalness: 0.35, roughness: 0.3, emissive: '#3a2400' });
-    crown.add(G.mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.16, 16, 1, true), new THREE.MeshStandardMaterial({ color: '#e0a526', metalness: 0.35, roughness: 0.3, emissive: '#3a2400', side: THREE.DoubleSide }), 0, 0, 0));
-    for (let k = 0; k < 5; k++) {
-      const a = (k / 5) * PI * 2;
-      crown.add(G.mesh(new THREE.ConeGeometry(0.06, 0.18, 6), gold, Math.cos(a) * 0.22, 0.16, Math.sin(a) * 0.22));
-      crown.add(G.mesh(G.geo.sph(0.035, 8, 6), G.glow(k % 2 ? '#b3261e' : '#2a9d8f'), Math.cos(a + 0.6) * 0.235, 0.0, Math.sin(a + 0.6) * 0.235, false));
-    }
-    crown.visible = false;
-    scene.add(crown);
 
     // Zzz when Grandad nods off
     zzz = new THREE.Group();
@@ -253,12 +247,6 @@
     }
     if (napping) grandad.head.rotation.x += (0.35 - grandad.head.rotation.x) * Math.min(1, dt * 3);
     else if (grandad.head.rotation.x) grandad.head.rotation.x *= Math.max(0, 1 - dt * 5);
-    const leader = crownFor !== null ? pawns[crownFor] : null;
-    crown.visible = !!leader;
-    if (leader) {
-      crown.position.copy(leader.group.position).add(new V3(0, 1.42 * leader.group.scale.y, 0));
-      crown.rotation.y = t * 1.5;
-    }
     targets.forEach((tg, k) => {
       tg.arrow.position.y = 2.1 + Math.sin(t * 5 + k) * 0.18;
       tg.ring.material.opacity = 0.55 + Math.sin(t * 6) * 0.35;
@@ -413,7 +401,7 @@
   const stackTop = (k) => B.pawnWorld(k).add(new V3(0, 0.75, 0));
   // won at a stall: the tokens fly off the stall and onto your stack
   B.tokensFromStall = (i, k, n) => {
-    const from = prizes[i] ? prizes[i].group.position.clone() : G.tileCentre(i).clone().setY(3);
+    const from = prizes[i] ? prizes[i].group.position.clone() : new V3(G.tileCentre(i).x, 3, G.tileCentre(i).z);
     return Promise.all(Array.from({ length: n }, (_, j) => flyToken(from, stackTop(k), 700, j * 170, 1.6, 0.75, 0.42)));
   };
   // found or given: tokens pop up from the square
@@ -434,7 +422,25 @@
   // bought at the shop: the tokens fly up and vanish in a sparkle
   B.spendTokens = (k, n) => Promise.all(Array.from({ length: n }, (_, j) => flyToken(stackTop(k), stackTop(k).add(new V3(0, 2.2, 0)), 500, j * 110, 0.3, 0.42, 0.05)))
     .then(() => G.spawnSparkles(scene, stackTop(k).add(new V3(0, 2.2, 0)), { n: 16, speed: 1.8, life: 0.7, size: 0.45 }));
-  B.setCrown = (k) => { crownFor = k; };
+  // a new deal of stalls for a new game
+  B.setStalls = () => { for (const i of G.STALL_SQUARES) buildStall(i); B.refreshTop(); };
+  // a stall that paid out packs up (it squashes down into the board) and a new one pops up in its place
+  B.swapStall = async (i) => {
+    const old = stalls[i];
+    const prize = prizes[i];
+    await G.tween(G.ms(380), (t) => {
+      old.scale.set(1 + t * 0.25, Math.max(0.001, 1 - t), 1 + t * 0.25);
+      if (prize) prize.group.scale.setScalar(Math.max(0.001, 1 - t));
+    }, G.ease.in);
+    B.refreshTop();
+    const fresh = buildStall(i);
+    fresh.scale.set(1, 0.001, 1);
+    G.spawnSparkles(scene, fresh.position.clone().setY(1.2), { n: 22, speed: 2.2, life: 0.8, size: 0.45 });
+    await G.tween(G.ms(520), (t) => {
+      fresh.scale.set(1, Math.max(0.001, t), 1);
+      if (prize) prize.group.scale.setScalar(Math.max(0.001, t));
+    }, G.ease.back);
+  };
   B.setWorn = (keys) => {
     grandad.setWorn(keys);
     table.tea.visible = keys.includes('tea');

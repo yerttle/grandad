@@ -26,9 +26,7 @@
   const SPEAKER_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
   const SPEAKER_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
   const PAWN_CSS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
-  const CROWN = '<svg class="crown" viewBox="0 0 24 18" aria-label="Grandad\'s favourite"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11z" fill="#e0a526" stroke="#2b1a10" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="1.8" fill="#b3261e"/></svg>';
-  // favourite points: Grandad keeps score of who's been most helpful
-  const POINTS = { token: 1, deliver: 2, duck: 1, hit: -1 };
+  const HEART = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 41S6 30 6 17.5C6 11 10.5 7 16 7c3.6 0 6.4 1.9 8 4.8C25.6 8.9 28.4 7 32 7c5.5 0 10 4 10 10.5C42 30 24 41 24 41z" fill="#d9642c" stroke="#2b1a10" stroke-width="2.4" stroke-linejoin="round"/><path d="M13 16c1-3 3-4 5-4" stroke="#f6c1a0" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
 
   // ---------- State ----------
   function freshState() {
@@ -43,10 +41,9 @@
       roll: null,
       players: Array.from({ length: settings.count }, (_, k) => ({
         name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
-        pos: 0, tokens: 0, skip: false, biscuits: 2, score: 0, won: 0, charm: false,
+        pos: 0, tokens: 0, skip: false, won: 0, bought: 0, charm: false,
       })),
       dealt: { ...G.dealt },
-      leader: null,
       watching: false,
       nap: false,
       lastFind: {},
@@ -64,8 +61,8 @@
   }
   const curP = () => S.players[S.cur];
   const districtAt = (pos) => { const sp = G.SPACES[pos]; return sp.type === 'room' ? G.DISTRICTS[sp.district] : null; };
-  // every room's middle square has a stall that's always open
-  const stallAt = (pos) => { const sp = G.SPACES[pos]; return sp.type === 'room' && sp.stall ? G.DISTRICTS[sp.district] : null; };
+  // the game on a stall square (every room's middle square, the Larder and the Sideboard), or null
+  const stallAt = (pos) => (G.SPACES[pos].stall ? G.dealt[pos] : null);
   const itemsLeft = () => G.ITEM_KEYS.filter((key) => S.items[key].state !== 'done');
   const lossFor = (kind) => G.DIFFS[S.diff].loss[kind];
   const coldness = () => clamp((36.8 - S.temp) / 1.8, 0, 1);
@@ -81,7 +78,7 @@
   // ---------- Log, speech, toasts ----------
   const LOG_TAGS = {
     news: ['LATEST', ''], fair: ['AT THE FAIR', ''], won: ['WINNER', 'good'], lost: ['NO LUCK', 'bad'], deliver: ['DELIVERED', 'good'],
-    thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], biscuit: ['BISCUITS', ''], boiler: ['BOILER', ''],
+    thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], swap: ['NEW STALL', ''], boiler: ['BOILER', ''],
     cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'], pinch: ['PINCHED', 'bad'],
     buy: ['FAIR SHOP', 'good'], token: ['TOKENS', 'good'], tokenlost: ['TOKENS', 'bad'], door: ['POCKET MONEY', 'good'],
     find: ['RUMMAGE', 'good'], dud: ['RUMMAGE', ''], findbad: ['RUMMAGE', 'bad'], charm: ['LUCKY CHARM', 'good'], nap: ['FORTY WINKS', 'good'],
@@ -167,7 +164,7 @@
       setup: 'Pick your players and how cold it is, then start.',
       roll: 'Roll the dice to take your go.',
       rolling: 'Rolling...',
-      choose: curP().biscuits > 0 ? `You rolled a ${S.roll}. ${G.isTouch ? 'Tap' : 'Press'} Go!, or eat a custard cream to roll again.` : `You rolled a ${S.roll}. Off you go!`,
+      choose: `You rolled a ${S.roll}. Next stop: ${describeDest().text}.`,
       moving: 'On the move...',
       fair: 'At the fair...',
       pinch: 'Pinch a token, or leave it?',
@@ -177,21 +174,15 @@
     };
     $('hint').textContent = hints[S.phase] || '';
     $('rollBtn').disabled = S.phase !== 'roll';
-    const choosing = S.phase === 'choose';
-    $('goBtn').disabled = !choosing;
-    $('goDest').textContent = choosing ? describeDest().text : ' ';
-    const rr = $('rerollBtn');
-    rr.disabled = !(choosing && p.biscuits > 0);
-    rr.innerHTML = `Eat a custard cream to re-roll (${p.biscuits} left) <kbd>R</kbd>`;
     renderPurse();
     $('team').innerHTML = S.players.map((q, j) => {
       const carry = q.tokens ? `<span class="tok-count" title="Tokens">${G.TOKEN_SVG} <b>${q.tokens}</b> token${q.tokens === 1 ? '' : 's'}</span>` : '<span>No tokens yet</span>';
       return `<div class="player-row${j === k && S.players.length > 1 ? ' now' : ''}">
         <span class="chip" style="background:${PAWN_CSS[j]}"></span>
-        <span class="pname">${S.leader === j ? CROWN : ''}${esc(q.name)}</span>
-        <span class="pscore" title="Favourite points">★ ${q.score}</span>
+        <span class="pname">${esc(q.name)}</span>
+        <span class="pscore" title="Things bought for Grandad">${q.bought} bought</span>
         <div class="carry">${carry}</div>
-        <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
+        ${q.skip || q.charm ? `<span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span>' : ''}</span>` : ''}
       </div>`;
     }).join('');
     $('needsHead').textContent = `Grandad needs ${S.goal} things · ${S.delivered.length} so far`;
@@ -273,7 +264,7 @@
   }
   function renderTargets() {
     if (S.phase !== 'choose') { B.clearTargets(); return; }
-    B.showTargets([{ i: describeDest().to, text: 'Go!' }]);
+    B.showTargets([{ i: describeDest().to, text: `${S.roll}` }]);
   }
   function render() {
     renderPanel();
@@ -294,33 +285,6 @@
     el.style.top = p.y + 'px';
     setTimeout(() => el.remove(), cls.includes('slow') ? 1900 : 1100);
   }
-  function currentLeader() {
-    if (S.players.length < 2) return null;
-    const top = Math.max(...S.players.map((q) => q.score));
-    const at = S.players.map((q, j) => (q.score === top ? j : -1)).filter((j) => j >= 0);
-    return top > 0 && at.length === 1 ? at[0] : null;
-  }
-  function award(k, pts) {
-    const p = S.players[k];
-    const before = p.score;
-    p.score = Math.max(0, p.score + pts);
-    const gained = p.score - before;
-    if (gained) {
-      floatAt(B.pawnWorld(k).add(new THREE.Vector3(0, 1.4, 0)), `${gained > 0 ? '+' : ''}${gained} ★`, gained > 0 ? 'good' : 'bad');
-      if (gained > 0) Sound.play('star');
-    }
-    const lead = currentLeader();
-    if (lead !== S.leader) {
-      S.leader = lead;
-      B.setCrown(lead);
-      if (lead !== null) {
-        const n = S.players[lead].name;
-        setTimeout(() => say(pick([`Ooh, ${n}, you're my favourite now.`, `${n}'s top of the list today.`, `Don't tell the others, ${n}, but you're my favourite.`, `${n}! That's my favourite grandchild, that is.`])), 900);
-      }
-    }
-    render();
-  }
-
   async function maybePinch(p, k) {
     if (S.players.length < 2) return;
     const victims = S.players.map((q, j) => ({ q, j })).filter(({ q, j }) => j !== k && q.pos === p.pos && q.tokens > 0);
@@ -383,9 +347,8 @@
     render();
   }
 
-  async function doRoll(isReroll) {
-    if (busy) return;
-    if (!(S.phase === 'roll' || (isReroll && S.phase === 'choose'))) return;
+  async function doRoll() {
+    if (busy || S.phase !== 'roll') return;
     busy = true;
     S.phase = 'rolling';
     render();
@@ -396,21 +359,10 @@
     S.phase = 'choose';
     busy = false;
     render();
-    // no custard creams means nothing to decide, so just go
-    if (curP().biscuits < 1) {
-      const g = S;
-      await sleep(1000); // time to see what you rolled
-      if (S === g && S.phase === 'choose') go();
-    }
-  }
-
-  function reroll() {
-    const p = curP();
-    if (busy || S.phase !== 'choose' || p.biscuits < 1) return;
-    p.biscuits--;
-    Sound.play('munch');
-    log('biscuit', `${p.name} eats a custard cream and rolls again.`);
-    doRoll(true);
+    // a moment to see what you rolled and where it takes you (Space hurries it along), then off you go
+    const g = S;
+    await sleep(1100);
+    if (S === g) go();
   }
 
   async function go() {
@@ -465,17 +417,16 @@
       Sound.play('fanfare');
       Cine.flash();
       Cine.card(key, p);
+      p.bought++;
       if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
       log('buy', `${p.name} buys Grandad the ${G.ITEMS[key].name} at the Fair Shop. +${G.ITEMS[key].warmth.toFixed(1)}°C, and he'll cool more slowly now.`);
     });
     await B.cineHold(2600);
     if (S !== g) { Cine.end(); return; }
     // the last thing: win() carries the cutscene on into the fireworks
-    if (allDone()) { award(k, POINTS.deliver); return; }
+    if (allDone()) return;
     Cine.end();
-    await sleep(G.ms(450));
-    award(k, POINTS.deliver);
-    await sleep(G.ms(300));
+    await sleep(G.ms(750));
   }
 
   // ---------- The Fair Shop ----------
@@ -577,7 +528,7 @@
       $('cineKicker').textContent = milestone(n) || `${n} of ${S.goal} things`;
       $('cineTitle').textContent = TITLES[key] || `${it.name}!`;
       $('cineSub').textContent = this.talk
-        ? `+${it.warmth.toFixed(1)}°C · he'll cool ${slower}% slower · ★ +${POINTS.deliver}${multi ? ` for ${p.name}` : ''}`
+        ? `+${it.warmth.toFixed(1)}°C · he'll cool ${slower}% slower${multi ? ` · bought by ${p.name}` : ''}`
         : `“${it.thanks}”`;
       $('cineSub').classList.toggle('quote', !this.talk);
       // one slot for each thing Grandad needs, filled in the order you bought them
@@ -597,7 +548,7 @@
     finale() {
       const el = $('cine');
       el.classList.add('finale');
-      $('cineIcon').innerHTML = CROWN;
+      $('cineIcon').innerHTML = HEART;
       $('cineKicker').textContent = `All ${S.goal} things delivered`;
       $('cineTitle').textContent = "Grandad's saved!";
       $('cineSub').textContent = this.talk ? `${S.temp.toFixed(1)}°C and warming up nicely` : `“${WIN_LINE}”`;
@@ -635,8 +586,7 @@
     else if (G.SPACE_FX[p.pos]) await spaceEffect(p, G.SPACE_FX[p.pos]);
     if (frozen()) return;
     await maybePinch(p, k);
-    const d = stallAt(p.pos);
-    if (d) await playStall(p, k, d);
+    if (stallAt(p.pos)) await playStall(p, k, p.pos);
     // rummage returns true when it sent you on somewhere else, which has already been dealt with
     else if (canRummage(p.pos) && await rummage(p, k, dir, hopped)) return;
     render();
@@ -671,13 +621,11 @@
 
   // ---------- Rummaging ----------
   // Every plain square in a room has something to find.
-  const FIND_TONE = { token: 'good', star: 'good', biscuit: 'good', charm: 'good', nap: 'good', hop: 'good', dud: 'dud', lose: 'bad' };
+  const FIND_TONE = { token: 'good', charm: 'good', nap: 'good', hop: 'good', dud: 'dud', lose: 'bad' };
   const FIND_ICON = {
     token: G.TOKEN_SVG.replace('class="token"', 'class="token big"'),
     lose: '<svg viewBox="0 0 48 48"><g transform="translate(4 8) scale(1.35)">' + G.TOKEN_SVG.replace(/<\/?svg[^>]*>/g, '') + '</g><circle cx="36" cy="12" r="9" fill="#b3261e" stroke="#2b1a10" stroke-width="2"/><path d="M31 12h10" stroke="#f6ecd2" stroke-width="3" stroke-linecap="round"/></svg>',
     mystery: '<svg viewBox="0 0 48 48"><path d="M6 18l18-8 18 8-18 8z" fill="#e3b77a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><path d="M6 18v18l18 8V26zM42 18v18l-18 8V26z" fill="#c9985a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><text x="24" y="21.5" text-anchor="middle" font-family="Shrikhand, Georgia, serif" font-size="11" fill="#7a3b1d">?</text><path d="M13 30l4 2M31 32l4-2" stroke="#7a3b1d" stroke-width="2" stroke-linecap="round"/></svg>',
-    star: '<svg viewBox="0 0 48 48"><path d="M24 4l6 13 14 1.5-10.5 9.5 3 14L24 35l-12.5 7 3-14L4 18.5 18 17z" fill="#e0a526" stroke="#2b1a10" stroke-width="2.4" stroke-linejoin="round"/><path d="M18 20l3-1" stroke="#fff3c4" stroke-width="2.5" stroke-linecap="round"/></svg>',
-    biscuit: '<svg viewBox="0 0 48 48"><rect x="6" y="12" width="36" height="24" rx="4" fill="#e8c068" stroke="#2b1a10" stroke-width="2.2"/><rect x="11" y="17" width="26" height="14" rx="3" fill="none" stroke="#b8862c" stroke-width="2"/><path d="M16 24c3-4 5 4 8 0s5 4 8 0" fill="none" stroke="#b8862c" stroke-width="2" stroke-linecap="round"/></svg>',
     warm: '<svg viewBox="0 0 48 48"><path d="M17 11c-2-3 2-5 0-8M24 11c-2-3 2-5 0-8M31 11c-2-3 2-5 0-8" fill="none" stroke="#c9531f" stroke-width="2" stroke-linecap="round"/><path d="M24 44S7 33 7 23a8.5 8.5 0 0 1 17-2 8.5 8.5 0 0 1 17 2c0 10-17 21-17 21z" fill="#e0667a" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/></svg>',
     cold: '<svg viewBox="0 0 48 48"><g stroke="#3f8fa0" stroke-width="3.2" stroke-linecap="round"><path d="M24 5v38M7.5 14.5l33 19M7.5 33.5l33-19"/><path d="M19 8l5 4 5-4M19 40l5-4 5 4M8 21l6-1-2-6M40 27l-6 1 2 6M8 27l6 1-2 6M40 21l-6-1 2-6"/></g></svg>',
     charm: '<svg viewBox="0 0 48 48"><path d="M10 10v14a14 14 0 0 0 28 0V10h-8v14a6 6 0 0 1-12 0V10z" fill="#b9bfc4" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M10 10h8v4h-8zM30 10h8v4h-8z" fill="#8a9096" stroke="#2b1a10" stroke-width="2"/><g fill="#2b1a10"><circle cx="13" cy="21" r="1.4"/><circle cx="35" cy="21" r="1.4"/><circle cx="16" cy="30" r="1.4"/><circle cx="32" cy="30" r="1.4"/></g></svg>',
@@ -703,27 +651,21 @@
     let r = Math.random() * total;
     const got = options.find((o) => (r -= G.FIND_WEIGHT[o.f[0]]) < 0) || options[0];
     S.lastFind[pos] = got.i;
-    const [fx, text, pts = 1] = got.f;
+    const [fx, text, n = 1] = got.f;
     const title = sp.name;
     const where = G.RUMMAGE[pos].where;
-    return { fx, text, pts, where, title };
+    return { fx, text, n, where, title };
   }
   function applyFind(p, k, f) {
     switch (f.fx) {
-      case 'star': award(k, f.pts); return `+${f.pts} ★ favourite point${f.pts === 1 ? '' : 's'}`;
-      case 'biscuit':
-        if (p.biscuits >= 3) { award(k, 1); return 'Pockets full, so +1 ★ instead'; }
-        p.biscuits++;
-        Sound.play('munch');
-        return '+1 custard cream';
-      case 'token': gainTokens(p, k, 1); return '+1 token';
+      case 'token': f.pending = gainTokens(p, k, f.n); return `+${G.tokenWord(f.n)}`;
       case 'lose': {
         const n = Math.min(p.tokens, lossFor('find'));
         loseTokens(p, k, n);
         return lossChip(n, true);
       }
       case 'charm':
-        if (p.charm) { award(k, 1); return 'Already got one, so +1 ★ instead'; }
+        if (p.charm) { f.pending = gainTokens(p, k, 1); return 'Already got one, so +1 token instead'; }
         p.charm = true;
         return 'Lucky charm: his next paper misses';
       case 'nap': S.nap = true; B.setNap(true); Sound.play('snore'); return 'He nods off: no newspaper';
@@ -749,6 +691,8 @@
     render();
     await Reveal.hold();
     Reveal.close();
+    // don't carry on until the tokens are in your hand, or the Fair Shop might not count them
+    if (find.pending) await find.pending;
     if (S !== g) return true;
     if (find.fx !== 'hop' || frozen()) return false;
     await sleep(G.ms(250));
@@ -826,15 +770,16 @@
     },
   };
 
-  async function playStall(p, k, d) {
-    const stall = G.stallOf(d);
+  async function playStall(p, k, pos) {
+    const stall = stallAt(pos);
+    const d = districtAt(pos);
     const title = G.Mini.GAMES[stall].title;
     S.phase = 'fair';
     render();
     S.stalls++;
     log('fair', `${p.name} steps up to the ${title} stall in the ${d.name}.`);
     say(pick(['Go on then, win some tokens.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win enough to buy me something warm!']));
-    await B.focusTile(d.idx[1]);
+    await B.focusTile(pos);
     const won = await G.Mini.play(stall, { diff: S.diff, playerName: p.name });
     B.unfocus();
     render();
@@ -842,9 +787,9 @@
       S.tokensWon += won;
       p.won += won;
       Sound.play('coin');
-      await B.tokensFromStall(d.idx[1], k, won);
+      await B.tokensFromStall(pos, k, won);
       p.tokens += won;
-      award(k, POINTS.token * won);
+      render();
       log('won', `${p.name} wins ${G.tokenWord(won)} at the ${title} stall.${p.tokens >= G.ITEM_COST ? ' Enough for the Fair Shop!' : ''}`);
       say(won === 3 ? pick(['Three tokens! Now buy me something warm.', 'The top prize! That\'s my grandchild.']) : pick(['Every little helps.', 'Ooh, tokens. Hurry up and spend them on me.', 'About time somebody won something.']));
     } else {
@@ -854,6 +799,25 @@
     S.phase = 'moving';
     render();
     await sleep(G.ms(400));
+    // a stall that pays out packs up, and another game from the fair takes its place
+    if (won) await swapStall(pos);
+  }
+  async function swapStall(pos) {
+    const reserve = G.reserve();
+    if (!reserve.length) return;
+    const was = G.dealt[pos];
+    const next = pick(reserve);
+    G.dealt[pos] = next;
+    S.dealt = { ...G.dealt };
+    const from = G.Mini.GAMES[was].title;
+    const to = G.Mini.GAMES[next].title;
+    Sound.play('sparkle');
+    await B.swapStall(pos);
+    render();
+    const c = G.tileCentre(pos);
+    floatAt(new THREE.Vector3(c.x, 3.4, c.z - 0.5), `New stall: ${to}!`, 'good slow');
+    log('swap', `The ${from} stall packs up, and ${to} sets up in its place.`);
+    await sleep(G.ms(500));
   }
 
   async function boiler(p) {
@@ -919,12 +883,6 @@
       log('tokenlost', n ? `${f.text} ${p.name} loses ${G.tokenWord(n)}.` : `${f.text} Luckily ${p.name} has no tokens to lose.`);
       await Reveal.event({ icon: 'cold', kicker: where, title: 'Draught!', text: n ? f.card : 'Whoosh! Luckily your pockets are empty.', chip: lossChip(n, true), tone: n ? 'bad' : 'dud' });
       await loss;
-    } else if (f.kind === 'biscuit') {
-      const full = p.biscuits >= 3;
-      if (full) log('biscuit', `${p.name} spots more custard creams, but their pockets are full.`);
-      else { p.biscuits++; Sound.play('munch'); B.findFx(k, 'good'); log('biscuit', f.text); }
-      render();
-      await Reveal.event({ icon: 'biscuit', kicker: where, title: 'Custard creams!', text: f.card, chip: full ? 'Pockets full, so you leave them' : '+1 custard cream (a re-roll)', tone: full ? 'dud' : 'good' });
     } else if (f.kind === 'warm') {
       Sound.play('warm');
       B.findFx(k, 'good');
@@ -964,14 +922,11 @@
       S.ducks++;
       say(pick(G.DUCK_LINES));
       log('duck', `${p.name} ducked! The paper sails clean over their head.`);
-      award(k, POINTS.duck);
     } else if (p.tokens) {
-      award(k, POINTS.hit);
       const n = await loseTokens(p, k, lossFor('paper'));
       log('thwack', `THWACK! ${p.name} drops ${G.tokenWord(n)}, and they go rolling off under the furniture.`);
       toast(`−${G.tokenWord(n)}`, 'danger');
     } else {
-      award(k, POINTS.hit);
       p.skip = true;
       log('thwack', `THWACK! ${p.name} is seeing stars and misses their next go.`);
     }
@@ -1113,35 +1068,28 @@
     $('statTurns').textContent = S.turns;
     $('statStalls').innerHTML = `${S.tokensWon}<small>from ${S.stalls} stall${S.stalls === 1 ? '' : 's'}</small>`;
     $('statDucks').textContent = `${S.ducks}/${S.swats}`;
-    $('endRivalry').innerHTML = rivalrySummary(won);
+    $('endRivalry').innerHTML = endSummary(won);
+    $('endRivalry').hidden = !$('endRivalry').innerHTML;
     $('endOverlay').hidden = false;
     $('againBtn').focus();
   }
 
-  function rivalrySummary(won) {
+  // solo: the fewest goes it's taken to save Grandad; together: who won what and bought what
+  function endSummary(won) {
     if (S.players.length === 1) {
-      const p = S.players[0];
-      const bonus = won ? 5 + Math.round((S.temp - 35) * 5) : 0;
-      const total = p.score + bonus;
-      // a best score for each length of game
-      settings.bests = settings.bests || {};
-      const best = settings.bests[S.goal] || 0;
-      const isBest = total > best;
-      if (isBest) { settings.bests[S.goal] = total; G.saveSettings(settings); }
-      return `<p class="fav-kicker">Favourite points</p>
-        <p class="fav-score">★ ${total}</p>
-        <p class="fav-note">${bonus ? `${p.score} from the game + ${bonus} rescue bonus. ` : ''}${isBest ? (best ? `A new best for a ${S.goal}-thing game! Your old best was ${best}.` : `Your first score for a ${S.goal}-thing game. Now beat it.`) : `Your best for a ${S.goal}-thing game is ${best}.`}</p>`;
+      if (!won) return '';
+      const key = `${S.diff}-${S.goal}`;
+      settings.fastest = settings.fastest || {};
+      const best = settings.fastest[key] || 0;
+      const isBest = !best || S.turns < best;
+      if (isBest) { settings.fastest[key] = S.turns; G.saveSettings(settings); }
+      const setting = `${G.DIFFS[S.diff].name}, ${S.goal} things`;
+      return `<p class="fav-kicker">Saved in</p>
+        <p class="fav-score">${S.turns} goes</p>
+        <p class="fav-note">${isBest ? (best ? `A new record for ${setting}! Your old best was ${best} goes.` : `Your first rescue on ${setting}. Now do it in fewer goes.`) : `Your record for ${setting} is ${best} goes.`}</p>`;
     }
-    const ranked = S.players.map((q, j) => ({ q, j })).sort((a, b) => b.q.score - a.q.score);
-    const top = ranked[0].q.score;
-    const winners = ranked.filter((r) => r.q.score === top);
-    const head = top === 0
-      ? '<p class="fav-kicker">Grandad\'s favourite</p><p class="fav-name">Nobody</p><p class="fav-note">Not a single point between you. He says he\'s disappointed in the lot of you.</p>'
-      : winners.length > 1
-        ? `<p class="fav-kicker">Grandad's favourite</p><p class="fav-name">${winners.map((r) => esc(r.q.name)).join(' and ')}</p><p class="fav-note">He can't choose. He says he loves you all the same. (He doesn't.)</p>`
-        : `<p class="fav-kicker">Grandad's favourite</p><p class="fav-name">${CROWN}${esc(winners[0].q.name)}</p><p class="fav-note">${won ? "He'll deny it in front of the others." : 'Even frozen solid, he knows who his favourite is.'}</p>`;
-    const rows = ranked.map((r) => `<li><span class="chip" style="background:${PAWN_CSS[r.j]}"></span><span>${esc(r.q.name)}</span><span class="fav-meta">${G.tokenWord(r.q.won)} won</span><b>★ ${r.q.score}</b></li>`).join('');
-    return head + `<ol class="fav-table">${rows}</ol>`;
+    const rows = S.players.map((q, j) => `<li><span class="chip" style="background:${PAWN_CSS[j]}"></span><span>${esc(q.name)}</span><span class="fav-meta">${G.tokenWord(q.won)} won</span><b>${q.bought} bought</b></li>`).join('');
+    return `<p class="fav-kicker">${won ? 'Team effort' : 'How you did'}</p><ol class="fav-table">${rows}</ol>`;
   }
 
   // ---------- Setup ----------
@@ -1185,13 +1133,12 @@
     $('endOverlay').hidden = true;
     G.dealt = G.dealStalls(settings.shuffle);
     S = freshState();
-    B.refreshTop();
-    B.setCrown(null);
+    B.setStalls();
     B.setFrozen(false);
     B.setNap(false);
     B.setPlayers(S.players);
     log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
-    say(S.players.length > 1 ? "May the best grandchild win. I'll be keeping score, mind." : 'Is it me, or is it parky in here?');
+    say(S.players.length > 1 ? 'Right, you lot. Go and win me something warm.' : 'Is it me, or is it parky in here?');
     S.phase = 'roll';
     startTurn();
   }
@@ -1219,9 +1166,7 @@
   }
 
   function bindControls() {
-    $('rollBtn').addEventListener('click', () => { Sound.init(); doRoll(false); });
-    $('goBtn').addEventListener('click', go);
-    $('rerollBtn').addEventListener('click', reroll);
+    $('rollBtn').addEventListener('click', () => { Sound.init(); doRoll(); });
     $('duckBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); if (duckHandler) duckHandler(); });
     $('duckBtn').addEventListener('click', () => { if (duckHandler) duckHandler(); });
     $('muteBtn').addEventListener('click', toggleMute);
@@ -1297,13 +1242,10 @@
       }
       const onButton = e.target.closest && e.target.closest('button');
       if ((key === ' ' || key === 'Enter') && !onButton) {
-        if (S.phase === 'roll') { e.preventDefault(); Sound.init(); doRoll(false); }
+        if (S.phase === 'roll') { e.preventDefault(); Sound.init(); doRoll(); }
         else if (S.phase === 'choose') { e.preventDefault(); if (!e.repeat) go(); }
         else if (key === ' ') e.preventDefault();
-      } else if (key === 'ArrowRight' || key === 'g' || key === 'G') {
-        if (S.phase === 'choose') { e.preventDefault(); go(); }
-      } else if (key === 'r' || key === 'R') reroll();
-      else if (key === 'm' || key === 'M') toggleMute();
+      } else if (key === 'm' || key === 'M') toggleMute();
     });
     window.addEventListener('keyup', (e) => { if (G.Mini.active && G.Mini.keyUp) G.Mini.keyUp(e); });
 

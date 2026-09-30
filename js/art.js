@@ -343,10 +343,6 @@
       x.strokeStyle = '#3f8fa0';
       x.beginPath(); x.moveTo(-20, -6); x.lineTo(6, -6); x.arc(6, -13, 7, PI / 2, -PI * 0.9, true); x.stroke();
       x.beginPath(); x.moveTo(-20, 8); x.lineTo(12, 8); x.arc(12, 15, 7, -PI / 2, PI * 0.9); x.stroke();
-    } else if (kind === 'biscuit') {
-      x.fillStyle = '#e8c068'; x.strokeStyle = '#2b1a10'; x.lineWidth = 3;
-      roundRect(x, -20, -13, 40, 26, 5); x.fill(); x.stroke();
-      x.strokeStyle = '#b8862c'; x.beginPath(); x.moveTo(-12, -4); x.lineTo(12, -4); x.moveTo(-12, 5); x.lineTo(12, 5); x.stroke();
     } else if (kind === 'rummage') {
       // a magnifying glass: have a rummage here
       x.strokeStyle = '#7a3b1d'; x.lineWidth = 5;
