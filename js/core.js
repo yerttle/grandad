@@ -218,7 +218,7 @@ window.GCS = window.GCS || {};
   G.DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
   const SETTINGS_KEY = 'grandads-cold-snap-settings';
   G.loadSettings = () => {
-    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false, shuffle: true, goal: 6, fastest: {} };
+    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false, shuffle: true, goal: 6, mode: 'coop', fastest: {} };
     try {
       const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (saved && typeof saved === 'object') {
@@ -228,6 +228,7 @@ window.GCS = window.GCS || {};
         base.muted = !!saved.muted;
         if (typeof saved.shuffle === 'boolean') base.shuffle = saved.shuffle;
         if ([3, 6, 9, 12].includes(saved.goal)) base.goal = saved.goal;
+        if (G.MODES[saved.mode]) base.mode = saved.mode;
         // the fewest goes it's taken to save Grandad, for each setting and length of game ("chilly-6")
         if (saved.fastest && typeof saved.fastest === 'object') {
           for (const [key, n] of Object.entries(saved.fastest)) if (/^(mild|chilly|freeze)-(3|6|9|12)$/.test(key) && Number.isFinite(n) && n > 0) base.fastest[key] = Math.round(n);
@@ -241,26 +242,37 @@ window.GCS = window.GCS || {};
   // ---------- Rules ----------
   G.N = 32;
   G.DOORS = [4, 12, 20, 28];
-  G.LOSE_AT = 35.05; // anything that shows as 35.0°C or lower is hypothermia
+  // The difficulty sets how hard the stalls are, how much the bad squares cost and how fast his paper comes.
+  // start is where the thermometer begins: it falls to 35.0°C over the game's rounds.
   G.DIFFS = {
-    mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.12, zone: 0.30, period: 1150, level: 0, loss: { window: 1, draught: 1, cat: 1, find: 1, paper: 1 } },
-    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.18, zone: 0.22, period: 950,  level: 1, loss: { window: 2, draught: 1, cat: 2, find: 1, paper: 1 } },
-    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.19,  zone: 0.16, period: 800,  level: 2, loss: { window: 3, draught: 2, cat: 2, find: 2, paper: 2 } },
+    mild:   { name: 'Mild Autumn',    start: 36.6, zone: 0.30, period: 1150, level: 0, loss: { window: 1, draught: 1, cat: 1, find: 1, paper: 1 } },
+    chilly: { name: 'Chilly Winter',  start: 36.4, zone: 0.22, period: 950,  level: 1, loss: { window: 2, draught: 1, cat: 2, find: 1, paper: 1 } },
+    freeze: { name: 'The Big Freeze', start: 36.2, zone: 0.16, period: 800,  level: 2, loss: { window: 3, draught: 2, cat: 2, find: 2, paper: 2 } },
   };
+  // How many rounds Grandad can last before hypothermia (a round is everyone having one go).
+  // Co-op: the team fills one list. Versus: everyone races to fill their own, so it takes longer.
+  // Set from simulated games so a steady player gets there about 9 times in 10 on Chilly Winter.
+  G.ROUNDS = {
+    coop:   { 1: { 3: 15, 6: 27, 9: 37, 12: 48 }, 2: { 3: 9, 6: 14, 9: 20, 12: 25 }, 3: { 3: 6, 6: 10, 9: 14, 12: 18 }, 4: { 3: 5, 6: 8, 9: 11, 12: 14 } },
+    versus: { 2: { 3: 11, 6: 22, 9: 32, 12: 42 }, 3: { 3: 10, 6: 20, 9: 30, 12: 39 }, 4: { 3: 9, 6: 19, 9: 28, 12: 38 } },
+  };
+  G.MODES = { coop: 'Co-op', versus: 'Versus' };
+  G.modeFor = (mode, players) => (players > 1 && mode === 'versus' ? 'versus' : 'coop');
+  G.roundsFor = (mode, players, goal) => G.ROUNDS[G.modeFor(mode, players)][players][goal];
 
   G.ITEMS = {
-    slippers: { name: 'Slippers', warmth: 0.30, ins: 0.10, thanks: 'About time! Me toes were going blue.' },
-    tea:      { name: 'Cup of Tea', warmth: 0.70, ins: 0.08, thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
-    blanket:  { name: 'Tartan Blanket', warmth: 0.30, ins: 0.14, thanks: "That's more like it. Tuck it in, tuck it in." },
-    scarf:    { name: 'Woolly Scarf', warmth: 0.30, ins: 0.10, thanks: 'Your Nan knitted that, you know.' },
-    hwb:      { name: 'Hot Water Bottle', warmth: 0.60, ins: 0.12, thanks: "Ooh, that's lovely. Not too hot, mind." },
-    cardigan: { name: 'Cardigan', warmth: 0.30, ins: 0.12, thanks: 'Me good cardigan! With the patches!' },
-    hat:      { name: 'Bobble Hat', warmth: 0.30, ins: 0.10, thanks: "Does this bobble make me look daft? Don't answer that." },
-    logs:     { name: 'Logs for the Fire', warmth: 0.60, ins: 0.14, thanks: "Now we're cooking. Stand back, I'll light it." },
-    mittens:  { name: 'Woolly Mittens', warmth: 0.30, ins: 0.08, thanks: 'Me fingers are coming back to life!' },
-    earmuffs: { name: 'Earmuffs', warmth: 0.30, ins: 0.08, thanks: 'What? WHAT? Oh, these are lovely.' },
-    soup:     { name: 'Bowl of Soup', warmth: 0.60, ins: 0.05, thanks: "Tomato! My favourite. Mind, it's hot." },
-    heater:   { name: 'Electric Heater', warmth: 0.50, ins: 0.14, thanks: "Two bars! Don't tell your Nan about the electric bill." },
+    slippers: { name: 'Slippers', thanks: 'About time! Me toes were going blue.' },
+    tea:      { name: 'Cup of Tea', thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
+    blanket:  { name: 'Tartan Blanket', thanks: "That's more like it. Tuck it in, tuck it in." },
+    scarf:    { name: 'Woolly Scarf', thanks: 'Your Nan knitted that, you know.' },
+    hwb:      { name: 'Hot Water Bottle', thanks: "Ooh, that's lovely. Not too hot, mind." },
+    cardigan: { name: 'Cardigan', thanks: 'Me good cardigan! With the patches!' },
+    hat:      { name: 'Bobble Hat', thanks: "Does this bobble make me look daft? Don't answer that." },
+    logs:     { name: 'Logs for the Fire', thanks: "Now we're cooking. Stand back, I'll light it." },
+    mittens:  { name: 'Woolly Mittens', thanks: 'Me fingers are coming back to life!' },
+    earmuffs: { name: 'Earmuffs', thanks: 'What? WHAT? Oh, these are lovely.' },
+    soup:     { name: 'Bowl of Soup', thanks: "Tomato! My favourite. Mind, it's hot." },
+    heater:   { name: 'Electric Heater', thanks: "Two bars! Don't tell your Nan about the electric bill." },
   };
   G.ITEM_KEYS = Object.keys(G.ITEMS);
 

@@ -31,8 +31,14 @@
   // ---------- State ----------
   function freshState() {
     const D = G.DIFFS[settings.diff];
+    const mode = G.modeFor(settings.mode, settings.count);
     return {
       phase: 'setup',
+      mode,
+      // a fixed number of rounds before Grandad gets hypothermia: the thermometer just counts them down
+      rounds: G.roundsFor(mode, settings.count, settings.goal),
+      roundsDone: 0,
+      winner: null,
       diff: settings.diff,
       temp: D.start,
       round: 1,
@@ -41,7 +47,7 @@
       roll: null,
       players: Array.from({ length: settings.count }, (_, k) => ({
         name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
-        pos: 0, tokens: 0, skip: false, won: 0, bought: 0, charm: false,
+        pos: 0, tokens: 0, skip: false, won: 0, got: [], charm: false,
       })),
       dealt: { ...G.dealt },
       watching: false,
@@ -63,17 +69,21 @@
   const districtAt = (pos) => { const sp = G.SPACES[pos]; return sp.type === 'room' ? G.DISTRICTS[sp.district] : null; };
   // the game on a stall square (every room's middle square, the Larder and the Sideboard), or null
   const stallAt = (pos) => (G.SPACES[pos].stall ? G.dealt[pos] : null);
-  const itemsLeft = () => G.ITEM_KEYS.filter((key) => S.items[key].state !== 'done');
+  // Co-op: the team fills one list for Grandad. Versus: everyone races to fill their own.
+  const versus = () => S.mode === 'versus';
+  const setOf = (p) => (versus() ? p.got : S.delivered);
+  const hasIt = (p, key) => setOf(p).includes(key);
+  const itemsLeftFor = (p) => G.ITEM_KEYS.filter((key) => !hasIt(p, key));
   const lossFor = (kind) => G.DIFFS[S.diff].loss[kind];
   const coldness = () => clamp((36.8 - S.temp) / 1.8, 0, 1);
-  const coolRate = () => {
-    const D = G.DIFFS[S.diff];
-    const keep = S.delivered.reduce((a, k) => a * (1 - G.ITEMS[k].ins), 1);
-    return D.cool * (1 - 0.09 * (S.players.length - 1)) * keep;
-  };
-  const setTemp = (t) => { S.temp = Math.round(clamp(t, 34.5, 37.2) * 1000) / 1000; };
-  const frozen = () => S.temp < G.LOSE_AT;
-  const allDone = () => S.delivered.length >= S.goal;
+  // rounds left, counting the one being played
+  const roundsLeft = () => Math.max(0, S.rounds - S.roundsDone);
+  // the last quarter of the rounds (at least 2) is the red zone
+  const dangerRounds = () => Math.max(2, Math.round(S.rounds / 4));
+  // his temperature just follows the countdown, from where he starts down to 35.0°C when the rounds run out
+  const updateTemp = () => { const D = G.DIFFS[S.diff]; S.temp = D.start - (D.start - 35) * (S.roundsDone / S.rounds); };
+  const frozen = () => S.roundsDone >= S.rounds;
+  const allDone = () => (versus() ? S.players.some((q) => q.got.length >= S.goal) : S.delivered.length >= S.goal);
 
   // ---------- Log, speech, toasts ----------
   const LOG_TAGS = {
@@ -123,15 +133,15 @@
   }
 
   // ---------- Rendering ----------
-  // judged on the temperature as shown (one decimal place), so the label, colour and number always agree
-  const shownTemp = () => Math.round(S.temp * 10) / 10;
+  // how Grandad's doing, from how many rounds are left
+  const inDanger = () => roundsLeft() <= dangerRounds();
   function tempState() {
-    const t = shownTemp();
-    if (t >= 36.5) return ['Comfy-ish', ''];
-    if (t >= 36.0) return ['Chilly', ''];
-    if (t >= 35.6) return ['Shivering', 'cold'];
-    if (t >= 35.3) return ['Freezing', 'danger'];
-    return ['Danger!', 'danger'];
+    const f = roundsLeft() / S.rounds;
+    if (roundsLeft() <= 1) return ['Last round!', 'danger'];
+    if (inDanger()) return ['Freezing', 'danger'];
+    if (f <= 0.5) return ['Shivering', 'cold'];
+    if (f <= 0.8) return ['Chilly', ''];
+    return ['Comfy-ish', ''];
   }
   // everyone goes clockwise round the house
   function describeDest() {
@@ -152,13 +162,14 @@
     const k = S.cur;
     $('turnChip').style.background = PAWN_CSS[k];
     $('turnName').textContent = S.phase === 'setup' ? 'New game' : S.players.length > 1 ? `${p.name}'s go` : p.name === G.DEFAULT_NAMES[0] ? 'Your go' : `${p.name}'s go`;
-    $('roundLabel').textContent = `Round ${S.round}`;
-    $('tempText').textContent = S.temp.toFixed(1) + '°C';
+    $('roundLabel').textContent = `Round ${Math.min(S.round, S.rounds)} of ${S.rounds}`;
+    const left = roundsLeft();
+    $('tempText').textContent = S.phase === 'over' ? (allDone() ? 'Saved!' : 'Out of time') : `${left} round${left === 1 ? '' : 's'} left`;
     const [label, tone] = tempState();
     const pill = $('tempState');
     pill.textContent = label;
     pill.className = 'state-pill' + (tone ? ' ' + tone : '');
-    $('rateText').textContent = `cools ${coolRate().toFixed(2)}°C a go`;
+    $('rateText').textContent = S.players.length > 1 ? G.MODES[S.mode] : '';
     renderThermo();
     const hints = {
       setup: 'Pick your players and how cold it is, then start.',
@@ -180,60 +191,61 @@
       return `<div class="player-row${j === k && S.players.length > 1 ? ' now' : ''}">
         <span class="chip" style="background:${PAWN_CSS[j]}"></span>
         <span class="pname">${esc(q.name)}</span>
-        <span class="pscore" title="Things bought for Grandad">${q.bought} bought</span>
+        <span class="pscore" title="Things bought for Grandad">${versus() ? `${q.got.length} of ${S.goal}` : `${q.got.length} bought`}</span>
         <div class="carry">${carry}</div>
         ${q.skip || q.charm ? `<span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span>' : ''}</span>` : ''}
       </div>`;
     }).join('');
-    $('needsHead').textContent = `Grandad needs ${S.goal} things · ${S.delivered.length} so far`;
+    $('needsHead').textContent = versus() ? `${p.name}'s set · ${p.got.length} of ${S.goal}` : `Grandad needs ${S.goal} things · ${S.delivered.length} so far`;
     $('needsList').innerHTML = G.ITEM_KEYS.map((key) => {
       const it = G.ITEMS[key];
-      const got = S.items[key].state === 'done';
-      const where = got ? "Grandad's got it" : `+${it.warmth.toFixed(1)}°C · ${G.TOKEN_SVG} ${G.ITEM_COST}`;
+      const got = hasIt(p, key);
+      const where = got ? (versus() ? 'Got it' : "Grandad's got it") : `${G.TOKEN_SVG} ${G.ITEM_COST}`;
       return `<li class="${got ? 'done' : ''}">${ICON[key]}<span class="iname">${esc(it.name)}</span><span class="where">${where}</span></li>`;
     }).join('');
   }
 
-  // The thermometer: 35.0°C (hypothermia) on the left, 37.0°C on the right, the danger zone below 35.6°C.
-  const THERMO_MIN = 35, THERMO_MAX = 37;
-  G.DANGER_AT = 35.6;
-  const thermoPct = (t) => clamp((t - THERMO_MIN) / (THERMO_MAX - THERMO_MIN), 0, 1) * 100;
-  // goes left before he drops below 35.0°C, counting this one, at today's rate of cooling
-  const goesLeft = () => Math.floor((S.temp - G.LOSE_AT) / coolRate()) + 1;
-  let coolNoteUntil = 0, coolNoteText = '';
-  function coolNote(amt) {
-    coolNoteText = `❄ −${amt.toFixed(2)}°C · he cools a bit every go`;
-    coolNoteUntil = performance.now() + 2800;
+  // The thermometer is a countdown: full at the start, down a notch at the end of every round, and empty
+  // (hypothermia) when the rounds run out. The red zone is the last quarter.
+  let roundNoteUntil = 0, roundNoteText = '';
+  function roundNote() {
+    const left = roundsLeft();
+    roundNoteText = `❄ Round over. ${left} round${left === 1 ? '' : 's'} left.`;
+    roundNoteUntil = performance.now() + 2800;
     renderThermo();
     setTimeout(() => { if (S) renderThermo(); }, 2900);
   }
   function renderThermo() {
     const box = $('thermoFill').closest('.temp-box');
     const over = S.phase === 'over';
-    const rate = coolRate();
-    const now = thermoPct(S.temp);
-    const next = over ? now : thermoPct(S.temp - rate);
+    const n = roundsLeft();
+    const pct = (r) => (r / S.rounds) * 100;
+    const now = over && allDone() ? 100 : pct(n);
+    // the dashed notch is the round being played: it goes once everyone's had their go
+    const next = over ? now : pct(Math.max(0, n - 1));
     $('thermoFill').style.width = now + '%';
     $('thermoLoss').style.left = next + '%';
     $('thermoLoss').style.width = (now - next) + '%';
+    $('thermoRed').style.width = pct(dangerRounds()) + '%';
+    $('thermoTicks').style.setProperty('--n', S.rounds <= 24 ? S.rounds : Math.ceil(S.rounds / 5));
     const t = $('thermo');
-    t.setAttribute('aria-valuenow', S.temp.toFixed(1));
-    const n = goesLeft();
+    t.setAttribute('aria-valuemax', String(S.rounds));
+    t.setAttribute('aria-valuenow', String(n));
     const multi = S.players.length > 1;
     let text;
-    if (over) text = allDone() ? 'Saved! He\'s warming up nicely.' : 'Hypothermia. Time for a blanket and the doctor.';
-    else if (n <= 1) text = 'Last chance! He\'ll be too cold after this go.';
-    else if (n <= 3) text = `Only ${n} goes left${multi ? ' between you' : ''} before hypothermia!`;
-    else text = `About ${n} goes left${multi ? ' between you' : ''} before hypothermia`;
-    // straight after a go ends, say why the thermometer just dropped
-    const noting = !over && performance.now() < coolNoteUntil;
-    $('thermoGoes').textContent = noting ? coolNoteText : text;
+    if (over) text = allDone() ? (versus() ? `${S.players[S.winner].name} got a full set first!` : "Saved! He's warming up nicely.") : 'Out of rounds. Time for a blanket and the doctor.';
+    else if (n <= 1) text = `Last round!${multi ? ' Everyone gets one more go.' : ' This is your last go.'}`;
+    else if (inDanger()) text = `Only ${n} rounds left before hypothermia!`;
+    else text = `${n} rounds left before hypothermia`;
+    // straight after a round ends, say why the thermometer just dropped
+    const noting = !over && performance.now() < roundNoteUntil;
+    $('thermoGoes').textContent = noting ? roundNoteText : text;
     $('thermoGoes').classList.toggle('note', noting);
-    t.setAttribute('aria-valuetext', `${S.temp.toFixed(1)}°C. ${text}`);
-    const danger = !over && shownTemp() < G.DANGER_AT;
+    t.setAttribute('aria-valuetext', text);
+    const danger = !over && inDanger();
     box.classList.toggle('danger', danger || (over && !allDone()));
-    box.classList.toggle('cold', !danger && shownTemp() < 36.0);
-    box.classList.toggle('critical', !over && n <= 2);
+    box.classList.toggle('cold', !danger && !over && n / S.rounds <= 0.5);
+    box.classList.toggle('critical', !over && n <= 1);
   }
 
   // the current player's tokens, and how close they are to buying Grandad something
@@ -410,16 +422,18 @@
     const g = S;
     await Cine.begin(key);
     await B.deliveryShow(key, k, () => {
+      p.got.push(key);
+      // Grandad wears everything anyone buys him (in Versus he might end up with two of something)
+      if (!S.delivered.includes(key)) S.delivered.push(key);
       S.items[key].state = 'done';
-      S.delivered.push(key);
-      setTemp(S.temp + G.ITEMS[key].warmth);
       render();
       Sound.play('fanfare');
       Cine.flash();
       Cine.card(key, p);
-      p.bought++;
       if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
-      log('buy', `${p.name} buys Grandad the ${G.ITEMS[key].name} at the Fair Shop. +${G.ITEMS[key].warmth.toFixed(1)}°C, and he'll cool more slowly now.`);
+      log('buy', versus()
+        ? `${p.name} buys Grandad the ${G.ITEMS[key].name}. That's ${p.got.length} of ${S.goal} in their set.`
+        : `${p.name} buys Grandad the ${G.ITEMS[key].name} at the Fair Shop. That's ${S.delivered.length} of ${S.goal}.`);
     });
     await B.cineHold(2600);
     if (S !== g) { Cine.end(); return; }
@@ -433,7 +447,7 @@
   // At the end of your go, if you've got three tokens, you can buy Grandad something. Returns true once he's saved.
   async function shopVisit(p, k) {
     const g = S;
-    while (p.tokens >= G.ITEM_COST && itemsLeft().length && !allDone()) {
+    while (p.tokens >= G.ITEM_COST && itemsLeftFor(p).length && !allDone()) {
       const key = await Shop.open(p);
       if (S !== g) return false;
       if (!key) { log('news', `${p.name} saves their tokens for later.`); break; }
@@ -444,7 +458,7 @@
       await B.spendTokens(k, G.ITEM_COST);
       await giveItem(p, k, key);
       if (S !== g) return false;
-      if (allDone()) return true;
+      if (allDone()) { S.winner = k; return true; }
     }
     S.phase = 'moving';
     render();
@@ -460,16 +474,20 @@
         const multi = S.players.length > 1;
         $('shopWho').textContent = multi ? `${p.name}'s tokens` : 'Your tokens';
         $('shopPurse').innerHTML = `${Array.from({ length: Math.min(p.tokens, 12) }, () => G.TOKEN_SVG).join('')} <b>${G.tokenWord(p.tokens)}</b>`;
-        $('shopNeed').textContent = `Grandad needs ${S.goal - S.delivered.length} more thing${S.goal - S.delivered.length === 1 ? '' : 's'}. Everything costs ${G.ITEM_COST} tokens.`;
+        const need = S.goal - setOf(p).length;
+        $('shopNeed').textContent = versus()
+          ? `${p.name} needs ${need} more for a full set. Everything costs ${G.ITEM_COST} tokens.`
+          : `Grandad needs ${need} more thing${need === 1 ? '' : 's'}. Everything costs ${G.ITEM_COST} tokens.`;
         let n = 0;
         $('shopGrid').innerHTML = G.ITEM_KEYS.map((key) => {
           const it = G.ITEMS[key];
-          const got = S.items[key].state === 'done';
+          const got = hasIt(p, key);
           const num = got ? '' : String(++n > 9 ? '' : n);
+          const others = versus() ? S.players.filter((q) => q !== p && q.got.includes(key)).map((q) => q.name) : [];
           return `<button type="button" class="shop-item${got ? ' got' : ''}" data-key="${key}"${got ? ' disabled' : ''}${num ? ` data-num="${num}"` : ''}>
             <span class="si-icon">${ICON[key]}</span>
             <span class="si-name">${esc(it.name)}</span>
-            <span class="si-fx">${got ? "Grandad's got it" : `+${it.warmth.toFixed(1)}°C now · cools ${Math.round(it.ins * 100)}% slower`}</span>
+            <span class="si-fx">${got ? (versus() ? "It's in your set" : "Grandad's got it") : others.length ? `${esc(others.join(' and '))} ${others.length === 1 ? 'has' : 'have'} one` : esc(`“${it.thanks}”`)}</span>
             <span class="si-price">${got ? '✓' : `${G.TOKEN_SVG}${G.ITEM_COST}`}</span>${num ? `<kbd>${num}</kbd>` : ''}
           </button>`;
         }).join('');
@@ -490,7 +508,7 @@
   // milestones depend on how many things Grandad needs this game
   const milestone = (n) => {
     const goal = S.goal;
-    if (n >= goal) return "That's everything!";
+    if (n >= goal) return versus() ? 'A full set!' : "That's everything!";
     if (n === 1) return 'The first one!';
     if (goal >= 6 && n === Math.ceil(goal / 2)) return 'Halfway there!';
     if (n === goal - 1) return 'Just one more thing!';
@@ -520,21 +538,22 @@
       await B.cineWait(450);
     },
     card(key, p) {
-      const n = S.delivered.length;
+      const set = setOf(p);
+      const n = set.length;
       const it = G.ITEMS[key];
-      const slower = Math.round(it.ins * 100);
       const multi = S.players.length > 1;
       $('cineIcon').innerHTML = ICON[key];
-      $('cineKicker').textContent = milestone(n) || `${n} of ${S.goal} things`;
+      $('cineKicker').textContent = milestone(n) || (versus() ? `${p.name}: ${n} of ${S.goal}` : `${n} of ${S.goal} things`);
       $('cineTitle').textContent = TITLES[key] || `${it.name}!`;
+      const togo = S.goal - n;
       $('cineSub').textContent = this.talk
-        ? `+${it.warmth.toFixed(1)}°C · he'll cool ${slower}% slower${multi ? ` · bought by ${p.name}` : ''}`
+        ? `${multi ? `Bought by ${p.name} · ` : ''}${togo ? `${togo} more to go` : versus() ? 'A full set!' : "That's the lot!"}`
         : `“${it.thanks}”`;
       $('cineSub').classList.toggle('quote', !this.talk);
       // one slot for each thing Grandad needs, filled in the order you bought them
       $('cineSlots').style.setProperty('--slots', Math.max(S.goal, 3));
       $('cineSlots').innerHTML = Array.from({ length: S.goal }, (_, j) => {
-        const k = S.delivered[j];
+        const k = set[j];
         if (!k) return '<span class="empty">?</span>';
         return `<span class="${k === key ? 'got new' : 'got'}" title="${esc(G.ITEMS[k].name)}">${ICON[k]}</span>`;
       }).join('');
@@ -549,9 +568,10 @@
       const el = $('cine');
       el.classList.add('finale');
       $('cineIcon').innerHTML = HEART;
-      $('cineKicker').textContent = `All ${S.goal} things delivered`;
-      $('cineTitle').textContent = "Grandad's saved!";
-      $('cineSub').textContent = this.talk ? `${S.temp.toFixed(1)}°C and warming up nicely` : `“${WIN_LINE}”`;
+      const spare = roundsLeft() - 1;
+      $('cineKicker').textContent = versus() ? `${S.players[S.winner].name} has a full set` : `All ${S.goal} things delivered`;
+      $('cineTitle').textContent = versus() ? `${S.players[S.winner].name} wins!` : "Grandad's saved!";
+      $('cineSub').textContent = this.talk ? (spare > 0 ? `With ${spare} round${spare === 1 ? '' : 's'} to spare` : 'In the very last round!') : `“${WIN_LINE}”`;
       $('cineSub').classList.toggle('quote', !this.talk);
       $('cineSlots').querySelectorAll('span').forEach((sp, j) => { sp.className = 'got dance'; sp.style.animationDelay = j * 0.08 + 's'; });
       const c = $('cineCard');
@@ -1001,31 +1021,38 @@
     if (S.phase === 'over') return;
     const g = S;
     S.turns++;
-    const wasSafe = shownTemp() >= G.DANGER_AT;
-    const chill = coolRate();
-    setTemp(S.temp - chill);
-    coolNote(chill);
-    if (wasSafe && shownTemp() < G.DANGER_AT && !frozen()) { toast('Danger zone!', 'danger'); Sound.play('heartbeat'); }
     if (S.nap) { S.nap = false; B.setNap(false); }
-    render();
-    if (frozen()) return lose();
-    for (const w of G.COLD_WARNINGS) {
-      if (S.temp <= w.at && !S.warned.includes(w.at)) { S.warned.push(w.at); say(w.line); Sound.play('grumble'); break; }
+    S.cur = (S.cur + 1) % S.players.length;
+    // everyone's had a go: that's a round gone, and the thermometer drops a notch
+    if (S.cur === 0) {
+      const wasSafe = !inDanger();
+      S.roundsDone++;
+      S.round++;
+      updateTemp();
+      roundNote();
+      if (wasSafe && inDanger() && !frozen()) { toast('Danger zone!', 'danger'); Sound.play('heartbeat'); }
+      render();
+      if (frozen()) return lose();
+      for (const w of G.COLD_WARNINGS) {
+        if (S.temp <= w.at && !S.warned.includes(w.at)) { S.warned.push(w.at); say(w.line); Sound.play('grumble'); break; }
+      }
     }
     if (Math.random() < 0.14 && $('bubble').classList.contains('quiet')) say(pick(G.GRUMBLES));
-    S.cur = (S.cur + 1) % S.players.length;
-    if (S.cur === 0) S.round++;
     await sleep(G.ms(380));
     if (S !== g) return;
     startTurn();
   }
 
-  // three stars if he ends up warmer than he started
-  const stars = () => (S.temp >= G.DIFFS[S.diff].start ? 3 : S.temp >= 35.8 ? 2 : 1);
+  // stars for how many rounds you had to spare
+  const spareRounds = () => Math.max(0, roundsLeft() - 1);
+  const stars = () => { const f = spareRounds() / S.rounds; return f >= 0.3 ? 3 : f >= 0.12 ? 2 : 1; };
   async function win() {
     const g = S;
     S.turns++;
+    S.spare = spareRounds();
     S.phase = 'over';
+    // all wrapped up: he warms right up for the celebration
+    S.temp = Math.max(S.temp, 36.9);
     S.nap = false;
     B.setNap(false);
     render();
@@ -1051,20 +1078,28 @@
     showEnd(false);
   }
   function showEnd(won) {
-    $('endKicker').textContent = won ? `${G.DIFFS[S.diff].name} · Grandad saved` : `${G.DIFFS[S.diff].name} · Grandad frozen`;
+    const D = G.DIFFS[S.diff];
+    const vs = versus();
+    const champ = won && vs ? S.players[S.winner] : null;
+    $('endKicker').textContent = `${D.name}${S.players.length > 1 ? ` · ${G.MODES[S.mode]}` : ''} · ${won ? 'Grandad saved' : 'Grandad frozen'}`;
     const title = $('endTitle');
-    title.textContent = won ? "Grandad's toasty!" : "Grandad's a grandsicle!";
+    title.textContent = champ ? `${champ.name} wins!` : won ? "Grandad's toasty!" : "Grandad's a grandsicle!";
     title.classList.toggle('cold', !won);
     const n = won ? stars() : 0;
     $('stars').innerHTML = won ? [1, 2, 3].map((s) => `<span class="${s <= n ? '' : 'off'}">★</span>`).join('') : '';
     $('stars').hidden = !won;
-    $('endText').textContent = won
-      ? (n === 3 ? 'Warm as toast, with time to spare. He even said thank you. Then he went straight back to his paper.'
-        : n === 2 ? 'Snug in his cardigan and slippers. He grumbled a bit, but he always does.'
-          : "That was close! His nose is still a bit blue, but he's thawing out nicely.")
-      : `His temperature dropped to 35.0°C. Below that is hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of ${S.goal} things to him. Try again?`;
-    const change = Math.round((S.temp - G.DIFFS[S.diff].start) * 10) / 10;
-    $('statTemp').innerHTML = `${S.temp.toFixed(1)}°<small class="${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '▲ +' : '▼ −'}${Math.abs(change).toFixed(1)}° since the start</small>`;
+    const spare = S.spare || 0;
+    const spareText = spare ? `with ${spare} round${spare === 1 ? '' : 's'} to spare` : 'in the very last round';
+    $('endText').textContent = champ
+      ? `${champ.name} got Grandad a full set of ${S.goal} things first, ${spareText}. He says well done to everyone. Mostly ${champ.name}.`
+      : won
+        ? (n === 3 ? `Warm as toast, ${spareText}. He even said thank you. Then he went straight back to his paper.`
+          : n === 2 ? `Snug in his cardigan and slippers, ${spareText}. He grumbled a bit, but he always does.`
+            : `That was close: ${spareText}! His nose is still a bit blue, but he's thawing out nicely.`)
+        : vs
+          ? `The rounds ran out before anyone got a full set, and Grandad's got hypothermia. It's a blanket, a brew and a call to the doctor. Nobody wins this time.`
+          : `The rounds ran out and Grandad's got hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of ${S.goal} things to him. Try again?`;
+    $('statTemp').innerHTML = won ? `${spare}<small>of ${S.rounds}</small>` : `0<small>of ${S.rounds}</small>`;
     $('statTurns').textContent = S.turns;
     $('statStalls').innerHTML = `${S.tokensWon}<small>from ${S.stalls} stall${S.stalls === 1 ? '' : 's'}</small>`;
     $('statDucks').textContent = `${S.ducks}/${S.swats}`;
@@ -1074,7 +1109,7 @@
     $('againBtn').focus();
   }
 
-  // solo: the fewest goes it's taken to save Grandad; together: who won what and bought what
+  // solo: the fewest goes it's taken to save Grandad; Co-op: who won and bought what; Versus: the race
   function endSummary(won) {
     if (S.players.length === 1) {
       if (!won) return '';
@@ -1088,8 +1123,12 @@
         <p class="fav-score">${S.turns} goes</p>
         <p class="fav-note">${isBest ? (best ? `A new record for ${setting}! Your old best was ${best} goes.` : `Your first rescue on ${setting}. Now do it in fewer goes.`) : `Your record for ${setting} is ${best} goes.`}</p>`;
     }
-    const rows = S.players.map((q, j) => `<li><span class="chip" style="background:${PAWN_CSS[j]}"></span><span>${esc(q.name)}</span><span class="fav-meta">${G.tokenWord(q.won)} won</span><b>${q.bought} bought</b></li>`).join('');
-    return `<p class="fav-kicker">${won ? 'Team effort' : 'How you did'}</p><ol class="fav-table">${rows}</ol>`;
+    const order = S.players.map((q, j) => ({ q, j }));
+    if (versus()) order.sort((a, b) => (b.j === S.winner) - (a.j === S.winner) || b.q.got.length - a.q.got.length || b.q.won - a.q.won);
+    const rows = order.map(({ q, j }) => `<li><span class="chip" style="background:${PAWN_CSS[j]}"></span><span>${esc(q.name)}</span><span class="fav-meta">${G.tokenWord(q.won)} won</span><b>${versus() ? `${q.got.length} of ${S.goal}` : `${q.got.length} bought`}</b></li>`).join('');
+    const top = order[0].q;
+    const kicker = versus() ? (won ? 'The race' : `${esc(top.name)} got closest`) : won ? 'Team effort' : 'How you did';
+    return `<p class="fav-kicker">${kicker}</p><ol class="fav-table">${rows}</ol>`;
   }
 
   // ---------- Setup ----------
@@ -1098,6 +1137,17 @@
       <label><span class="chip" style="background:${PAWN_CSS[k]}"></span>
       <input type="text" id="name${k + 1}" maxlength="18" value="${esc(settings.names[k] || G.DEFAULT_NAMES[k])}" aria-label="Name for player ${k + 1}" autocomplete="off" enterkeyhint="${k + 1 < settings.count ? 'next' : 'done'}"></label>`).join('');
   }
+  // the Co-op / Versus choice only matters with two or more players; and say how many rounds Grandad can last
+  function renderSetupInfo() {
+    const multi = settings.count > 1;
+    const mode = G.modeFor(settings.mode, settings.count);
+    $('modeField').hidden = !multi;
+    $('mode' + (settings.mode === 'versus' ? 'Versus' : 'Coop')).checked = true;
+    const r = G.roundsFor(settings.mode, settings.count, settings.goal);
+    $('goalNote').textContent = mode === 'versus'
+      ? `Each of you needs a full set of ${settings.goal}. Grandad can last ${r} rounds, and everything costs 3 tokens.`
+      : `Grandad can last ${r} rounds${multi ? ' (everyone has a go each round)' : ''}. Everything at the Fair Shop costs 3 tokens.`;
+  }
   function syncSetupForm() {
     $('count' + settings.count).checked = true;
     ({ mild: $('diffMild'), chilly: $('diffChilly'), freeze: $('diffFreeze') })[settings.diff].checked = true;
@@ -1105,6 +1155,7 @@
     const goalEl = $('goal' + settings.goal) || $('goal6');
     goalEl.checked = true;
     renderNames();
+    renderSetupInfo();
   }
   function readNames() {
     for (let k = 0; k < settings.count; k++) {
@@ -1138,7 +1189,7 @@
     B.setNap(false);
     B.setPlayers(S.players);
     log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
-    say(S.players.length > 1 ? 'Right, you lot. Go and win me something warm.' : 'Is it me, or is it parky in here?');
+    say(S.players.length === 1 ? 'Is it me, or is it parky in here?' : versus() ? "A race, is it? First one to get me a full set wins. Chop chop!" : 'Right, you lot. Go and win me something warm.');
     S.phase = 'roll';
     startTurn();
   }
@@ -1199,8 +1250,10 @@
       readNames();
       settings.count = +e.target.value;
       renderNames();
+      renderSetupInfo();
     });
     document.querySelectorAll('input[name="diff"]').forEach((el) => el.addEventListener('change', () => { settings.diff = el.value; }));
+    $('modeSeg').addEventListener('change', (e) => { if (e.target.name === 'mode') { settings.mode = e.target.value; G.saveSettings(settings); renderSetupInfo(); } });
     $('fairGrid').innerHTML = Object.entries(G.Mini.GAMES).map(([key, g]) => `<button type="button" class="btn fair-btn" data-game="${key}" style="--dc:${g.c1}" title="${esc(g.blurb)}"><b>${g.title}</b></button>`).join('');
     $('shuffleStalls').addEventListener('change', (e) => { settings.shuffle = e.target.checked; G.saveSettings(settings); });
     $('pinchYes').addEventListener('click', () => { if (pinchResolve) pinchResolve(true); });
@@ -1218,7 +1271,7 @@
     $('pinchNo').addEventListener('click', () => { if (pinchResolve) pinchResolve(false); });
     $('shopGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-key]'); if (b && !b.disabled && Shop.resolve) Shop.resolve(b.dataset.key); });
     $('shopLeave').addEventListener('click', () => { if (Shop.resolve) Shop.resolve(null); });
-    $('goalSeg').addEventListener('change', (e) => { if (e.target.name === 'goal') { settings.goal = +e.target.value; G.saveSettings(settings); } });
+    $('goalSeg').addEventListener('change', (e) => { if (e.target.name === 'goal') { settings.goal = +e.target.value; G.saveSettings(settings); renderSetupInfo(); } });
     $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
     B.onTileClick = (i) => {
       if (!S || S.phase !== 'choose') return;

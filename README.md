@@ -1,8 +1,8 @@
 # Grandad's Cold Snap
 
-The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Grandad sits in his armchair in the middle of the board, getting colder by the minute. Race round the rooms winning tokens at the fairground games, and buy him his things back before his temperature drops to 35°C and he gets hypothermia. The colder he gets, the grumpier he gets, and every so often he'll throw his rolled-up newspaper at you.
+The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Grandad sits in his armchair in the middle of the board, getting colder by the minute. Race round the rooms winning tokens at the fairground games, and buy him his things back before the rounds run out and he gets hypothermia. The colder he gets, the grumpier he gets, and every so often he'll throw his rolled-up newspaper at you.
 
-It's a 3D board game for 1 to 4 players, all on Grandad's side. It runs in the browser, with nothing to install.
+It's a 3D board game for 1 to 4 players: play together to save Grandad (Co-op), or race each other to be the first to buy him a full set (Versus). It runs in the browser, with nothing to install.
 
 ## Playing on your Mac
 
@@ -32,35 +32,18 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 
 ## How to play
 
-1. **Pick how many things Grandad needs** on the start screen: 3 for a quick game, 6 for a standard one, 9, or 12 for a marathon.
+1. **Pick how many things Grandad needs** on the start screen: 3 for a quick game, 6 for a standard one, 9, or 12 for a marathon. With two or more players, also pick **Co-op** or **Versus**.
 2. **Roll the dice.** Everyone moves clockwise round the house. The score pad tells you where you'll land and what's there, and your pawn sets off by itself a moment later (press <kbd>Space</kbd> to hurry it along).
 3. **Land on a fairground stall** (a gold token spins above each one) and play for **tokens**: up to 3 each time, depending on how well you do. When a stall pays out, it packs up and a different game from the fair takes its place, so you won't keep playing the same one.
-4. **Go to the Fair Shop.** At the end of your go, if you've got 3 tokens, you're taken to the Fair Shop to buy Grandad something. Everything costs 3 tokens, and each thing warms him up and makes him cool more slowly from then on. The camera swoops in to watch him put it on. Buy the number of things you picked at the start and he's saved. You can also save your tokens for later.
+4. **Go to the Fair Shop.** At the end of your go, if you've got 3 tokens, you're taken to the Fair Shop to buy Grandad something. Everything costs 3 tokens. The camera swoops in to watch him put it on. Buy the number of things you picked at the start and he's saved. You can also save your tokens for later.
 5. **Every other square wins or loses you tokens**, and each one pops up a card saying exactly what happened (see "Around the board" below). The card stays up until you press **OK** (or <kbd>Space</kbd>).
-6. **Watch the thermometer.** Grandad cools a little at the end of every go, and the only things that warm him up are the things you buy him. Keep him out of the red zone and above 35.0°C.
+6. **Watch the rounds.** You get a fixed number of rounds (a round is everyone having one go). The thermometer counts them down, a notch at the end of every round. Get everything before it runs out, or Grandad gets hypothermia.
 7. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop tokens, or you miss a go if you've none. He throws more often as he gets colder, and more often still if you hang about in his doorway.
-8. **Playing together?** You're all on the same side. But land on another player's square and you can pinch a token (see below).
+8. **Playing together?** In Co-op you fill one list between you. In Versus you each need your own full set, and the first to get one wins (see below).
 
 ### The Fair Shop
 
-There are 12 things to buy, all for 3 tokens each:
-
-| Thing | Warms him | He cools this much slower |
-| --- | --- | --- |
-| Slippers | +0.3°C | 10% |
-| Cup of Tea | +0.7°C | 8% |
-| Tartan Blanket | +0.3°C | 14% |
-| Woolly Scarf | +0.3°C | 10% |
-| Hot Water Bottle | +0.6°C | 12% |
-| Cardigan | +0.3°C | 12% |
-| Bobble Hat | +0.3°C | 10% |
-| Logs for the Fire | +0.6°C | 14% |
-| Woolly Mittens | +0.3°C | 8% |
-| Earmuffs | +0.3°C | 8% |
-| Bowl of Soup | +0.6°C | 5% |
-| Electric Heater | +0.5°C | 14% |
-
-Tea and soup give him the biggest warm-up straight away. The blanket, the logs and the heater slow his cooling the most, which pays off over a long game.
+There are 12 things to buy, all for 3 tokens each: slippers, a cup of tea, a tartan blanket, a woolly scarf, a hot water bottle, his cardigan, a bobble hat, logs for the fire, woolly mittens, earmuffs, a bowl of soup and an electric heater. They all count the same, so buy whichever you like.
 
 ### The fair
 
@@ -122,25 +105,39 @@ Every room has its own finds, and you won't get the same thing twice in a row. T
 
 ### Playing together
 
-Everyone's on the same side: you win or lose together. Land on the same square as another player who has tokens, though, and you can **pinch** one. Grandad might spot you doing it, and then he's much more likely to throw his paper at you. At the end you'll see how many tokens each of you won and how many things you each bought him.
+With two or more players you pick how to play on the start screen:
+
+- **Co-op:** you're all on the same side and fill one list for Grandad between you. You win or lose together. At the end you'll see how many tokens each of you won and how many things you each bought him.
+- **Versus:** you each need your own full set of the number of things you picked, and the first to get one wins. The Fair Shop shows what's already in your set and who else has bought what. Grandad wears everything anyone buys him. If the rounds run out before anyone finishes, Grandad gets hypothermia and nobody wins, though the end screen shows who got closest.
+
+In either mode, land on the same square as another player who has tokens and you can **pinch** one. Grandad might spot you doing it, and then he's much more likely to throw his paper at you.
 
 Playing on your own, the end screen shows how many goes it took to save Grandad, and your record for that setting and number of things, so you can try to do it faster.
 
 ### The thermometer
 
-The thermometer in the score pad shows how close Grandad is to hypothermia. It runs from 35°C on the left to 37°C on the right, and the striped red zone at the cold end covers 35.5°C and below. He cools a little at the end of every go, whatever square you land on. The dashed tip of the column shows how much, the thermometer says so as it happens, and underneath it tells you roughly how many goes are left. When he first slips into the red zone you'll hear his heartbeat, and the thermometer starts to pulse.
+The thermometer in the score pad is a countdown. It starts full and drops a notch at the end of every round, and it's empty when the rounds run out. "Round 3 of 14" and the number of rounds left are shown above it, so there's nothing to work out. The dashed notch at the tip is the round you're in. The striped red zone is the last quarter of the rounds: when you reach it you'll hear his heartbeat, and the thermometer starts to pulse. Buying things doesn't change the countdown. It's just a race to get everything before time's up.
 
-Everything you buy him goes on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the mittens go on his hands, the earmuffs over his ears, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea and the soup land on the side table, the logs light the fire and the heater switches on. A card shows how many of the things he needs he has so far. As he cools down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
+How many rounds you get depends on the mode, the number of players and the number of things. The start screen tells you before you begin.
+
+| Things | Solo | Co-op, 2 / 3 / 4 players | Versus, 2 / 3 / 4 players |
+| --- | --- | --- | --- |
+| 3 | 15 | 9 / 6 / 5 | 11 / 10 / 9 |
+| 6 | 27 | 14 / 10 / 8 | 22 / 20 / 19 |
+| 9 | 37 | 20 / 14 / 11 | 32 / 30 / 28 |
+| 12 | 48 | 25 / 18 / 14 | 42 / 39 / 38 |
+
+Everything you buy him goes on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the mittens go on his hands, the earmuffs over his ears, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea and the soup land on the side table, the logs light the fire and the heater switches on. A card shows how many of the things he needs he has so far (in Versus, how many are in your set). As the rounds run down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
 
 ### How cold is it?
 
-| Setting | Starts at | Cools each go | What else changes |
-| --- | --- | --- | --- |
-| Mild Autumn | 36.6°C | 0.12°C | Friendlier stalls, small token losses, wide ducking window. Good for little ones. |
-| Chilly Winter | 36.4°C | 0.18°C | The proper game. |
-| The Big Freeze | 36.2°C | 0.19°C | Stalls need more for each token, bigger token losses, tight ducking window. |
+| Setting | What changes |
+| --- | --- |
+| Mild Autumn | Friendlier stalls, small token losses, wide ducking window. Good for little ones. |
+| Chilly Winter | The proper game. |
+| The Big Freeze | Stalls need more for each token, bigger token losses, tight ducking window. |
 
-Every thing you buy slows his cooling a little more. With more players each go chills Grandad a little less, so the challenge stays about the same whether you play alone or with the whole family. In simulated games, a steady player wins Chilly Winter about 9 times in 10 and the Big Freeze about 6 times in 10, whichever number of things you pick. Picking more things makes a longer game: roughly 10 goes for 3 things, 19 for 6, 28 for 9 and 37 for 12.
+You get the same number of rounds on every setting. The harder settings are harder because the stalls pay out less and the bad squares cost more. The round limits come from simulated games: a steady player gets there about 9 times in 10 on Chilly Winter, nearly always on Mild Autumn and about 6 times in 10 on the Big Freeze. In Versus, someone finishes about 9 times in 10 on Chilly Winter.
 
 ### Keys
 

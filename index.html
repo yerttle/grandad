@@ -476,9 +476,10 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .thermo { display: flex; align-items: center; margin-top: 8px; height: 24px; }
 .thermo-bulb { position: relative; z-index: 1; flex: none; width: 24px; height: 24px; margin-right: -8px; border: 2px solid var(--ink); border-radius: 50%; background: var(--liquid); box-shadow: inset -3px -3px 0 rgb(0 0 0 / .18), inset 3px 3px 0 rgb(255 255 255 / .3); transition: background .8s; }
 .thermo-tube { position: relative; flex: 1; height: 18px; overflow: hidden; border: 2px solid var(--ink); border-radius: 0 99px 99px 0; background: var(--tube); transition: background .8s; }
-/* the danger zone: 35.0 to 35.6°C, textured as well as red so it doesn't rely on colour */
-.thermo-red { position: absolute; left: 0; top: 0; bottom: 0; width: 30%; background: repeating-linear-gradient(135deg, rgb(179 38 30 / .55) 0 4px, rgb(179 38 30 / .22) 4px 8px); border-right: 2px dashed var(--danger); }
-.thermo-ticks { position: absolute; inset: 0 0 auto; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1.5px), rgb(43 26 16 / .45) calc(25% - 1.5px) 25%); }
+/* the danger zone: the last quarter of the rounds, textured as well as red so it does not rely on colour */
+.thermo-red { position: absolute; left: 0; top: 0; bottom: 0; width: 25%; transition: width .4s; background: repeating-linear-gradient(135deg, rgb(179 38 30 / .55) 0 4px, rgb(179 38 30 / .22) 4px 8px); border-right: 2px dashed var(--danger); }
+/* one tick for every round (or every five in a long game) */
+.thermo-ticks { --n: 10; position: absolute; inset: 0 0 auto; height: 5px; background: repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--n) - 1.5px), rgb(43 26 16 / .45) calc(100% / var(--n) - 1.5px) calc(100% / var(--n))); }
 .thermo-fill { position: absolute; left: 0; top: 4px; bottom: 4px; width: 50%; border: 1.5px solid var(--ink); border-left: 0; border-radius: 0 99px 99px 0; background: var(--liquid); transition: width .9s cubic-bezier(.3, .7, .3, 1), background .8s; }
 .thermo-loss { position: absolute; top: 4px; bottom: 4px; border-block: 1.5px dashed var(--ink); background: repeating-linear-gradient(90deg, rgb(255 255 255 / .8) 0 3px, rgb(255 255 255 / .25) 3px 6px); transition: left .9s cubic-bezier(.3, .7, .3, 1), width .9s cubic-bezier(.3, .7, .3, 1); }
 .thermo-scale { position: relative; height: 12px; margin: 3px 0 0 16px; font: 700 10px/1 var(--font-news); color: var(--ink-soft); }
@@ -662,6 +663,9 @@ legend { padding: 0; margin-bottom: 8px; font: 800 12px/1.2 var(--font-body); le
 .diffs small { font-size: 13px; color: var(--ink-soft); }
 .diffs input:checked + span { background: var(--mustard); box-shadow: 0 3px 0 var(--ink); }
 .diffs input:checked + span small { color: var(--ink); }
+.mode-field { grid-column: 1 / -1; }
+.diffs.mode-seg { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 520px; }
+.mode-seg small { line-height: 1.25; }
 .howto { margin: 0; padding: 14px 16px; background: var(--board); border-radius: 10px; font-size: 14px; }
 .howto h3, .fair h3 { margin: 0 0 6px; font: 800 12px/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
 .howto ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
@@ -935,20 +939,20 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       </div>
       <div class="temp-box">
         <p class="temp-line">
-          <strong id="tempText">36.4°C</strong>
+          <strong id="tempText">Round 1</strong>
           <span class="state-pill" id="tempState">Chilly</span>
-          <span class="rate" id="rateText">cools 0.17°C a go</span>
+          <span class="rate" id="rateText"></span>
         </p>
-        <div class="thermo" id="thermo" role="meter" aria-label="Grandad's temperature" aria-valuemin="35" aria-valuemax="37" aria-valuenow="36.4">
+        <div class="thermo" id="thermo" role="meter" aria-label="Rounds left before Grandad gets hypothermia" aria-valuemin="0" aria-valuemax="15" aria-valuenow="15">
           <span class="thermo-bulb" aria-hidden="true"></span>
           <span class="thermo-tube" aria-hidden="true">
-            <span class="thermo-red"></span>
-            <span class="thermo-ticks"></span>
+            <span class="thermo-red" id="thermoRed"></span>
+            <span class="thermo-ticks" id="thermoTicks"></span>
             <span class="thermo-fill" id="thermoFill"></span>
-            <span class="thermo-loss" id="thermoLoss" title="What he'll lose at the end of this go"></span>
+            <span class="thermo-loss" id="thermoLoss" title="This round: it goes once everyone's had their go"></span>
           </span>
         </div>
-        <div class="thermo-scale" aria-hidden="true"><span class="hypo">35° hypothermia</span><span style="left:50%">36°</span><span class="top">37°</span></div>
+        <div class="thermo-scale" aria-hidden="true"><span class="hypo">Hypothermia</span><span class="top">Start</span></div>
         <p class="thermo-goes" id="thermoGoes"></p>
       </div>
       <p class="purse" id="purse" aria-live="polite"></p>
@@ -989,7 +993,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <h2 class="logo">Grandad's Cold Snap</h2>
     <div class="setup-cols">
     <div class="setup-main">
-    <p class="story">The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Race round the rooms winning tokens at the fairground games, and buy Grandad his things back before his temperature drops to 35°C and he gets hypothermia. Watch out: the colder he gets, the grumpier he gets, and he's got a rolled-up newspaper.</p>
+    <p class="story">The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Race round the rooms winning tokens at the fairground games, and buy Grandad his things back before the rounds run out and he gets hypothermia. Watch out: the colder he gets, the grumpier he gets, and he's got a rolled-up newspaper.</p>
     <div class="setup-grid">
       <fieldset>
         <legend>Players</legend>
@@ -1004,9 +1008,16 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <fieldset>
         <legend>How cold is it?</legend>
         <div class="diffs">
-          <label><input type="radio" name="diff" id="diffMild" value="mild"><span><b>Mild Autumn</b><small>Slow chill and friendly stalls. Good for little ones.</small></span></label>
+          <label><input type="radio" name="diff" id="diffMild" value="mild"><span><b>Mild Autumn</b><small>Friendly stalls and small losses. Good for little ones.</small></span></label>
           <label><input type="radio" name="diff" id="diffChilly" value="chilly"><span><b>Chilly Winter</b><small>The proper game. You'll need a steady hand at the fair.</small></span></label>
-          <label><input type="radio" name="diff" id="diffFreeze" value="freeze"><span><b>The Big Freeze</b><small>1963 all over again. Fast chill, tricky stalls.</small></span></label>
+          <label><input type="radio" name="diff" id="diffFreeze" value="freeze"><span><b>The Big Freeze</b><small>1963 all over again. Tricky stalls and big losses.</small></span></label>
+        </div>
+      </fieldset>
+      <fieldset class="mode-field" id="modeField" hidden>
+        <legend>How do you want to play?</legend>
+        <div class="diffs mode-seg" id="modeSeg">
+          <label><input type="radio" name="mode" id="modeCoop" value="coop"><span><b>Co-op</b><small>Work together to get Grandad everything he needs.</small></span></label>
+          <label><input type="radio" name="mode" id="modeVersus" value="versus"><span><b>Versus</b><small>Race to be the first to buy him a full set.</small></span></label>
         </div>
       </fieldset>
       <fieldset class="goal-field">
@@ -1017,7 +1028,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
           <label><input type="radio" name="goal" id="goal9" value="9"><span>9<small>Long</small></span></label>
           <label><input type="radio" name="goal" id="goal12" value="12"><span>12<small>Marathon</small></span></label>
         </div>
-        <p class="note">Everything at the Fair Shop costs 3 tokens. More things makes a longer game.</p>
+        <p class="note" id="goalNote">Everything at the Fair Shop costs 3 tokens. More things makes a longer game.</p>
       </fieldset>
     </div>
     <label class="check" for="shuffleStalls">
@@ -1038,10 +1049,10 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
         <li>Roll the dice and you move clockwise round the house.</li>
         <li>Land on a fairground stall (the gold token floats over it) and play for <b>tokens</b>: up to 3 each go, depending on how well you do. When a stall pays out, it packs up and a different game from the fair takes its place.</li>
         <li>At the end of your go, if you've got 3 tokens, you're off to the <b>Fair Shop</b> to buy Grandad something warm. Buy the number of things you picked at the start and he's saved.</li>
+        <li>You've got a fixed number of <b>rounds</b> (everyone has one go a round). The thermometer counts them down, a notch at the end of every round. Get everything before it runs out, or Grandad gets hypothermia.</li>
         <li>Other squares win or lose you tokens, and every square says exactly what happened. Grandad's doors, the boiler and the airing cupboard pay a token, and so does walking past the boiler on your way round. The open window, draughts and Tiddles cost you tokens, and more on the harder settings. Magnifying-glass squares are a rummage.</li>
-        <li>Grandad cools a little at the end of every go, and each thing you buy warms him up. Keep him out of the red zone and above 35.0°C.</li>
         <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop tokens, or miss a go if you've none.</li>
-        <li>Playing together? You're all on the same side, saving Grandad. But land on another player's square and you can pinch a token, if Grandad isn't looking.</li>
+        <li>Playing together? In <b>Co-op</b> you all fill one list for Grandad. In <b>Versus</b> you each need your own full set, and the first to get one wins. Either way, land on another player's square and you can pinch a token, if Grandad isn't looking.</li>
       </ol>
     </div>
     <div class="fair">
@@ -1076,7 +1087,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <p class="end-text" id="endText"></p>
     <div class="fav" id="endRivalry"></div>
     <dl class="stats">
-      <div><dt>Final temp</dt><dd id="statTemp">36.4°</dd></div>
+      <div><dt>Rounds to spare</dt><dd id="statTemp">0</dd></div>
       <div><dt>Goes taken</dt><dd id="statTurns">0</dd></div>
       <div><dt>Tokens won</dt><dd id="statStalls">0</dd></div>
       <div><dt>Swats ducked</dt><dd id="statDucks">0/0</dd></div>

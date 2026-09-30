@@ -36,7 +36,7 @@ A few squares draw a newspaper headline that shakes things up:
 - **"NAN RINGS":** everyone gets a token.
 - **"GRANDAD NODS OFF":** no newspaper for two goes.
 - **"TIDDLES STEALS A PRIZE":** the cat runs off with one and you chase her.
-- **"BLIZZARD":** double cooling this round.
+- **"BLIZZARD":** the countdown loses an extra round.
 
 These fit the newspaper theme and make each game play differently.
 
@@ -49,6 +49,14 @@ Favourite points for winning stalls, buying things and ducking his paper, with a
 ### Custard creams — Removed
 
 You started with two custard creams and could eat one to re-roll. It didn't feel like a real choice, so they've gone too. The Larder and the Sideboard, which used to give custard creams, are now stalls, and everyone simply rolls and moves clockwise.
+
+### Co-op and Versus — Built
+
+With two or more players you choose on the start screen. **Co-op:** you fill one list for Grandad between you and win or lose together. **Versus:** everyone races to buy their own full set, and the first to finish wins. The Fair Shop shows what's in your set and who else has bought what. If the rounds run out first, nobody wins, and the end screen shows who got closest.
+
+### A fixed number of rounds — Built
+
+The cooling maths (a different drop every go, items that warmed him and slowed his cooling) was hard to follow, so it's gone. You now get a fixed number of rounds, shown as "Round 3 of 14", and the thermometer just counts them down. How many rounds depends on the mode, the number of players and the number of things. The limits come from simulated games, so a steady player gets there about 9 times in 10 on Chilly Winter.
 
 ### Head-to-head stalls — Idea
 
@@ -80,7 +88,7 @@ Once a room's prize has been won, its squares used to do nothing, so the end of 
 
 ### Tokens and the Fair Shop — Built
 
-The stalls now pay out fairground tokens instead of one fixed prize: up to 3 a go, depending on how well you do. On harder settings each token takes more (on Dodgems it's 1 bump per token on Mild, 2 on Chilly and 4 on the Big Freeze). At the end of your go, 3 tokens buys Grandad something at the Fair Shop, which now has 12 things, including new mittens, earmuffs, a bowl of soup and an electric heater. Every other square is a clear token swing: the doors, the boiler and the airing cupboard pay a token, and the open window, draughts and Tiddles cost tokens, more on harder settings. Grandad's temperature now only moves for two reasons: the steady cooling at the end of each go, and warming up when you buy him something. You pick how many things he needs (3, 6, 9 or 12), which sets how long the game lasts. Everyone goes clockwise round the house, and walking past the Boiler Cupboard (START) pays a token, like passing Go.
+The stalls now pay out fairground tokens instead of one fixed prize: up to 3 a go, depending on how well you do. On harder settings each token takes more (on Dodgems it's 1 bump per token on Mild, 2 on Chilly and 4 on the Big Freeze). At the end of your go, 3 tokens buys Grandad something at the Fair Shop, which now has 12 things, including new mittens, earmuffs, a bowl of soup and an electric heater. Every other square is a clear token swing: the doors, the boiler and the airing cupboard pay a token, and the open window, draughts and Tiddles cost tokens, more on harder settings. You pick how many things he needs (3, 6, 9 or 12), which sets how long the game lasts. Everyone goes clockwise round the house, and walking past the Boiler Cupboard (START) pays a token, like passing Go.
 
 ### Grandad's errands — Idea
 
@@ -92,7 +100,7 @@ Each round a glowing gift box drops onto a random empty square where everyone ca
 
 ### Tiddles roams — Idea
 
-The cat wanders onto a new square each round. Land on her and she either purrs on Grandad's lap (+0.1°C) or scratches you (drop a token).
+The cat wanders onto a new square each round. Land on her and she either purrs on Grandad's lap (+1 token) or scratches you (drop a token).
 
 ### Stalls swap when they pay out — Built
 
