@@ -175,6 +175,7 @@
       <p class="kicker">${practice ? 'Practice at the fair' : `${G.esc(playerName)} steps up to the stall`}</p>
       <h2 class="logo small">${def.title}</h2>
       <p class="prize-line">${practice ? 'In the game this stall pays out' : 'Win'} up to <b>3 tokens</b> ${G.TOKEN_SVG}${G.TOKEN_SVG}${G.TOKEN_SVG} for the Fair Shop</p>
+      ${p.per && def.unit ? `<p class="target">Top prize: <b>${3 * p.per} ${def.unit(3 * p.per)}</b> for 3 tokens</p>` : ''}
       <p class="goal">${def.goal(p)}</p>
       <p>${def.how}</p>
       <p class="keys">${keysText}</p>
