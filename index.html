@@ -299,6 +299,20 @@ body.minigame .find { display: none; }
 .mini-title { font: 400 30px/1 var(--font-display); color: var(--mustard); text-shadow: 2px 2px 0 var(--ink), 4px 4px 0 var(--orange); }
 .mini-prize { font: 800 12px/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: rgb(246 236 210 / .8); }
 .mini-status { font-size: 16px; font-variant-numeric: tabular-nums; }
+/* the three token slots at the top of a stall: they light up as you earn them */
+.mini-tokens { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+.mini-tokens .slot { width: 26px; height: 26px; border-radius: 50%; border: 2px dashed rgb(246 236 210 / .45); background: rgb(246 236 210 / .06); transition: background .2s, border-color .2s; }
+.mini-tokens .slot.on { border: 2px solid var(--ink); background: radial-gradient(circle at 35% 35%, #fff3c4 0 18%, #e0a526 19% 62%, #9a6a14 63%); animation: tokenpop .45s cubic-bezier(.3, 1.8, .5, 1); }
+@keyframes tokenpop { from { scale: 0; rotate: -90deg; } }
+.mini-tokens small { flex-basis: 100%; font: 700 12px/1.2 var(--font-body); color: rgb(246 236 210 / .8); }
+.mini-tokens small:empty { display: none; }
+svg.token { width: 1.15em; height: 1.15em; vertical-align: -0.2em; }
+.token-row { display: flex; justify-content: center; gap: 10px; margin: 4px 0 10px; }
+.token-row span svg { width: 46px; height: 46px; }
+.token-row span:not(.on) svg { filter: grayscale(1) opacity(.25); }
+.token-row span.on svg { animation: tokenpop .5s cubic-bezier(.3, 1.8, .5, 1) both; }
+.token-row span.on:nth-child(2) svg { animation-delay: .15s; }
+.token-row span.on:nth-child(3) svg { animation-delay: .3s; }
 .mini-status b { color: var(--mustard); }
 .mini-timer { width: 100%; height: 8px; margin-top: 4px; background: rgb(246 236 210 / .18); border-radius: 99px; overflow: hidden; }
 .mini-timer i { display: block; height: 100%; width: 100%; background: var(--mustard); }
@@ -406,10 +420,11 @@ body.minigame .find { display: none; }
 .cine-title { margin: 3px 0 2px; font: 400 30px/1.02 var(--font-display); color: var(--danger); text-shadow: 2px 2px 0 rgb(224 165 38 / .55); }
 .cine-sub { margin: 0; font: 700 13px/1.3 var(--font-body); color: var(--ink-soft); }
 .cine-sub.quote { font-style: italic; color: var(--paper-ink); }
-.cine-slots { grid-area: slots; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; margin-top: 6px; padding-top: 8px; border-top: 2px dashed rgb(43 26 16 / .22); }
+.cine-slots { grid-area: slots; display: grid; grid-template-columns: repeat(var(--slots, 8), minmax(0, 1fr)); gap: 5px; margin-top: 6px; padding-top: 8px; border-top: 2px dashed rgb(43 26 16 / .22); }
 .cine-slots span { aspect-ratio: 1; display: grid; place-items: center; border-radius: 9px; background: rgb(43 26 16 / .08); }
 .cine-slots svg { width: 78%; height: 78%; filter: grayscale(1) opacity(.28); }
 .cine-slots .got { background: rgb(224 165 38 / .22); }
+.cine-slots .empty { border: 2px dashed rgb(43 26 16 / .25); background: none; font: 400 16px/1 var(--font-display); color: rgb(43 26 16 / .35); }
 .cine-slots .got svg { filter: none; }
 .cine-slots .new { background: #ffe7a6; box-shadow: 0 0 0 2px var(--mustard), 0 0 14px 2px rgb(255 200 90 / .8); animation: slotpop .6s .45s cubic-bezier(.3, 1.8, .5, 1) both; }
 @keyframes slotpop { from { scale: 0; rotate: -30deg; } }
@@ -549,6 +564,60 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .news li:first-child { animation: fresh .5s ease; }
 @keyframes fresh { from { background: rgb(224 165 38 / .35); } }
 
+/* ---------- Tokens and the Fair Shop ---------- */
+.purse { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 8px 0 0; padding: 6px 10px; border-radius: 8px; background: var(--board); font-size: 13px; }
+.purse .coins { display: inline-flex; }
+.purse .coins svg.token { width: 20px; height: 20px; margin-right: -5px; }
+.purse .none { color: var(--ink-soft); font-style: italic; }
+.purse b { font-size: 15px; }
+.purse .note { color: var(--ink-soft); }
+.purse.rich { background: #ffe7a6; box-shadow: inset 0 0 0 2px var(--mustard); }
+.purse.rich .note { color: var(--ink); font-weight: 700; }
+.tok-count svg.token { width: 18px; height: 18px; }
+.needs-head { margin: -2px 0 6px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.needs .where svg.token { width: 14px; height: 14px; }
+.goal-field { grid-column: 1 / -1; }
+.goal-field .note { margin: 0; }
+.goal-seg span { width: 74px; height: 50px; gap: 2px; align-content: center; }
+.goal-seg span small { font: 800 10px/1 var(--font-body); letter-spacing: .06em; text-transform: uppercase; }
+.shop-lid { width: min(840px, 100%); }
+.shop-lid::before { height: 22px; background: repeating-linear-gradient(90deg, var(--orange) 0 26px, var(--cream) 26px 52px); }
+.shop-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 12px; border-radius: 10px; background: var(--board); font-weight: 800; }
+.shop-purse { display: inline-flex; align-items: center; gap: 0; }
+.shop-purse svg.token { width: 24px; height: 24px; margin-right: -6px; }
+.shop-purse b { margin-left: 12px; font-size: 16px; }
+.shop-need { margin: 8px 0 12px; font-size: 14px; color: var(--ink-soft); }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 10px; }
+.shop-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-areas: "icon name price" "icon fx fx";
+  align-items: center;
+  gap: 2px 10px;
+  padding: 10px 12px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--ink);
+  transition: translate .1s, box-shadow .1s, background .15s;
+}
+.shop-item:hover:not(:disabled), .shop-item:focus-visible { background: #fff6dc; translate: 0 -2px; box-shadow: 0 5px 0 var(--ink); outline: none; }
+.shop-item:active:not(:disabled) { translate: 0 2px; box-shadow: 0 1px 0 var(--ink); }
+.si-icon { grid-area: icon; }
+.si-icon svg { display: block; width: 44px; height: 44px; }
+.si-name { grid-area: name; font-weight: 800; font-size: 15px; line-height: 1.15; }
+.si-fx { grid-area: fx; font-size: 12px; line-height: 1.3; color: var(--ink-soft); }
+.si-price { grid-area: price; display: inline-flex; align-items: center; gap: 3px; font: 800 16px/1 var(--font-body); }
+.si-price svg.token { width: 20px; height: 20px; }
+.shop-item kbd { position: absolute; right: 8px; bottom: 6px; }
+.shop-item.got { cursor: default; opacity: .55; box-shadow: none; background: rgb(43 26 16 / .06); }
+.shop-item.got .si-price { color: var(--good); }
+.find-box svg.token.big { width: 52px; height: 52px; vertical-align: 0; }
+
 /* ---------- Overlays ---------- */
 .overlay {
   position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
@@ -662,6 +731,9 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   html.touch .thermo-fill, html.touch .thermo-loss { top: 3px; bottom: 3px; }
   html.touch .thermo-scale { display: none; }
   html.touch .thermo-goes { margin-top: 4px; font-size: 12px; }
+  html.touch .purse { margin-top: 5px; padding: 4px 8px; font-size: 12px; }
+  html.touch .purse b { font-size: 13px; }
+  html.touch .purse .coins svg.token { width: 16px; height: 16px; }
   html.touch .temp-line strong { font-size: 18px; }
   html.touch .rate { font-size: 12px; }
   html.touch .hint { margin: 6px 0 8px; min-height: 0; font-size: 13px; line-height: 1.3; }
@@ -732,6 +804,8 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   .mini-title { font-size: 22px; }
   .mini-prize { font-size: 10px; }
   .mini-status { font-size: 14px; }
+  .mini-tokens .slot { width: 20px; height: 20px; }
+  .mini-tokens small { font-size: 11px; }
   .mini-hint { bottom: 8px; padding: 6px 12px; border-radius: 12px; font-size: 12px; }
   .power { bottom: 50px; }
   .countdown { font-size: 96px; }
@@ -743,6 +817,15 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   .setup-main .lid-actions { position: sticky; bottom: 0; z-index: 2; margin: 12px -16px 0; padding: 10px 16px 12px; background: var(--cream); box-shadow: 0 -10px 14px -10px rgb(0 0 0 / .35); }
   .setup-main .lid-actions .btn.primary { flex: 1; }
   .mini-card .tip { font-size: 13px; color: var(--orange); font-weight: 700; }
+  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  /* keep "Save my tokens" in reach while the shop scrolls */
+  .shop-lid .lid-actions { position: sticky; bottom: 0; z-index: 2; margin: 12px -16px -20px; padding: 10px 16px 12px; background: var(--cream); box-shadow: 0 -10px 14px -10px rgb(0 0 0 / .35); }
+  .shop-lid .lid-actions .btn { flex: 1; }
+  .shop-item { grid-template-columns: 34px minmax(0, 1fr) auto; padding: 8px 9px 9px; gap: 2px 8px; }
+  .si-icon svg { width: 34px; height: 34px; }
+  .si-name { font-size: 13px; }
+  .si-fx { font-size: 11px; }
+  .goal-seg span { width: 64px; }
   .find { width: calc(100% - 20px); grid-template-columns: 46px minmax(0, 1fr); gap: 4px 10px; padding: 8px 10px 10px; box-shadow: 3px 4px 0 var(--ink); }
   .find-box { width: 46px; height: 46px; border-radius: 10px; }
   .find-box svg { width: 38px; height: 38px; }
@@ -805,6 +888,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <div class="mini-top">
         <div class="mini-title" id="miniTitle">Hook-a-Duck</div>
         <div class="mini-prize" id="miniPrize"></div>
+        <div class="mini-tokens" id="miniTokens" aria-label="Tokens won"><span class="slot"></span><span class="slot"></span><span class="slot"></span><small id="miniNext"></small></div>
         <div class="mini-status" id="miniStatus"></div>
         <div class="mini-timer" id="miniTimerWrap" hidden><i id="miniTimer"></i></div>
       </div>
@@ -865,6 +949,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
         <div class="thermo-scale" aria-hidden="true"><span class="hypo">35° hypothermia</span><span style="left:50%">36°</span><span class="top">37°</span></div>
         <p class="thermo-goes" id="thermoGoes"></p>
       </div>
+      <p class="purse" id="purse" aria-live="polite"></p>
       <p class="hint" id="hint">Roll the dice to take your go.</p>
       <div class="actions">
         <button class="btn primary" id="rollBtn" type="button">Roll the dice <kbd>Space</kbd></button>
@@ -883,13 +968,14 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       </div>
       <div class="sheet-tabs" aria-label="More of the score pad">
         <button class="tab" type="button" data-sheet="team" aria-pressed="false">Players</button>
-        <button class="tab" type="button" data-sheet="needs" aria-pressed="false">Grandad needs</button>
+        <button class="tab" type="button" data-sheet="needs" aria-pressed="false">Fair Shop</button>
         <button class="tab" type="button" data-sheet="news" aria-pressed="false">The Daily Grumble</button>
       </div>
     </section>
     <section class="card team" id="team" aria-label="Players"></section>
     <section class="card needs">
-      <h2>Grandad needs</h2>
+      <h2>The Fair Shop</h2>
+      <p class="needs-head" id="needsHead"></p>
       <ul id="needsList"></ul>
     </section>
     <section class="news" aria-label="Game log">
@@ -906,7 +992,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <h2 class="logo">Grandad's Cold Snap</h2>
     <div class="setup-cols">
     <div class="setup-main">
-    <p class="story">The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and all his cosy things are on the stalls as prizes. Race round the rooms, win them back at the fairground games, and get them to Grandad before his temperature drops to 35°C and he gets hypothermia. Watch out: the colder he gets, the grumpier he gets, and he's got a rolled-up newspaper.</p>
+    <p class="story">The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Race round the rooms winning tokens at the fairground games, and buy Grandad his things back before his temperature drops to 35°C and he gets hypothermia. Watch out: the colder he gets, the grumpier he gets, and he's got a rolled-up newspaper.</p>
     <div class="setup-grid">
       <fieldset>
         <legend>Players</legend>
@@ -926,6 +1012,16 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
           <label><input type="radio" name="diff" id="diffFreeze" value="freeze"><span><b>The Big Freeze</b><small>1963 all over again. Fast chill, tricky stalls.</small></span></label>
         </div>
       </fieldset>
+      <fieldset class="goal-field">
+        <legend>How many things does Grandad need?</legend>
+        <div class="seg goal-seg" id="goalSeg">
+          <label><input type="radio" name="goal" id="goal3" value="3"><span>3<small>Quick</small></span></label>
+          <label><input type="radio" name="goal" id="goal6" value="6"><span>6<small>Standard</small></span></label>
+          <label><input type="radio" name="goal" id="goal9" value="9"><span>9<small>Long</small></span></label>
+          <label><input type="radio" name="goal" id="goal12" value="12"><span>12<small>Marathon</small></span></label>
+        </div>
+        <p class="note">Everything at the Fair Shop costs 3 tokens. More things makes a longer game.</p>
+      </fieldset>
     </div>
     <label class="check" for="shuffleStalls">
       <input type="checkbox" id="shuffleStalls" checked>
@@ -943,12 +1039,12 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <h3>How to play</h3>
       <ol>
         <li>Roll the dice, then choose which way to go round the house: clockwise or anticlockwise.</li>
-        <li>Land in a room that still has its prize and you play that room's fairground game. Win it to take Grandad's thing.</li>
-        <li>Pass or stop on a yellow <b>Pop in to Grandad</b> door to hand over everything you're carrying.</li>
-        <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop something, or miss a go.</li>
-        <li>Once a room's prize has been won, a parcel floats over its stall: land anywhere in that room and you have a rummage. You might find custard creams, favourite points, a lucky charm... or a sock.</li>
-        <li>Deliver all 8 cosy things before he cools to 35.0°C. Custard creams let you re-roll.</li>
-        <li>Grandad keeps score of who's his favourite: points for winning stalls, delivering things and ducking his paper. Playing together? Land on another player's square and you can pinch what they're carrying, if Grandad isn't looking.</li>
+        <li>Land on a fairground stall (the gold token floats over it) and play for <b>tokens</b>: up to 3 each go, depending on how well you do.</li>
+        <li>At the end of your go, if you've got 3 tokens, you're off to the <b>Fair Shop</b> to buy Grandad something warm. Buy the number of things you picked at the start and he's saved.</li>
+        <li>Other squares win or lose you tokens, and every square says exactly what happened. Grandad's doors, the boiler and the airing cupboard pay a token. The open window, draughts and Tiddles cost you tokens, and more on the harder settings. Magnifying-glass squares are a rummage.</li>
+        <li>Grandad cools a little at the end of every go, and each thing you buy warms him up. Keep him out of the red zone and above 35.0°C. Custard creams let you re-roll.</li>
+        <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop tokens, or miss a go if you've none.</li>
+        <li>Grandad keeps score of who's his favourite: points for tokens you win, things you buy him and ducking his paper. Playing together? Land on another player's square and you can pinch a token, if Grandad isn't looking.</li>
       </ol>
     </div>
     <div class="fair">
@@ -961,6 +1057,20 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
   </form>
 </div>
 
+<div class="overlay shop-overlay" id="shop" hidden>
+  <div class="lid shop-lid" role="dialog" aria-modal="true" aria-labelledby="shopTitle">
+    <p class="kicker">End of your go</p>
+    <h2 class="logo small" id="shopTitle">The Fair Shop</h2>
+    <div class="shop-head"><span id="shopWho">Your tokens</span><span class="shop-purse" id="shopPurse"></span></div>
+    <p class="shop-need" id="shopNeed"></p>
+    <div class="shop-grid" id="shopGrid"></div>
+    <div class="lid-actions">
+      <button class="btn" id="shopLeave" type="button">Save my tokens <kbd>Esc</kbd></button>
+      <span class="note k-only">Press a number to buy.</span>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="endOverlay" hidden>
   <div class="lid end-lid">
     <p class="kicker" id="endKicker">Game over</p>
@@ -971,7 +1081,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <dl class="stats">
       <div><dt>Final temp</dt><dd id="statTemp">36.4°</dd></div>
       <div><dt>Goes taken</dt><dd id="statTurns">0</dd></div>
-      <div><dt>Stalls won</dt><dd id="statStalls">0/0</dd></div>
+      <div><dt>Tokens won</dt><dd id="statStalls">0</dd></div>
       <div><dt>Swats ducked</dt><dd id="statDucks">0/0</dd></div>
     </dl>
     <div class="lid-actions">

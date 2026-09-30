@@ -18,13 +18,17 @@
     cardigan: '<svg viewBox="0 0 48 48"><path d="M17 7l7 11 7-11 11 5-3 11-5-2v20H14V21l-5 2-3-11z" fill="#7b4a2a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><path d="M17 7l7 11 7-11z" fill="#a9c1d1" stroke="#2b1a10" stroke-width="1.5" stroke-linejoin="round"/><path d="M24 18v23" stroke="#2b1a10" stroke-width="2"/><circle cx="26.5" cy="24" r="1.6" fill="#e0a526"/><circle cx="26.5" cy="30" r="1.6" fill="#e0a526"/><circle cx="26.5" cy="36" r="1.6" fill="#e0a526"/></svg>',
     hat: '<svg viewBox="0 0 48 48"><path d="M10 35c0-12 6-20 14-20s14 8 14 20z" fill="#2a7a8c" stroke="#2b1a10" stroke-width="2"/><path d="M12 27q12-5 24 0" fill="none" stroke="#f3e6c9" stroke-width="3"/><rect x="8" y="32" width="32" height="9" rx="3.5" fill="#e0a526" stroke="#2b1a10" stroke-width="2"/><circle cx="24" cy="12" r="6.5" fill="#f3e6c9" stroke="#2b1a10" stroke-width="2"/></svg>',
     logs: '<svg viewBox="0 0 48 48"><rect x="8" y="28" width="34" height="11" rx="5.5" fill="#8a5a33" stroke="#2b1a10" stroke-width="2"/><rect x="12" y="16" width="30" height="11" rx="5.5" fill="#9c6a3f" stroke="#2b1a10" stroke-width="2"/><circle cx="13.5" cy="33.5" r="5.5" fill="#e3c49a" stroke="#2b1a10" stroke-width="2"/><circle cx="17.5" cy="21.5" r="5.5" fill="#e3c49a" stroke="#2b1a10" stroke-width="2"/></svg>',
+    mittens: '<svg viewBox="0 0 48 48"><g stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"><path d="M5 34V20c0-5 3-9 7-9s7 4 7 9v14z" fill="#b3261e"/><path d="M5 25c-3 0-4 4-2 6l2 2" fill="#b3261e"/><path d="M26 34V20c0-5 3-9 7-9s7 4 7 9v14z" fill="#b3261e"/><path d="M40 25c3 0 4 4 2 6l-2 2" fill="#b3261e"/><rect x="4" y="33" width="16" height="7" rx="2" fill="#f3e6c9"/><rect x="25" y="33" width="16" height="7" rx="2" fill="#f3e6c9"/></g><path d="M7 21h10M28 21h10M7 27h10M28 27h10" stroke="#f3e6c9" stroke-width="1.8"/></svg>',
+    earmuffs: '<svg viewBox="0 0 48 48"><path d="M9 28c0-12 7-19 15-19s15 7 15 19" fill="none" stroke="#2b1a10" stroke-width="6" stroke-linecap="round"/><path d="M9 28c0-12 7-19 15-19s15 7 15 19" fill="none" stroke="#7a3b1d" stroke-width="3" stroke-linecap="round"/><g fill="#e0667a" stroke="#2b1a10" stroke-width="2"><ellipse cx="9" cy="31" rx="6.5" ry="8.5"/><ellipse cx="39" cy="31" rx="6.5" ry="8.5"/></g><path d="M6 28c1-2 3-3 5-3M36 28c1-2 3-3 5-3" stroke="#f6c1c9" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
+    soup: '<svg viewBox="0 0 48 48"><path d="M17 12c-2-3 2-5 0-8M24 12c-2-3 2-5 0-8M31 12c-2-3 2-5 0-8" fill="none" stroke="#8a7a6a" stroke-width="2" stroke-linecap="round"/><path d="M5 21h38c0 10-8 18-19 18S5 31 5 21z" fill="#f3efe4" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><ellipse cx="24" cy="21" rx="19" ry="4.5" fill="#d9642c" stroke="#2b1a10" stroke-width="2"/><path d="M30 18l10-9" stroke="#8a9096" stroke-width="3" stroke-linecap="round"/><path d="M10 31h28" stroke="#2a7a8c" stroke-width="2.2"/></svg>',
+    heater: '<svg viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="26" rx="3" fill="#8a9096" stroke="#2b1a10" stroke-width="2"/><rect x="10" y="16" width="28" height="5" rx="2.5" fill="#ff7a2e" stroke="#2b1a10" stroke-width="1.4"/><rect x="10" y="25" width="28" height="5" rx="2.5" fill="#ff7a2e" stroke="#2b1a10" stroke-width="1.4"/><path d="M11 37v5M37 37v5" stroke="#2b1a10" stroke-width="3" stroke-linecap="round"/><path d="M16 8c-1-2 1-3 0-5M24 8c-1-2 1-3 0-5M32 8c-1-2 1-3 0-5" stroke="#ff7a2e" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
   };
   const SPEAKER_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
   const SPEAKER_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
   const PAWN_CSS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
   const CROWN = '<svg class="crown" viewBox="0 0 24 18" aria-label="Grandad\'s favourite"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11z" fill="#e0a526" stroke="#2b1a10" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11" r="1.8" fill="#b3261e"/></svg>';
   // favourite points: Grandad keeps score of who's been most helpful
-  const POINTS = { stall: 3, deliver: 2, duck: 1, boiler: 1, warm: 1, hit: -1 };
+  const POINTS = { token: 1, deliver: 2, duck: 1, hit: -1 };
 
   // ---------- State ----------
   function freshState() {
@@ -39,41 +43,47 @@
       roll: null,
       players: Array.from({ length: settings.count }, (_, k) => ({
         name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
-        pos: 0, carry: [], skip: false, biscuits: 2, score: 0, won: 0, charm: false,
+        pos: 0, tokens: 0, skip: false, biscuits: 2, score: 0, won: 0, charm: false,
       })),
       dealt: { ...G.dealt },
       leader: null,
       watching: false,
       nap: false,
       lastFind: {},
-      items: Object.fromEntries(G.ITEM_KEYS.map((k) => [k, { state: 'room', by: null }])),
+      // everything at the Fair Shop, and how many things Grandad needs before he's saved
+      items: Object.fromEntries(G.ITEM_KEYS.map((k) => [k, { state: 'shop' }])),
+      goal: settings.goal,
       delivered: [],
       log: [],
       warned: [],
       swats: 0,
       ducks: 0,
       stalls: 0,
-      stallWins: 0,
+      tokensWon: 0,
     };
   }
   const curP = () => S.players[S.cur];
   const districtAt = (pos) => { const sp = G.SPACES[pos]; return sp.type === 'room' ? G.DISTRICTS[sp.district] : null; };
-  const prizeAt = (pos) => { const d = districtAt(pos); return d && S.items[d.item].state === 'room' ? d : null; };
+  // every room's middle square has a stall that's always open
+  const stallAt = (pos) => { const sp = G.SPACES[pos]; return sp.type === 'room' && sp.stall ? G.DISTRICTS[sp.district] : null; };
+  const itemsLeft = () => G.ITEM_KEYS.filter((key) => S.items[key].state !== 'done');
+  const lossFor = (kind) => G.DIFFS[S.diff].loss[kind];
   const coldness = () => clamp((36.8 - S.temp) / 1.8, 0, 1);
   const coolRate = () => {
     const D = G.DIFFS[S.diff];
-    const ins = S.delivered.reduce((a, k) => a + G.ITEMS[k].ins, 0);
-    return D.cool * (1 - 0.09 * (S.players.length - 1)) * (1 - ins);
+    const keep = S.delivered.reduce((a, k) => a * (1 - G.ITEMS[k].ins), 1);
+    return D.cool * (1 - 0.09 * (S.players.length - 1)) * keep;
   };
   const setTemp = (t) => { S.temp = Math.round(clamp(t, 34.5, 37.2) * 1000) / 1000; };
   const frozen = () => S.temp < G.LOSE_AT;
-  const allDone = () => S.delivered.length === G.ITEM_KEYS.length;
+  const allDone = () => S.delivered.length >= S.goal;
 
   // ---------- Log, speech, toasts ----------
   const LOG_TAGS = {
     news: ['LATEST', ''], fair: ['AT THE FAIR', ''], won: ['WINNER', 'good'], lost: ['NO LUCK', 'bad'], deliver: ['DELIVERED', 'good'],
     thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], biscuit: ['BISCUITS', ''], boiler: ['BOILER', ''],
     cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'], pinch: ['PINCHED', 'bad'],
+    buy: ['FAIR SHOP', 'good'], token: ['TOKENS', 'good'], tokenlost: ['TOKENS', 'bad'], door: ['POCKET MONEY', 'good'],
     find: ['RUMMAGE', 'good'], dud: ['RUMMAGE', ''], findbad: ['RUMMAGE', 'bad'], charm: ['LUCKY CHARM', 'good'], nap: ['FORTY WINKS', 'good'],
   };
   function log(kind, text) {
@@ -131,12 +141,11 @@
     const to = G.wrap(p.pos + dir * S.roll);
     const sp = G.SPACES[to];
     const bits = [G.spaceName(to)];
-    const d = prizeAt(to);
-    if (d) bits.push(`win the ${G.ITEMS[d.item].name}`);
+    if (stallAt(to)) bits.push('up to 3 tokens');
+    else if (sp.type === 'door') bits.push('+1 token');
     else if (sp.type === 'corner') bits.push(sp.short);
     else if (G.SPACE_FX[to]) bits.push(G.SPACE_FX[to].short);
     else if (canRummage(to)) bits.push('rummage');
-    if (p.carry.length) for (let s = 1; s <= S.roll; s++) if (G.DOORS.includes(G.wrap(p.pos + dir * s))) { bits.push('hand over'); break; }
     return { to, text: bits.join(' · ') };
   }
 
@@ -155,12 +164,13 @@
     renderThermo();
     const hints = {
       setup: 'Pick your players and how cold it is, then start.',
-      roll: 'Roll the dice to take your go.' + (p.carry.length ? " Pass a yellow door to hand over what you're carrying." : ''),
+      roll: 'Roll the dice to take your go.',
       rolling: 'Rolling...',
       choose: G.isTouch ? `You rolled a ${S.roll}. Tap a flashing square, or a direction button.` : `You rolled a ${S.roll}. Pick a direction: click a flashing square, or press ← or →.`,
       moving: 'On the move...',
       fair: 'At the fair...',
-      pinch: 'Pinch it, or leave it?',
+      pinch: 'Pinch a token, or leave it?',
+      shop: 'At the Fair Shop: pick something for Grandad.',
       dodge: G.isTouch ? 'Duck! Tap the Duck button when the marker is in the green.' : 'Duck! Press Space when the marker is in the green.',
       over: 'Game over.',
     };
@@ -174,8 +184,9 @@
     const rr = $('rerollBtn');
     rr.disabled = !(choosing && p.biscuits > 0);
     rr.innerHTML = `Eat a custard cream to re-roll (${p.biscuits} left) <kbd>R</kbd>`;
+    renderPurse();
     $('team').innerHTML = S.players.map((q, j) => {
-      const carry = q.carry.length ? q.carry.map((c) => `<span title="${esc(G.ITEMS[c].name)}">${ICON[c]}</span>`).join('') : '<span>Empty-handed</span>';
+      const carry = q.tokens ? `<span class="tok-count" title="Tokens">${G.TOKEN_SVG} <b>${q.tokens}</b> token${q.tokens === 1 ? '' : 's'}</span>` : '<span>No tokens yet</span>';
       return `<div class="player-row${j === k && S.players.length > 1 ? ' now' : ''}">
         <span class="chip" style="background:${PAWN_CSS[j]}"></span>
         <span class="pname">${S.leader === j ? CROWN : ''}${esc(q.name)}</span>
@@ -184,13 +195,12 @@
         <span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span> ' : ''}${q.biscuits} custard cream${q.biscuits === 1 ? '' : 's'}</span>
       </div>`;
     }).join('');
-    $('needsList').innerHTML = G.DISTRICTS.map((d) => {
-      const it = S.items[d.item];
-      const game = G.Mini.GAMES[G.stallOf(d)].title;
-      let cls = '', where = `${game}, ${d.name}`;
-      if (it.state === 'done') { cls = 'done'; where = 'Delivered'; }
-      else if (it.state === 'carried') { cls = 'carried'; where = `<span class="dot" style="background:${PAWN_CSS[it.by]}"></span>With ${esc(S.players[it.by].name)}`; }
-      return `<li class="${cls}">${ICON[d.item]}<span class="iname">${esc(G.ITEMS[d.item].name)}</span><span class="where">${where}</span></li>`;
+    $('needsHead').textContent = `Grandad needs ${S.goal} things · ${S.delivered.length} so far`;
+    $('needsList').innerHTML = G.ITEM_KEYS.map((key) => {
+      const it = G.ITEMS[key];
+      const got = S.items[key].state === 'done';
+      const where = got ? "Grandad's got it" : `+${it.warmth.toFixed(1)}°C · ${G.TOKEN_SVG} ${G.ITEM_COST}`;
+      return `<li class="${got ? 'done' : ''}">${ICON[key]}<span class="iname">${esc(it.name)}</span><span class="where">${where}</span></li>`;
     }).join('');
   }
 
@@ -236,10 +246,25 @@
     box.classList.toggle('critical', !over && n <= 2);
   }
 
+  // the current player's tokens, and how close they are to buying Grandad something
+  function renderPurse() {
+    const p = curP();
+    const n = p.tokens;
+    const coins = Array.from({ length: Math.min(n, 12) }, () => G.TOKEN_SVG).join('') + (n > 12 ? '…' : '');
+    const need = G.ITEM_COST - (n % G.ITEM_COST);
+    const can = Math.floor(n / G.ITEM_COST);
+    const note = n >= G.ITEM_COST
+      ? `enough for ${can === 1 ? 'one thing' : can + ' things'} at the Fair Shop after your go`
+      : `${need} more buys Grandad something`;
+    $('purse').innerHTML = n
+      ? `<span class="coins">${coins}</span><b>${G.tokenWord(n)}</b><span class="note">${note}</span>`
+      : `<b>No tokens yet</b><span class="note">${note}</span>`;
+    $('purse').classList.toggle('rich', n >= G.ITEM_COST);
+  }
+
   function renderBoard() {
     const c = coldness();
-    B.setPrizes(S.items);
-    B.setCarry(S.players);
+    B.setTokens(S.players);
     B.placePawns(S.players, S.cur, S.phase !== 'setup' && S.phase !== 'over' && S.phase !== 'moving');
     B.setWorn(S.delivered);
     const won = S.phase === 'over' && allDone();
@@ -297,33 +322,32 @@
 
   async function maybePinch(p, k) {
     if (S.players.length < 2) return;
-    const victims = S.players.map((q, j) => ({ q, j })).filter(({ q, j }) => j !== k && q.pos === p.pos && q.carry.length);
+    const victims = S.players.map((q, j) => ({ q, j })).filter(({ q, j }) => j !== k && q.pos === p.pos && q.tokens > 0);
     if (!victims.length) return;
     const { q: victim, j } = pick(victims);
-    const key = pick(victim.carry);
     S.phase = 'pinch';
     render();
-    const yes = await askPinch(`${victim.name} is standing right here holding Grandad's ${G.ITEMS[key].name}. Pinch it? You'll get the points when you hand it over, but Grandad might be watching.`);
+    const yes = await askPinch(`${victim.name} is standing right here with ${G.tokenWord(victim.tokens)}. Pinch one? Grandad might be watching.`);
     if (!yes) {
-      log('news', `${p.name} leaves ${victim.name}'s ${G.ITEMS[key].name} alone. Very noble.`);
+      log('news', `${p.name} leaves ${victim.name}'s tokens alone. Very noble.`);
       S.phase = 'moving';
       render();
       return;
     }
-    victim.carry.splice(victim.carry.indexOf(key), 1);
-    p.carry.push(key);
-    S.items[key].by = k;
-    B.setCarry(S.players);
+    victim.tokens--;
+    B.setTokens(S.players);
     Sound.play('whoosh');
-    await B.passItem(key, j, k);
-    B.setCarry(S.players);
+    await B.tokensBetween(j, k, 1);
+    p.tokens++;
+    Sound.play('coin');
+    B.setTokens(S.players);
     if (Math.random() < 0.5) {
       S.watching = true;
       say(pick(['I saw that!', `Oi! Give that back to ${victim.name}!`, 'Cheeky monkey. I had my eye on you.']));
-      log('pinch', `${p.name} pinches the ${G.ITEMS[key].name} off ${victim.name}. Grandad saw everything, and he's reaching for his paper...`);
+      log('pinch', `${p.name} pinches a token off ${victim.name}. Grandad saw everything, and he's reaching for his paper...`);
     } else {
       say('Hmm? What are you two whispering about?');
-      log('pinch', `${p.name} pinches the ${G.ITEMS[key].name} off ${victim.name} while Grandad isn't looking.`);
+      log('pinch', `${p.name} pinches a token off ${victim.name} while Grandad isn't looking.`);
     }
     S.phase = 'moving';
     render();
@@ -392,69 +416,119 @@
     render();
     await moveSteps(p, k, dir, S.roll);
     B.placePawns(S.players, S.cur, false);
-    if (allDone()) { busy = false; return win(); }
     await resolveLanding(p, k, dir);
     if (S !== g) return;
-    // a rummage can send you on past a door, which might have been the last delivery
-    if (allDone()) { busy = false; return win(); }
     if (!frozen()) await maybeSwat(p, k);
+    if (S !== g) return;
+    // at the end of every go with enough tokens, it's off to the Fair Shop
+    if (await shopVisit(p, k)) { busy = false; return win(); }
+    if (S !== g) return;
     busy = false;
     endTurn();
   }
 
-  // hop the pawn along, handing things over at any door on the way; stops once everything's delivered
+  // hop the pawn along the squares
   async function moveSteps(p, k, dir, n) {
     for (let s = 0; s < n; s++) {
       const from = p.pos;
       p.pos = G.wrap(p.pos + dir);
       Sound.play('step');
       await B.hop(S.players, k, from);
-      if (G.DOORS.includes(p.pos) && p.carry.length) {
-        await deliver(p, k);
-        if (allDone()) return;
-      }
     }
   }
 
-  // Every delivery is a little cutscene: the camera swoops in, the item puts itself on Grandad and he cheers.
-  async function deliver(p, k) {
+  // Every purchase is a little cutscene: the camera swoops in, the thing puts itself on Grandad and he cheers.
+  async function giveItem(p, k, key) {
     const g = S;
-    const keys = p.carry.splice(0);
-    B.setCarry(S.players);
-    await Cine.begin(keys[0]);
-    for (const [j, key] of keys.entries()) {
-      if (j) { B.cineShot(key); Cine.hideCard(); }
-      await B.deliveryShow(key, k, () => {
-        const it = S.items[key];
-        it.state = 'done';
-        it.by = null;
-        S.delivered.push(key);
-        setTemp(S.temp + G.ITEMS[key].warmth);
-        render();
-        Sound.play('fanfare');
-        Cine.flash();
-        Cine.card(key, p);
-        if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
-        log('deliver', `${p.name} hands Grandad the ${G.ITEMS[key].name}. +${G.ITEMS[key].warmth.toFixed(2)}°C, and he'll cool more slowly now.`);
-      });
-      await B.cineHold(j < keys.length - 1 ? 1700 : 2600);
-      if (S !== g) { Cine.end(); return; }
-    }
+    await Cine.begin(key);
+    await B.deliveryShow(key, k, () => {
+      S.items[key].state = 'done';
+      S.delivered.push(key);
+      setTemp(S.temp + G.ITEMS[key].warmth);
+      render();
+      Sound.play('fanfare');
+      Cine.flash();
+      Cine.card(key, p);
+      if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
+      log('buy', `${p.name} buys Grandad the ${G.ITEMS[key].name} at the Fair Shop. +${G.ITEMS[key].warmth.toFixed(1)}°C, and he'll cool more slowly now.`);
+    });
+    await B.cineHold(2600);
+    if (S !== g) { Cine.end(); return; }
     // the last thing: win() carries the cutscene on into the fireworks
-    if (allDone()) { award(k, POINTS.deliver * keys.length); return; }
+    if (allDone()) { award(k, POINTS.deliver); return; }
     Cine.end();
     await sleep(G.ms(450));
-    award(k, POINTS.deliver * keys.length);
+    award(k, POINTS.deliver);
     await sleep(G.ms(300));
   }
+
+  // ---------- The Fair Shop ----------
+  // At the end of your go, if you've got three tokens, you can buy Grandad something. Returns true once he's saved.
+  async function shopVisit(p, k) {
+    const g = S;
+    while (p.tokens >= G.ITEM_COST && itemsLeft().length && !allDone()) {
+      const key = await Shop.open(p);
+      if (S !== g) return false;
+      if (!key) { log('news', `${p.name} saves their tokens for later.`); break; }
+      p.tokens -= G.ITEM_COST;
+      Sound.play('till');
+      S.phase = 'moving';
+      render();
+      await B.spendTokens(k, G.ITEM_COST);
+      await giveItem(p, k, key);
+      if (S !== g) return false;
+      if (allDone()) return true;
+    }
+    S.phase = 'moving';
+    render();
+    return false;
+  }
+  const Shop = {
+    resolve: null,
+    open(p) {
+      return new Promise((resolve) => {
+        S.phase = 'shop';
+        render();
+        if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        const multi = S.players.length > 1;
+        $('shopWho').textContent = multi ? `${p.name}'s tokens` : 'Your tokens';
+        $('shopPurse').innerHTML = `${Array.from({ length: Math.min(p.tokens, 12) }, () => G.TOKEN_SVG).join('')} <b>${G.tokenWord(p.tokens)}</b>`;
+        $('shopNeed').textContent = `Grandad needs ${S.goal - S.delivered.length} more thing${S.goal - S.delivered.length === 1 ? '' : 's'}. Everything costs ${G.ITEM_COST} tokens.`;
+        let n = 0;
+        $('shopGrid').innerHTML = G.ITEM_KEYS.map((key) => {
+          const it = G.ITEMS[key];
+          const got = S.items[key].state === 'done';
+          const num = got ? '' : String(++n > 9 ? '' : n);
+          return `<button type="button" class="shop-item${got ? ' got' : ''}" data-key="${key}"${got ? ' disabled' : ''}${num ? ` data-num="${num}"` : ''}>
+            <span class="si-icon">${ICON[key]}</span>
+            <span class="si-name">${esc(it.name)}</span>
+            <span class="si-fx">${got ? "Grandad's got it" : `+${it.warmth.toFixed(1)}°C now · cools ${Math.round(it.ins * 100)}% slower`}</span>
+            <span class="si-price">${got ? '✓' : `${G.TOKEN_SVG}${G.ITEM_COST}`}</span>${num ? `<kbd>${num}</kbd>` : ''}
+          </button>`;
+        }).join('');
+        $('shop').hidden = false;
+        Sound.play('coin');
+        this.resolve = (key) => { this.resolve = null; $('shop').hidden = true; resolve(key); };
+      });
+    },
+  };
 
   // ---------- Cutscenes ----------
   const TITLES = {
     slippers: 'Toasty toes!', tea: 'A proper cuppa!', blanket: 'Tucked in!', scarf: 'Wrapped up warm!',
     hwb: 'Hot water bottle!', cardigan: 'Cardigan on!', hat: 'Bobble hat on!', logs: "The fire's lit!",
+    mittens: 'Toasty fingers!', earmuffs: 'Snug ears!', soup: 'Hot soup!', heater: 'Heater on!',
   };
   const WIN_LINE = "Well... thank you, love. Now shush, I'm reading.";
-  const MILESTONES = { 1: 'The first one!', 4: 'Halfway there!', 7: 'Just one more thing!', 8: "That's everything!" };
+  // milestones depend on how many things Grandad needs this game
+  const milestone = (n) => {
+    const goal = S.goal;
+    if (n >= goal) return "That's everything!";
+    if (n === 1) return 'The first one!';
+    if (goal >= 6 && n === Math.ceil(goal / 2)) return 'Halfway there!';
+    if (n === goal - 1) return 'Just one more thing!';
+    return '';
+  };
   let barH = 0;
   const Cine = {
     active: false,
@@ -484,29 +558,31 @@
       const slower = Math.round(it.ins * 100);
       const multi = S.players.length > 1;
       $('cineIcon').innerHTML = ICON[key];
-      $('cineKicker').textContent = MILESTONES[n] || `${n} of ${G.ITEM_KEYS.length} delivered`;
+      $('cineKicker').textContent = milestone(n) || `${n} of ${S.goal} things`;
       $('cineTitle').textContent = TITLES[key] || `${it.name}!`;
       $('cineSub').textContent = this.talk
-        ? `+${it.warmth.toFixed(2)}°C · he'll cool ${slower}% slower · ★ +${POINTS.deliver}${multi ? ` for ${p.name}` : ''}`
+        ? `+${it.warmth.toFixed(1)}°C · he'll cool ${slower}% slower · ★ +${POINTS.deliver}${multi ? ` for ${p.name}` : ''}`
         : `“${it.thanks}”`;
       $('cineSub').classList.toggle('quote', !this.talk);
-      $('cineSlots').innerHTML = G.DISTRICTS.map((d) => {
-        const k = d.item;
-        const cls = k === key ? 'got new' : S.delivered.includes(k) ? 'got' : '';
-        return `<span class="${cls}" title="${esc(G.ITEMS[k].name)}">${ICON[k]}</span>`;
+      // one slot for each thing Grandad needs, filled in the order you bought them
+      $('cineSlots').style.setProperty('--slots', Math.max(S.goal, 3));
+      $('cineSlots').innerHTML = Array.from({ length: S.goal }, (_, j) => {
+        const k = S.delivered[j];
+        if (!k) return '<span class="empty">?</span>';
+        return `<span class="${k === key ? 'got new' : 'got'}" title="${esc(G.ITEMS[k].name)}">${ICON[k]}</span>`;
       }).join('');
       const c = $('cineCard');
       c.classList.remove('show');
       void c.offsetWidth;
       c.classList.add('show');
-      $('cine').classList.toggle('milestone', !!MILESTONES[n]);
+      $('cine').classList.toggle('milestone', !!milestone(n));
     },
     hideCard() { $('cineCard').classList.remove('show'); },
     finale() {
       const el = $('cine');
       el.classList.add('finale');
       $('cineIcon').innerHTML = CROWN;
-      $('cineKicker').textContent = `All ${G.ITEM_KEYS.length} delivered`;
+      $('cineKicker').textContent = `All ${S.goal} things delivered`;
       $('cineTitle').textContent = "Grandad's saved!";
       $('cineSub').textContent = this.talk ? `${S.temp.toFixed(1)}°C and warming up nicely` : `“${WIN_LINE}”`;
       $('cineSub').classList.toggle('quote', !this.talk);
@@ -539,21 +615,50 @@
   async function resolveLanding(p, k, dir, hopped = false) {
     const sp = G.SPACES[p.pos];
     if (sp.type === 'corner') await cornerEffect(p, k, sp);
-    else if (sp.type === 'door') log('news', `${p.name} lingers in the doorway. Grandad peers over his paper...`);
+    else if (sp.type === 'door') await popIn(p, k);
     else if (G.SPACE_FX[p.pos]) await spaceEffect(p, G.SPACE_FX[p.pos]);
     if (frozen()) return;
     await maybePinch(p, k);
-    const d = prizeAt(p.pos);
+    const d = stallAt(p.pos);
     if (d) await playStall(p, k, d);
     // rummage returns true when it sent you on somewhere else, which has already been dealt with
     else if (canRummage(p.pos) && await rummage(p, k, dir, hopped)) return;
     render();
   }
 
+  // ---------- Tokens ----------
+  async function gainTokens(p, k, n) {
+    Sound.play('coin');
+    await B.tokensUp(k, n);
+    p.tokens += n;
+    render();
+  }
+  // you can't lose more than you've got; returns how many actually went
+  async function loseTokens(p, k, n) {
+    const lost = Math.min(p.tokens, n);
+    if (!lost) return 0;
+    p.tokens -= lost;
+    B.setTokens(S.players);
+    await B.tokensAway(k, lost);
+    render();
+    return lost;
+  }
+  const lossChip = (lost, wanted) => (lost ? `−${G.tokenWord(lost)}` : wanted ? 'No tokens to lose. Phew!' : '');
+  // popping in to Grandad: he slips you a token, but he's grumpier with you hanging about in the doorway
+  async function popIn(p, k) {
+    log('door', `${p.name} pops in to see Grandad. He slips them a token from his cardigan pocket.`);
+    say(pick(["Here, don't spend it all at once.", 'Go on, take it. Now stop hovering.', "A token for you. Don't tell the others."]));
+    const gain = gainTokens(p, k, G.DOOR_TOKENS);
+    await Reveal.event({ icon: 'token', kicker: 'Pop in to Grandad', title: 'Grandad slips you a token', text: "He fishes it out of his cardigan pocket. He's a bit grumpier with you hanging about in the doorway, mind.", chip: `+${G.tokenWord(G.DOOR_TOKENS)}`, tone: 'good' });
+    await gain;
+  }
+
   // ---------- Rummaging ----------
-  // Rooms whose prize has already been won always have something to find.
-  const FIND_TONE = { star: 'good', biscuit: 'good', warm: 'good', charm: 'good', nap: 'good', hop: 'good', dud: 'dud', cold: 'bad' };
+  // Every plain square in a room has something to find.
+  const FIND_TONE = { token: 'good', star: 'good', biscuit: 'good', charm: 'good', nap: 'good', hop: 'good', dud: 'dud', lose: 'bad' };
   const FIND_ICON = {
+    token: G.TOKEN_SVG.replace('class="token"', 'class="token big"'),
+    lose: '<svg viewBox="0 0 48 48"><g transform="translate(4 8) scale(1.35)">' + G.TOKEN_SVG.replace(/<\/?svg[^>]*>/g, '') + '</g><circle cx="36" cy="12" r="9" fill="#b3261e" stroke="#2b1a10" stroke-width="2"/><path d="M31 12h10" stroke="#f6ecd2" stroke-width="3" stroke-linecap="round"/></svg>',
     mystery: '<svg viewBox="0 0 48 48"><path d="M6 18l18-8 18 8-18 8z" fill="#e3b77a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><path d="M6 18v18l18 8V26zM42 18v18l-18 8V26z" fill="#c9985a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><text x="24" y="21.5" text-anchor="middle" font-family="Shrikhand, Georgia, serif" font-size="11" fill="#7a3b1d">?</text><path d="M13 30l4 2M31 32l4-2" stroke="#7a3b1d" stroke-width="2" stroke-linecap="round"/></svg>',
     star: '<svg viewBox="0 0 48 48"><path d="M24 4l6 13 14 1.5-10.5 9.5 3 14L24 35l-12.5 7 3-14L4 18.5 18 17z" fill="#e0a526" stroke="#2b1a10" stroke-width="2.4" stroke-linejoin="round"/><path d="M18 20l3-1" stroke="#fff3c4" stroke-width="2.5" stroke-linecap="round"/></svg>',
     biscuit: '<svg viewBox="0 0 48 48"><rect x="6" y="12" width="36" height="24" rx="4" fill="#e8c068" stroke="#2b1a10" stroke-width="2.2"/><rect x="11" y="17" width="26" height="14" rx="3" fill="none" stroke="#b8862c" stroke-width="2"/><path d="M16 24c3-4 5 4 8 0s5 4 8 0" fill="none" stroke="#b8862c" stroke-width="2" stroke-linecap="round"/></svg>',
@@ -567,14 +672,14 @@
     dud: '<svg viewBox="0 0 48 48"><path d="M17 4h14v22l-2 4c-2 5-7 12-15 12-5 0-8-4-7-8 1-5 7-6 10-9z" fill="#a9c1d1" stroke="#2b1a10" stroke-width="2.2" stroke-linejoin="round"/><path d="M17 9h14M17 15h14" stroke="#e8432f" stroke-width="3"/><path d="M11 36c1 2 3 3 5 3" fill="none" stroke="#2b1a10" stroke-width="1.6"/></svg>',
   };
   let forcedFind = null;
-  // once a room's prize has been won, every square in it without its own effect is a rummage
+  // every plain room square is a rummage
   const canRummage = (pos) => {
     const sp = G.SPACES[pos];
-    return sp.type === 'room' && !G.SPACE_FX[pos] && !prizeAt(pos) && (sp.stall || !!G.RUMMAGE[pos]);
+    return sp.type === 'room' && !sp.stall && !G.SPACE_FX[pos] && !!G.RUMMAGE[pos];
   };
   function drawFind(pos, hopped) {
     const sp = G.SPACES[pos];
-    const table = sp.stall ? G.RUMMAGE_STALL : G.RUMMAGE[pos].finds;
+    const table = G.RUMMAGE[pos].finds;
     // never the same thing twice running on one square, and never two lawnmower chases in a row
     let options = table.map((f, i) => ({ f, i })).filter(({ f, i }) => !(hopped && f[0] === 'hop') && i !== S.lastFind[pos]);
     if (forcedFind) { const m = options.filter(({ f }) => f[0] === forcedFind); if (m.length) options = m; }
@@ -583,8 +688,8 @@
     const got = options.find((o) => (r -= G.FIND_WEIGHT[o.f[0]]) < 0) || options[0];
     S.lastFind[pos] = got.i;
     const [fx, text, pts = 1] = got.f;
-    const title = sp.stall ? G.Mini.GAMES[G.stallOf(districtAt(pos))].title : sp.name;
-    const where = sp.stall ? `You look round the back of the ${title} stall...` : G.RUMMAGE[pos].where;
+    const title = sp.name;
+    const where = G.RUMMAGE[pos].where;
     return { fx, text, pts, where, title };
   }
   function applyFind(p, k, f) {
@@ -595,8 +700,12 @@
         p.biscuits++;
         Sound.play('munch');
         return '+1 custard cream';
-      case 'warm': setTemp(S.temp + 0.1); Sound.play('warm'); return 'Grandad +0.1°C';
-      case 'cold': setTemp(S.temp - 0.1); return 'Grandad −0.1°C';
+      case 'token': gainTokens(p, k, 1); return '+1 token';
+      case 'lose': {
+        const n = Math.min(p.tokens, lossFor('find'));
+        loseTokens(p, k, n);
+        return lossChip(n, true);
+      }
       case 'charm':
         if (p.charm) { award(k, 1); return 'Already got one, so +1 ★ instead'; }
         p.charm = true;
@@ -696,25 +805,22 @@
     render();
     S.stalls++;
     log('fair', `${p.name} steps up to the ${title} stall in the ${d.name}.`);
-    say(pick(['Go on then, win me something.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win me me ' + G.ITEMS[d.item].name.toLowerCase() + '!']));
+    say(pick(['Go on then, win some tokens.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win enough to buy me something warm!']));
     await B.focusTile(d.idx[1]);
-    const won = await G.Mini.play(stall, { diff: S.diff, prizeKey: d.item, playerName: p.name });
+    const won = await G.Mini.play(stall, { diff: S.diff, playerName: p.name });
     B.unfocus();
     render();
     if (won) {
-      S.stallWins++;
-      Sound.play('pickup');
-      await B.prizeToPawn(d.item, k);
-      const it = S.items[d.item];
-      it.state = 'carried';
-      it.by = k;
-      p.carry.push(d.item);
-      p.won++;
-      award(k, POINTS.stall);
-      log('won', `${p.name} wins the ${G.ITEMS[d.item].name} at the ${title} stall! Take it to one of Grandad's doors.`);
-      say(pick(['Well done! Now bring it here.', 'Ooh, that looks warm. Hurry up!', 'About time somebody won something.']));
+      S.tokensWon += won;
+      p.won += won;
+      Sound.play('coin');
+      await B.tokensFromStall(d.idx[1], k, won);
+      p.tokens += won;
+      award(k, POINTS.token * won);
+      log('won', `${p.name} wins ${G.tokenWord(won)} at the ${title} stall.${p.tokens >= G.ITEM_COST ? ' Enough for the Fair Shop!' : ''}`);
+      say(won === 3 ? pick(['Three tokens! Now buy me something warm.', 'The top prize! That\'s my grandchild.']) : pick(['Every little helps.', 'Ooh, tokens. Hurry up and spend them on me.', 'About time somebody won something.']));
     } else {
-      log('lost', `No luck at the ${title} stall. The ${G.ITEMS[d.item].name} stays there for another go.`);
+      log('lost', `No tokens at the ${title} stall this time.`);
       say(pick(['Useless! In my day we won everything.', 'Hmph. Try again, then.', "It's rigged, those stalls."]));
     }
     S.phase = 'moving';
@@ -725,22 +831,13 @@
   async function boiler(p) {
     const k = S.players.indexOf(p);
     await sleep(G.ms(300));
-    if (Math.random() < 0.5) {
-      setTemp(S.temp + 0.3);
-      Sound.play('boiler');
-      B.flashBoiler();
-      B.findFx(k, 'good');
-      log('boiler', `${p.name} thumps the boiler. It coughs into life for a bit! Grandad +0.3°C.`);
-      say('Ooh, is that the radiator ticking?');
-      award(k, POINTS.boiler);
-      render();
-      await Reveal.event({ icon: 'boiler', kicker: 'Boiler Cupboard', title: 'You give the boiler a thump...', text: 'It coughs into life for a bit! The radiators start ticking.', chip: `Grandad +0.3°C · +${POINTS.boiler} ★`, tone: 'good' });
-    } else {
-      Sound.play('clank');
-      log('boiler', `${p.name} thumps the boiler. Clank. Nothing. It's sulking.`);
-      render();
-      await Reveal.event({ icon: 'boiler', kicker: 'Boiler Cupboard', title: 'You give the boiler a thump...', text: "Clank. Nothing. It's sulking. Maybe next time.", chip: 'No luck this time', tone: 'dud' });
-    }
+    Sound.play('boiler');
+    B.flashBoiler();
+    log('boiler', `${p.name} thumps the boiler, and a token rattles out of the pipes.`);
+    say('Ooh, is that the radiator ticking?');
+    const gain = gainTokens(p, k, 1);
+    await Reveal.event({ icon: 'boiler', kicker: 'Boiler Cupboard', title: 'You give the boiler a thump...', text: 'It coughs, clanks, and a token rattles out of the pipes!', chip: '+1 token', tone: 'good' });
+    await gain;
   }
 
   async function cornerEffect(p, k, sp) {
@@ -748,15 +845,17 @@
       case 'boiler':
         await boiler(p);
         break;
-      case 'window':
-        setTemp(S.temp - 0.2);
+      case 'window': {
         Sound.play('draught');
         B.findFx(k, 'bad');
         say('Who opened that window?! Shut it!');
-        log('draught', `${p.name} finds the window wide open. An icy blast! Grandad −0.2°C.`);
-        render();
-        await Reveal.event({ icon: 'cold', kicker: 'Open Window', title: 'Brrr! The window is wide open!', text: 'An icy blast blows through the house before you can shut it.', chip: 'Grandad −0.2°C', tone: 'bad' });
+        const n = Math.min(p.tokens, lossFor('window'));
+        const loss = loseTokens(p, k, n);
+        log('tokenlost', n ? `${p.name} finds the window wide open, and the icy blast whips away ${G.tokenWord(n)}.` : `${p.name} finds the window wide open, but they've no tokens to lose.`);
+        await Reveal.event({ icon: 'cold', kicker: 'Open Window', title: 'Brrr! The window is wide open!', text: n ? 'An icy blast whips tokens out of your hand and out into the snow.' : 'An icy blast! Luckily your pockets are empty.', chip: lossChip(n, true), tone: n ? 'bad' : 'dud' });
+        await loss;
         break;
+      }
       case 'stairlift': {
         await Reveal.event({ icon: 'hop', kicker: 'Stairlift', title: "Wheee! Grandad's stairlift!", text: 'It whisks you all the way down to the Boiler Cupboard, where you can give the boiler a thump.', chip: 'Off to the boiler', tone: 'good' });
         Sound.play('stairlift');
@@ -767,14 +866,16 @@
         await boiler(p);
         break;
       }
-      case 'cat':
-        p.skip = true;
+      case 'cat': {
         Sound.play('meow');
-        log('cat', `${p.name} trips over Tiddles the cat. Miss your next go.`);
         say('Mind the cat!');
-        render();
-        await Reveal.event({ icon: 'cat', kicker: "Tiddles' Basket", title: 'You trip over Tiddles!', text: 'Mrrrow! You go flying, and you need a sit down.', chip: 'Miss your next go', tone: 'bad' });
+        const n = Math.min(p.tokens, lossFor('cat'));
+        const loss = loseTokens(p, k, n);
+        log('cat', n ? `Tiddles pinches ${G.tokenWord(n)} off ${p.name} and bats them under the sofa.` : `Tiddles sniffs ${p.name}'s empty pockets and wanders off.`);
+        await Reveal.event({ icon: 'cat', kicker: "Tiddles' Basket", title: n ? 'Tiddles pinches your tokens!' : 'Tiddles has a sniff...', text: n ? 'Mrrrow! She bats them under the sofa and sits on them.' : "Your pockets are empty, so she wanders off in a huff.", chip: lossChip(n, true), tone: n ? 'bad' : 'dud' });
+        await loss;
         break;
+      }
     }
   }
 
@@ -782,13 +883,14 @@
     const k = S.players.indexOf(p);
     const where = G.spaceName(p.pos);
     if (f.kind === 'draught') {
-      setTemp(S.temp - f.amt);
       Sound.play('draught');
       B.findFx(k, 'bad');
-      log('draught', f.text);
       if (f.line) say(f.line);
-      render();
-      await Reveal.event({ icon: 'cold', kicker: where, title: 'Draught!', text: f.card, chip: `Grandad −${f.amt}°C`, tone: 'bad' });
+      const n = Math.min(p.tokens, lossFor('draught'));
+      const loss = loseTokens(p, k, n);
+      log('tokenlost', n ? `${f.text} ${p.name} loses ${G.tokenWord(n)}.` : `${f.text} Luckily ${p.name} has no tokens to lose.`);
+      await Reveal.event({ icon: 'cold', kicker: where, title: 'Draught!', text: n ? f.card : 'Whoosh! Luckily your pockets are empty.', chip: lossChip(n, true), tone: n ? 'bad' : 'dud' });
+      await loss;
     } else if (f.kind === 'biscuit') {
       const full = p.biscuits >= 3;
       if (full) log('biscuit', `${p.name} spots more custard creams, but their pockets are full.`);
@@ -796,14 +898,13 @@
       render();
       await Reveal.event({ icon: 'biscuit', kicker: where, title: 'Custard creams!', text: f.card, chip: full ? 'Pockets full, so you leave them' : '+1 custard cream (a re-roll)', tone: full ? 'dud' : 'good' });
     } else if (f.kind === 'warm') {
-      setTemp(S.temp + f.amt);
       Sound.play('warm');
       B.findFx(k, 'good');
-      log('warm', f.text);
+      log('token', f.text);
       if (f.line) say(f.line);
-      award(k, POINTS.warm);
-      render();
-      await Reveal.event({ icon: 'warm', kicker: where, title: 'A warm towel!', text: f.card, chip: `Grandad +${f.amt}°C · +${POINTS.warm} ★`, tone: 'good' });
+      const gain = gainTokens(p, k, 1);
+      await Reveal.event({ icon: 'token', kicker: where, title: 'Warm towels!', text: f.card, chip: '+1 token', tone: 'good' });
+      await gain;
     }
   }
 
@@ -836,16 +937,11 @@
       say(pick(G.DUCK_LINES));
       log('duck', `${p.name} ducked! The paper sails clean over their head.`);
       award(k, POINTS.duck);
-    } else if (p.carry.length) {
+    } else if (p.tokens) {
       award(k, POINTS.hit);
-      const key = p.carry.splice(rnd(p.carry.length), 1)[0];
-      const d = G.DISTRICT_OF_ITEM[key];
-      B.setCarry(S.players);
-      await B.backToStall(key, k);
-      const it = S.items[key];
-      it.state = 'room';
-      it.by = null;
-      log('thwack', `THWACK! ${p.name} drops the ${G.ITEMS[key].name}, and it goes flying back to the ${G.Mini.GAMES[G.stallOf(d)].title} stall in the ${d.name}.`);
+      const n = await loseTokens(p, k, lossFor('paper'));
+      log('thwack', `THWACK! ${p.name} drops ${G.tokenWord(n)}, and they go rolling off under the furniture.`);
+      toast(`−${G.tokenWord(n)}`, 'danger');
     } else {
       award(k, POINTS.hit);
       p.skip = true;
@@ -983,11 +1079,11 @@
       ? (n === 3 ? 'Warm as toast, with time to spare. He even said thank you. Then he went straight back to his paper.'
         : n === 2 ? 'Snug in his cardigan and slippers. He grumbled a bit, but he always does.'
           : "That was close! His nose is still a bit blue, but he's thawing out nicely.")
-      : `His temperature dropped to 35.0°C. Below that is hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of 8 things to him. Try again?`;
+      : `His temperature dropped to 35.0°C. Below that is hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of ${S.goal} things to him. Try again?`;
     const change = Math.round((S.temp - G.DIFFS[S.diff].start) * 10) / 10;
     $('statTemp').innerHTML = `${S.temp.toFixed(1)}°<small class="${change >= 0 ? 'up' : 'down'}">${change >= 0 ? '▲ +' : '▼ −'}${Math.abs(change).toFixed(1)}° since the start</small>`;
     $('statTurns').textContent = S.turns;
-    $('statStalls').textContent = `${S.stallWins}/${S.stalls}`;
+    $('statStalls').innerHTML = `${S.tokensWon}<small>from ${S.stalls} stall${S.stalls === 1 ? '' : 's'}</small>`;
     $('statDucks').textContent = `${S.ducks}/${S.swats}`;
     $('endRivalry').innerHTML = rivalrySummary(won);
     $('endOverlay').hidden = false;
@@ -999,12 +1095,14 @@
       const p = S.players[0];
       const bonus = won ? 5 + Math.round((S.temp - 35) * 5) : 0;
       const total = p.score + bonus;
-      const best = settings.best || 0;
+      // a best score for each length of game
+      settings.bests = settings.bests || {};
+      const best = settings.bests[S.goal] || 0;
       const isBest = total > best;
-      if (isBest) { settings.best = total; G.saveSettings(settings); }
+      if (isBest) { settings.bests[S.goal] = total; G.saveSettings(settings); }
       return `<p class="fav-kicker">Favourite points</p>
         <p class="fav-score">★ ${total}</p>
-        <p class="fav-note">${bonus ? `${p.score} from the game + ${bonus} rescue bonus. ` : ''}${isBest ? (best ? `A new best! Your old best was ${best}.` : 'Your first score. Now beat it.') : `Your best is ${best}.`}</p>`;
+        <p class="fav-note">${bonus ? `${p.score} from the game + ${bonus} rescue bonus. ` : ''}${isBest ? (best ? `A new best for a ${S.goal}-thing game! Your old best was ${best}.` : `Your first score for a ${S.goal}-thing game. Now beat it.`) : `Your best for a ${S.goal}-thing game is ${best}.`}</p>`;
     }
     const ranked = S.players.map((q, j) => ({ q, j })).sort((a, b) => b.q.score - a.q.score);
     const top = ranked[0].q.score;
@@ -1014,7 +1112,7 @@
       : winners.length > 1
         ? `<p class="fav-kicker">Grandad's favourite</p><p class="fav-name">${winners.map((r) => esc(r.q.name)).join(' and ')}</p><p class="fav-note">He can't choose. He says he loves you all the same. (He doesn't.)</p>`
         : `<p class="fav-kicker">Grandad's favourite</p><p class="fav-name">${CROWN}${esc(winners[0].q.name)}</p><p class="fav-note">${won ? "He'll deny it in front of the others." : 'Even frozen solid, he knows who his favourite is.'}</p>`;
-    const rows = ranked.map((r) => `<li><span class="chip" style="background:${PAWN_CSS[r.j]}"></span><span>${esc(r.q.name)}</span><span class="fav-meta">${r.q.won} stall${r.q.won === 1 ? '' : 's'} won</span><b>★ ${r.q.score}</b></li>`).join('');
+    const rows = ranked.map((r) => `<li><span class="chip" style="background:${PAWN_CSS[r.j]}"></span><span>${esc(r.q.name)}</span><span class="fav-meta">${G.tokenWord(r.q.won)} won</span><b>★ ${r.q.score}</b></li>`).join('');
     return head + `<ol class="fav-table">${rows}</ol>`;
   }
 
@@ -1028,6 +1126,8 @@
     $('count' + settings.count).checked = true;
     ({ mild: $('diffMild'), chilly: $('diffChilly'), freeze: $('diffFreeze') })[settings.diff].checked = true;
     $('shuffleStalls').checked = settings.shuffle;
+    const goalEl = $('goal' + settings.goal) || $('goal6');
+    goalEl.checked = true;
     renderNames();
   }
   function readNames() {
@@ -1126,6 +1226,9 @@
     // stop iOS Safari zooming the whole page when you pinch the board
     document.addEventListener('gesturestart', (e) => e.preventDefault());
     $('pinchNo').addEventListener('click', () => { if (pinchResolve) pinchResolve(false); });
+    $('shopGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-key]'); if (b && !b.disabled && Shop.resolve) Shop.resolve(b.dataset.key); });
+    $('shopLeave').addEventListener('click', () => { if (Shop.resolve) Shop.resolve(null); });
+    $('goalSeg').addEventListener('change', (e) => { if (e.target.name === 'goal') { settings.goal = +e.target.value; G.saveSettings(settings); } });
     $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
     B.onTileClick = (i) => {
       if (!S || S.phase !== 'choose') return;
@@ -1139,6 +1242,14 @@
       if (e.target.closest && e.target.closest('input, textarea, select')) return;
       if (!$('setup').hidden || !$('endOverlay').hidden) return;
       const key = e.key;
+      // the Fair Shop: number keys buy, Escape or N saves your tokens
+      if (Shop.resolve) {
+        const btn = /^[1-9]$/.test(key) && document.querySelector(`#shopGrid [data-num="${key}"]`);
+        if (btn) { e.preventDefault(); Shop.resolve(btn.dataset.key); }
+        else if (key === 'Escape' || key === 'n' || key === 'N') { e.preventDefault(); Shop.resolve(null); }
+        else if (key === 'm' || key === 'M') toggleMute();
+        return;
+      }
       if (Reveal.active) {
         if (key === ' ' || key === 'Enter' || key === 'Escape') { e.preventDefault(); if (Reveal.skip) Reveal.skip(); }
         else if (key === 'm' || key === 'M') toggleMute();
@@ -1229,6 +1340,9 @@
     cine: () => Cine.active,
     skipCine: () => Cine.skip(),
     forceFind: (fx) => { forcedFind = fx; },
+    shop: () => !!Shop.resolve,
+    buy: (key) => { if (Shop.resolve) Shop.resolve(key || document.querySelector('#shopGrid [data-key]:not([disabled])').dataset.key); },
+    leaveShop: () => { if (Shop.resolve) Shop.resolve(null); },
     render: () => render(),
     reveal: () => Reveal.active,
   };

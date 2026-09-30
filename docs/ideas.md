@@ -17,7 +17,7 @@ His lines could also be read aloud in a grumpy British voice, using one of the v
 
 A family game about your own Grandad will get far more laughs than a generic one.
 
-### 2. Fairground tickets and a prize booth — Idea
+### 2. Fairground tickets and a prize booth — Built (as tokens and the Fair Shop)
 
 At the moment you either win a stall's prize or get nothing. Instead, every stall pays out tickets however well you do, and you spend them at a prize booth on treats:
 
@@ -79,6 +79,10 @@ Winning a stall now fires confetti cannons too. Every cutscene can be skipped wi
 ### Rummaging — Built
 
 Once a room's prize has been won, its squares used to do nothing, so the end of a game went flat. Now a mystery parcel floats over the stall, and landing anywhere in that room means a rummage. Every room has its own finds: the TV remote down the back of the sofa, Nan ringing on the telephone table, moth balls in the wardrobe that send Grandad off to sleep, a lawnmower that chases you two squares on, and a single sock. Finds give favourite points, custard creams, a bit of warmth, a lucky charm that stops the next newspaper, or nothing at all, with the odd icy draught.
+
+### Tokens and the Fair Shop — Built
+
+The stalls now pay out fairground tokens instead of one fixed prize: up to 3 a go, depending on how well you do. On harder settings each token takes more (on Dodgems it's 1 bump per token on Mild, 2 on Chilly and 4 on the Big Freeze). At the end of your go, 3 tokens buys Grandad something at the Fair Shop, which now has 12 things, including new mittens, earmuffs, a bowl of soup and an electric heater. Every other square is a clear token swing: the doors, the boiler and the airing cupboard pay a token, and the open window, draughts and Tiddles cost tokens, more on harder settings. Grandad's temperature now only moves for two reasons: the steady cooling at the end of each go, and warming up when you buy him something. You pick how many things he needs (3, 6, 9 or 12), which sets how long the game lasts.
 
 ### Grandad's errands — Idea
 

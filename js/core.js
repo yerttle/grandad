@@ -154,6 +154,8 @@ window.GCS = window.GCS || {};
         case 'ignite': this.noise(1.1, { vol: 0.4, freq: 200, to: 1600, q: 0.8, swell: true }); this.tone(70, 0.9, { vol: 0.25, to: 140 }); for (let k = 0; k < 5; k++) this.noise(0.04, { vol: 0.3, at: 0.3 + k * 0.12 + Math.random() * 0.08, freq: 3000, q: 4 }); break;
         case 'rocket': this.noise(0.7, { vol: 0.16, freq: 600, to: 4000, q: 4, swell: true }); break;
         case 'firework': this.noise(0.5, { vol: 0.5, freq: 900, type: 'lowpass' }); this.tone(70, 0.4, { vol: 0.3, to: 40 }); for (let k = 0; k < 8; k++) this.noise(0.03, { vol: 0.14, at: 0.15 + k * 0.07 + Math.random() * 0.05, freq: 5000, q: 6 }); break;
+        case 'coin': [1319, 1760, 2637].forEach((f, k) => this.tone(f, k === 2 ? 0.35 : 0.1, { type: 'triangle', vol: 0.12, at: k * 0.06 })); this.noise(0.05, { vol: 0.2, freq: 5000, q: 8 }); break;
+        case 'till': this.tone(2093, 0.5, { vol: 0.14 }); this.tone(2637, 0.6, { vol: 0.1, at: 0.08 }); this.noise(0.12, { vol: 0.25, freq: 3500, q: 3 }); this.tone(180, 0.12, { type: 'square', vol: 0.05, at: 0.2 }); break;
         case 'heartbeat': [0, 0.22, 0.8, 1.02].forEach((at, k) => this.tone(k % 2 ? 62 : 72, 0.16, { vol: 0.35, at, to: 40 })); break;
         // rummaging
         case 'rustle': for (let k = 0; k < 4; k++) this.noise(0.09, { vol: 0.22, at: k * 0.17 + Math.random() * 0.05, freq: 1800 + r(1500), q: 1.2 }); break;
@@ -216,7 +218,7 @@ window.GCS = window.GCS || {};
   G.DEFAULT_NAMES = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
   const SETTINGS_KEY = 'grandads-cold-snap-settings';
   G.loadSettings = () => {
-    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false, shuffle: true, best: 0 };
+    const base = { count: 1, names: G.DEFAULT_NAMES.slice(), diff: 'chilly', muted: false, shuffle: true, best: 0, goal: 6, bests: {} };
     try {
       const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
       if (saved && typeof saved === 'object') {
@@ -226,6 +228,10 @@ window.GCS = window.GCS || {};
         base.muted = !!saved.muted;
         if (typeof saved.shuffle === 'boolean') base.shuffle = saved.shuffle;
         if (Number.isFinite(saved.best)) base.best = Math.max(0, Math.round(saved.best));
+        if ([3, 6, 9, 12].includes(saved.goal)) base.goal = saved.goal;
+        // best solo scores, one for each length of game
+        base.bests = {};
+        if (saved.bests && typeof saved.bests === 'object') for (const g of [3, 6, 9, 12]) if (Number.isFinite(saved.bests[g])) base.bests[g] = Math.max(0, Math.round(saved.bests[g]));
       }
     } catch (e) { /* storage unavailable */ }
     return base;
@@ -237,20 +243,24 @@ window.GCS = window.GCS || {};
   G.DOORS = [4, 12, 20, 28];
   G.LOSE_AT = 35.05; // anything that shows as 35.0°C or lower is hypothermia
   G.DIFFS = {
-    mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.12, zone: 0.30, period: 1150, level: 0 },
-    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.17, zone: 0.22, period: 950,  level: 1 },
-    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.19, zone: 0.16, period: 800,  level: 2 },
+    mild:   { name: 'Mild Autumn',    start: 36.6, cool: 0.12, zone: 0.30, period: 1150, level: 0, loss: { window: 1, draught: 1, cat: 1, find: 1, paper: 1 } },
+    chilly: { name: 'Chilly Winter',  start: 36.4, cool: 0.19, zone: 0.22, period: 950,  level: 1, loss: { window: 2, draught: 1, cat: 2, find: 1, paper: 1 } },
+    freeze: { name: 'The Big Freeze', start: 36.2, cool: 0.20, zone: 0.16, period: 800,  level: 2, loss: { window: 3, draught: 2, cat: 2, find: 2, paper: 2 } },
   };
 
   G.ITEMS = {
-    slippers: { name: 'Slippers', warmth: 0.20, ins: 0.10, thanks: 'About time! Me toes were going blue.' },
-    tea:      { name: 'Cup of Tea', warmth: 0.50, ins: 0.08, thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
-    blanket:  { name: 'Tartan Blanket', warmth: 0.20, ins: 0.14, thanks: "That's more like it. Tuck it in, tuck it in." },
-    scarf:    { name: 'Woolly Scarf', warmth: 0.20, ins: 0.10, thanks: 'Your Nan knitted that, you know.' },
-    hwb:      { name: 'Hot Water Bottle', warmth: 0.40, ins: 0.12, thanks: "Ooh, that's lovely. Not too hot, mind." },
-    cardigan: { name: 'Cardigan', warmth: 0.20, ins: 0.12, thanks: 'Me good cardigan! With the patches!' },
-    hat:      { name: 'Bobble Hat', warmth: 0.20, ins: 0.10, thanks: "Does this bobble make me look daft? Don't answer that." },
-    logs:     { name: 'Logs for the Fire', warmth: 0.40, ins: 0.14, thanks: "Now we're cooking. Stand back, I'll light it." },
+    slippers: { name: 'Slippers', warmth: 0.30, ins: 0.10, thanks: 'About time! Me toes were going blue.' },
+    tea:      { name: 'Cup of Tea', warmth: 0.70, ins: 0.08, thanks: 'Ahh. Proper tea. None of your fancy stuff.' },
+    blanket:  { name: 'Tartan Blanket', warmth: 0.30, ins: 0.14, thanks: "That's more like it. Tuck it in, tuck it in." },
+    scarf:    { name: 'Woolly Scarf', warmth: 0.30, ins: 0.10, thanks: 'Your Nan knitted that, you know.' },
+    hwb:      { name: 'Hot Water Bottle', warmth: 0.60, ins: 0.12, thanks: "Ooh, that's lovely. Not too hot, mind." },
+    cardigan: { name: 'Cardigan', warmth: 0.30, ins: 0.12, thanks: 'Me good cardigan! With the patches!' },
+    hat:      { name: 'Bobble Hat', warmth: 0.30, ins: 0.10, thanks: "Does this bobble make me look daft? Don't answer that." },
+    logs:     { name: 'Logs for the Fire', warmth: 0.60, ins: 0.14, thanks: "Now we're cooking. Stand back, I'll light it." },
+    mittens:  { name: 'Woolly Mittens', warmth: 0.30, ins: 0.08, thanks: 'Me fingers are coming back to life!' },
+    earmuffs: { name: 'Earmuffs', warmth: 0.30, ins: 0.08, thanks: 'What? WHAT? Oh, these are lovely.' },
+    soup:     { name: 'Bowl of Soup', warmth: 0.60, ins: 0.05, thanks: "Tomato! My favourite. Mind, it's hot." },
+    heater:   { name: 'Electric Heater', warmth: 0.50, ins: 0.14, thanks: "Two bars! Don't tell your Nan about the electric bill." },
   };
   G.ITEM_KEYS = Object.keys(G.ITEMS);
 
@@ -285,24 +295,35 @@ window.GCS = window.GCS || {};
   };
 
   G.CORNERS = {
-    0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Thump it. It might kick in!', short: 'thump the boiler' },
-    8:  { key: 'window',    name: 'Open Window',     rule: 'Brrr! Grandad −0.2°C',        short: 'brrr! −0.2°C' },
-    16: { key: 'stairlift', name: 'Stairlift',       rule: 'Ride down to the boiler',     short: 'ride the stairlift' },
-    24: { key: 'cat',       name: "Tiddles' Basket", rule: 'Trip over the cat. Miss a go', short: 'miss a go' },
+    0:  { key: 'boiler',    name: 'Boiler Cupboard', rule: 'Thump it: +1 token',          short: '+1 token' },
+    8:  { key: 'window',    name: 'Open Window',     rule: 'Brrr! Tokens blow away',      short: 'lose tokens' },
+    16: { key: 'stairlift', name: 'Stairlift',       rule: 'Ride down to the boiler',     short: 'ride to the boiler' },
+    24: { key: 'cat',       name: "Tiddles' Basket", rule: 'Tiddles pinches tokens!',     short: 'lose tokens' },
   };
 
   G.SPACE_FX = {
     5:  { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', card: 'A packet of custard creams in the larder!', text: 'A packet of custard creams in the larder. +1 re-roll.' },
-    7:  { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', card: "The back door's been left wide open.", text: "The back door's wide open. Draught! Grandad −0.1°C.", line: 'Were you born in a barn? Shut that door!' },
+    7:  { kind: 'draught', mark: 'draught', short: 'lose tokens', card: "The back door's wide open, and the draught whips tokens out of your hand.", text: "The back door's wide open. A draught blows tokens away.", line: 'Were you born in a barn? Shut that door!' },
     11: { kind: 'biscuit', mark: 'biscuit', short: '+1 custard cream', card: 'The biscuit tin in the sideboard!', text: 'The biscuit tin in the sideboard! +1 custard cream.' },
-    15: { kind: 'draught', amt: 0.1, mark: 'draught', short: 'draught', card: 'The conservatory window leaks like a sieve.', text: 'The conservatory window leaks like a sieve. Grandad −0.1°C.', line: 'I can feel that draught from here!' },
-    19: { kind: 'warm', amt: 0.1, mark: 'warm', short: 'warm towel', card: 'A toasty towel from the airing cupboard, draped round Grandad.', text: 'A toasty towel from the airing cupboard, draped over Grandad. +0.1°C.', line: "Ooh, that's warm." },
+    15: { kind: 'draught', mark: 'draught', short: 'lose tokens', card: 'The conservatory window leaks like a sieve, and the draught whips tokens out of your hand.', text: 'The leaky conservatory window blows tokens away.', line: 'I can feel that draught from here!' },
+    19: { kind: 'warm', mark: 'warm', short: '+1 token', card: 'You fold the warm towels in the airing cupboard, and Grandad gives you a token for your trouble.', text: 'Folding the towels in the airing cupboard earns a token from Grandad.', line: "Ooh, that's warm." },
   };
 
+  // ---------- Tokens ----------
+  // Stalls pay out fairground tokens, and everything at the Fair Shop costs three of them.
+  G.ITEM_COST = 3;
+  // how many things Grandad needs before he's saved: chosen on the start screen
+  G.GOALS = [3, 6, 9, 12];
+  G.MAX_TOKENS = 3;
+  G.DOOR_TOKENS = 1; // popping in to Grandad: he slips you a token from his cardigan pocket
+  G.TOKEN_SVG = '<svg class="token" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="#e0a526" stroke="#2b1a10" stroke-width="1.6"/><circle cx="12" cy="12" r="7.6" fill="none" stroke="#9a6a14" stroke-width="1.1"/><path d="M12 6.9l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z" fill="#fff3c4" stroke="#8a5a12" stroke-width=".6" stroke-linejoin="round"/></svg>';
+  G.tokenWord = (n) => `${n} token${n === 1 ? '' : 's'}`;
+
   // ---------- Rummage ----------
-  // Once a room's prize has been won, its squares have something to find. Each find is [effect, text, points]:
-  // star (favourite points), biscuit, warm (+0.1°C), cold (−0.1°C), charm (stops the next newspaper),
-  // nap (Grandad nods off: no newspaper this go), hop (two more squares on), dud (nothing, but a laugh).
+  // Every plain square in a room has something to find. Each find is [effect, text, points]:
+  // token (+1 token), lose (tokens, more on harder settings), star (favourite points), biscuit,
+  // charm (stops the next newspaper), nap (Grandad nods off: no newspaper this go), hop (two more squares on),
+  // dud (nothing, but a laugh).
   G.RUMMAGE = {
     1: { where: 'You lift the doormat...', finds: [
       ['star', "The spare key! Grandad's been looking for that since 1987."],
@@ -310,15 +331,18 @@ window.GCS = window.GCS || {};
       ['dud', 'Three catalogues and a leaflet about double glazing.'],
       ['charm', 'A lucky horseshoe that fell off the front door.'],
       ['hop', 'The postman barges in and sweeps you two squares along.'],
-      ['cold', 'You shake it out of the front door and let the cold in.'],
+      ['dud', 'You shake it out of the front door. Brrr! Just dust.'],
+      ['token', 'A token someone dropped on their way in!'],
+      ['lose', 'A hole in your pocket. A token rolls out under the door.'],
     ] },
     3: { where: 'You check the telephone table...', finds: [
-      ['warm', "The phone rings. It's Nan! Grandad goes all pink and cheerful."],
+      ['token', "The phone rings. It's Nan! She says there's a token for you under the phone."],
       ['star', "Grandad's little address book. He's chuffed you found it."],
       ['nap', 'You ring the talking clock for him. Grandad nods off listening.'],
       ['dud', 'A pencil with no lead and a phone book from 1974.'],
       ['biscuit', 'The emergency biscuit drawer!'],
       ['charm', 'A lucky four-leaf clover, pressed in the phone book.'],
+      ['token', 'A token tucked in the address book, for emergencies.'],
     ] },
     9: { where: 'Down the back of the sofa...', finds: [
       ['biscuit', '20p, a hairgrip and a custard cream!'],
@@ -326,23 +350,27 @@ window.GCS = window.GCS || {};
       ['charm', 'A lucky penny. Heads up, too.'],
       ['dud', 'Fluff. So much fluff.'],
       ['nap', 'You plump the cushions and Grandad dozes off at the very thought.'],
-      ['warm', "Tiddles' heated cushion. You tuck it behind Grandad."],
+      ['star', "Tiddles' heated cushion. You tuck it behind Grandad and he's ever so grateful."],
+      ['token', 'A fairground token down the back of the sofa!'],
+      ['lose', "You lose a token down the back of the sofa. It's gone for ever."],
     ] },
     13: { where: 'You poke about in the wicker chair...', finds: [
       ['star', "Grandad's reading glasses! Now he can do the crossword."],
       ['dud', 'A wicker splinter. Ow.'],
       ['hop', 'It creaks, collapses and bounces you two squares along.'],
       ['biscuit', 'A shortbread tin with one custard cream left in it.'],
-      ['cold', 'You fiddle with the blinds and let the cold in.'],
+      ['lose', 'You fiddle with the blinds and a token slips down behind the radiator.'],
       ['charm', 'A lucky pebble from Skegness.'],
+      ['token', 'A token stuck in the wicker.'],
     ] },
     17: { where: 'You look in the bath...', finds: [
       ['charm', 'A lucky rubber duck. Squeak!'],
       ['dud', "A bar of soap. That's it. Just soap."],
       ['hop', 'You slip on the soap and skid two squares along.'],
-      ['warm', "The hot tap works! A hot flannel for Grandad's forehead."],
+      ['star', "The hot tap works! A hot flannel for Grandad's forehead. He's ever so grateful."],
       ['star', "Grandad's false teeth, in a glass. He's delighted to have them back.", 2],
-      ['cold', 'The plughole gurgles up an icy draught.'],
+      ['lose', 'A token rolls straight down the plughole. Glug.'],
+      ['token', 'A token in the soap dish. A bit soapy, still spends.'],
     ] },
     21: { where: 'You open the wardrobe...', finds: [
       ['nap', 'Moth balls! The pong sends Grandad off for a snooze.'],
@@ -351,14 +379,16 @@ window.GCS = window.GCS || {};
       ['hop', 'You get lost among the coats and come out two squares along.'],
       ['charm', 'A lucky flat cap.'],
       ['biscuit', 'A custard cream in the pocket of his best jacket.'],
+      ['token', 'A token in the pocket of his best coat!'],
     ] },
     23: { where: 'You rifle through the chest of drawers...', finds: [
       ['star', 'His old bowls trophy. He puffs up with pride.', 2],
       ['biscuit', 'The sock drawer is hiding a custard cream.'],
       ['dud', 'A sock. Just the one.'],
-      ['warm', "Thermal long johns. You don't ask. He puts them on anyway."],
+      ['star', "Thermal long johns. You don't ask. He's delighted."],
       ['charm', 'A lucky threepenny bit.'],
       ['nap', 'His old pyjamas. He yawns just looking at them.'],
+      ['token', 'A token in the sock drawer. With the socks.'],
     ] },
     25: { where: 'You creak open the old trunk...', finds: [
       ['star', "Grandad's school photo. Look at his hair!"],
@@ -366,45 +396,41 @@ window.GCS = window.GCS || {};
       ['charm', "A lucky rabbit's foot. Plastic, probably."],
       ['hop', 'A jack-in-the-box springs out and you jump two squares.'],
       ['biscuit', 'A biscuit tin full of buttons, and one custard cream.'],
-      ['warm', "A moth-eaten jumper to go over Grandad's knees."],
+      ['star', "A moth-eaten jumper for Grandad's knees. He's chuffed."],
+      ['token', 'An old token from the fair of 1963!'],
+      ['lose', 'A moth flies out and makes off with one of your tokens.'],
     ] },
     27: { where: 'You lift the lid of the water tank...', finds: [
-      ['cold', 'An icy chill pours out.'],
+      ['lose', 'A token slips out of your hand and plops into the tank.'],
       ['dud', 'A very old tennis ball, bobbing about.'],
-      ['warm', 'You lag the pipes and a radiator starts ticking.'],
+      ['token', 'You lag the pipes, and Grandad pays you a token for the job.'],
       ['hop', 'The pipes clank so loudly you jump two squares.'],
       ['nap', 'The gurgling sounds like the seaside. Grandad drifts off.'],
       ['star', "You fix the ballcock. Grandad says you're a proper plumber."],
+      ['token', 'A token floating on the top. Lucky!'],
     ] },
     29: { where: 'You dig through the log pile...', finds: [
       ['biscuit', 'A custard cream the squirrels missed.'],
       ['hop', 'The pile rolls and carries you two squares along.'],
       ['charm', 'A lucky conker. A proper tough one.'],
       ['dud', 'A woodlouse. It waves.'],
-      ['warm', "An old hand-warmer, still working. Straight into Grandad's pocket."],
+      ['star', "An old hand-warmer, still working. Straight into Grandad's pocket, and he's thrilled."],
       ['star', "Grandad's lost pipe. He won't light it, he just likes holding it."],
+      ['token', 'A token wedged between two logs.'],
     ] },
     31: { where: 'You tinker with the lawnmower...', finds: [
       ['hop', 'It roars into life and chases you two squares on!'],
       ['dud', 'Grass cuttings. In your hair.'],
       ['star', "You oil the blades. Grandad says you're a proper handyman."],
-      ['cold', 'You leave the shed door open and the cold creeps in.'],
+      ['dud', 'You leave the shed door open. Brrr! Nothing else happens.'],
       ['charm', 'A lucky garden gnome was hiding behind it.'],
       ['biscuit', 'A custard cream in the toolbox. Slightly oily.'],
+      ['token', 'A token in the grass box!'],
+      ['lose', 'The mower chews up one of your tokens.'],
     ] },
   };
-  // once a stall's prize has gone, you can still have a root around behind it
-  G.RUMMAGE_STALL = [
-    ['biscuit', 'A dropped custard cream.'],
-    ['star', 'A winner\'s rosette someone left behind.'],
-    ['dud', 'A sticky toffee apple core.'],
-    ['charm', 'A lucky fairground token.'],
-    ['hop', 'The stall-holder shoos you two squares along.'],
-    ['warm', 'The stall-holder sends a cup of cocoa over for Grandad.'],
-    ['nap', 'The organ music is so soothing that Grandad nods off.'],
-  ];
   // how likely each kind of find is: mostly good, a few duds, the odd chilly one
-  G.FIND_WEIGHT = { star: 24, biscuit: 18, warm: 14, charm: 10, nap: 9, hop: 9, dud: 10, cold: 6 };
+  G.FIND_WEIGHT = { token: 20, star: 18, biscuit: 15, charm: 9, nap: 8, hop: 8, dud: 9, lose: 7 };
 
   G.SPACES = [];
   for (const [i, c] of Object.entries(G.CORNERS)) G.SPACES[+i] = { type: 'corner', ...c };

@@ -296,6 +296,16 @@
       x.fillStyle = g; x.fillRect(0, 0, 64, 64);
       return toTex(c);
     }),
+    tokenFace: () => once('tokenface', () => {
+      const [c, x] = mk(128, 128);
+      x.fillStyle = '#e0a526'; x.fillRect(0, 0, 128, 128);
+      x.strokeStyle = '#9a6a14'; x.lineWidth = 6; x.beginPath(); x.arc(64, 64, 50, 0, PI * 2); x.stroke();
+      x.fillStyle = '#fff3c4'; x.strokeStyle = '#8a5a12'; x.lineWidth = 3;
+      x.beginPath();
+      for (let k = 0; k < 10; k++) { const r = k % 2 ? 16 : 36, a = -PI / 2 + (k * PI) / 5; x.lineTo(64 + Math.cos(a) * r, 64 + Math.sin(a) * r); }
+      x.closePath(); x.fill(); x.stroke();
+      return toTex(c);
+    }),
     puff: () => once('puff', () => {
       const [c, x] = mk(64, 64);
       const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -314,6 +324,18 @@
     x.fillStyle = '#e8b24a'; roundRect(x, -18, 4, 36, 16, 4); x.fill(); x.stroke();
     x.restore();
   }
+  // a gold fairground token, drawn flat on the board
+  function drawToken(x, cx, cy, s) {
+    x.save(); x.translate(cx, cy); x.scale(s, s);
+    x.fillStyle = '#e0a526'; x.strokeStyle = '#2b1a10'; x.lineWidth = 3;
+    x.beginPath(); x.arc(0, 0, 18, 0, PI * 2); x.fill(); x.stroke();
+    x.strokeStyle = '#9a6a14'; x.lineWidth = 2; x.beginPath(); x.arc(0, 0, 12.5, 0, PI * 2); x.stroke();
+    x.fillStyle = '#fff3c4';
+    x.beginPath();
+    for (let k = 0; k < 10; k++) { const r = k % 2 ? 4.5 : 10, a = -PI / 2 + (k * PI) / 5; x.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    x.closePath(); x.fill();
+    x.restore();
+  }
   function drawMark(x, kind, cx, cy, s) {
     x.save(); x.translate(cx, cy); x.scale(s, s);
     x.lineWidth = 4; x.lineCap = 'round';
@@ -325,6 +347,14 @@
       x.fillStyle = '#e8c068'; x.strokeStyle = '#2b1a10'; x.lineWidth = 3;
       roundRect(x, -20, -13, 40, 26, 5); x.fill(); x.stroke();
       x.strokeStyle = '#b8862c'; x.beginPath(); x.moveTo(-12, -4); x.lineTo(12, -4); x.moveTo(-12, 5); x.lineTo(12, 5); x.stroke();
+    } else if (kind === 'rummage') {
+      // a magnifying glass: have a rummage here
+      x.strokeStyle = '#7a3b1d'; x.lineWidth = 5;
+      x.fillStyle = 'rgba(122, 59, 29, 0.12)';
+      x.beginPath(); x.arc(-4, -4, 13, 0, PI * 2); x.fill(); x.stroke();
+      x.lineWidth = 7; x.beginPath(); x.moveTo(6, 6); x.lineTo(18, 18); x.stroke();
+    } else if (kind === 'token') {
+      drawToken(x, 0, 0, 1);
     } else if (kind === 'warm') {
       x.fillStyle = '#e0667a'; x.strokeStyle = '#2b1a10'; x.lineWidth = 3;
       x.fillRect(-15, -14, 30, 30); x.strokeRect(-15, -14, 30, 30);
@@ -384,7 +414,8 @@
           x.fillStyle = '#f6ecd2'; x.font = `800 22px ${FONT_BODY}`; x.fillText('START', R.x + 69, R.y + 34);
         }
       } else if (sp.type === 'door') {
-        drawIconChair(x, cx, cy - 18, 1.35);
+        drawIconChair(x, cx - 16, cy - 18, 1.2);
+        drawToken(x, cx + 34, cy - 30, 0.9);
         x.fillStyle = '#2b1a10';
         x.font = `800 24px ${FONT_BODY}`;
         x.fillText('POP IN TO', cx, cy + 42);
@@ -410,7 +441,8 @@
           const baseY = A.y + A.h - 34 - (lines.length - 1) * 32;
           lines.forEach((ln, k) => x.fillText(ln, cx, baseY + k * 32));
           const fx = G.SPACE_FX[i];
-          if (fx && fx.mark) drawMark(x, fx.mark, cx, A.y + 48, 1.4);
+          if (fx && fx.mark) drawMark(x, fx.kind === 'warm' ? 'token' : fx.mark, cx, A.y + 48, 1.4);
+          else if (G.RUMMAGE[i]) drawMark(x, 'rummage', cx, A.y + 48, 1.3);
         }
       }
     }
@@ -566,6 +598,53 @@
         };
         log(0, 0.15); log(0, 0.15); g.children[0].position.z = -0.16; g.children[1].position.z = 0.16;
         log(0, 0.42);
+        break;
+      }
+      case 'mittens': {
+        const wool = G.mat('#ffffff', { map: G.tex.stripes('#b3261e', '#f3e6c9', 8, false) });
+        [-0.24, 0.24].forEach((sx) => {
+          const hand = mesh(sph(0.2, 14, 10), wool, sx, 0.22, 0);
+          hand.scale.set(0.9, 1.25, 0.6);
+          g.add(hand);
+          const thumb = mesh(sph(0.08, 10, 8), wool, sx + (sx < 0 ? 0.17 : -0.17), 0.14, 0);
+          thumb.scale.set(0.8, 1.3, 0.8);
+          g.add(thumb);
+          g.add(mesh(cyl(0.16, 0.16, 0.12, 14), cream, sx, -0.02, 0));
+        });
+        break;
+      }
+      case 'earmuffs': {
+        const fluff = G.mat('#e0667a');
+        const band = mesh(new THREE.TorusGeometry(0.34, 0.04, 8, 24, PI), G.mat('#7a3b1d'), 0, 0.1, 0);
+        g.add(band);
+        [-1, 1].forEach((sd) => { const m = mesh(sph(0.16, 14, 10), fluff, sd * 0.34, 0.08, 0); m.scale.set(0.7, 1, 1); g.add(m); });
+        break;
+      }
+      case 'soup': {
+        const bowl = mesh(new THREE.CylinderGeometry(0.34, 0.2, 0.26, 20, 1, true), G.mat('#f3efe4', { side: THREE.DoubleSide }), 0, 0.13, 0);
+        g.add(bowl);
+        g.add(mesh(cyl(0.2, 0.2, 0.03, 20), G.mat('#f3efe4'), 0, 0.01, 0));
+        g.add(mesh(cyl(0.31, 0.31, 0.02, 20), G.glow('#d9642c'), 0, 0.22, 0, false));
+        const rim = mesh(new THREE.TorusGeometry(0.33, 0.025, 6, 24), G.mat('#2a7a8c'), 0, 0.26, 0);
+        rim.rotation.x = PI / 2;
+        g.add(rim);
+        const spoon = mesh(cyl(0.02, 0.02, 0.5, 6), G.mat('#c9d2d6'), 0.18, 0.36, 0);
+        spoon.rotation.z = -0.9;
+        g.add(spoon);
+        break;
+      }
+      case 'heater': {
+        const metal = G.mat('#8a9096');
+        g.add(mesh(box(0.9, 0.62, 0.26), metal, 0, 0.45, 0));
+        g.add(mesh(box(0.96, 0.08, 0.34), G.mat('#5c5f63'), 0, 0.78, 0));
+        const bars = [0.36, 0.56].map((y) => {
+          const b = mesh(cyl(0.05, 0.05, 0.76, 10), G.glow('#ff7a2e'), 0, y, 0.15, false);
+          b.rotation.z = PI / 2;
+          g.add(b);
+          return b;
+        });
+        g.userData.bars = bars;
+        [-0.36, 0.36].forEach((fx) => g.add(mesh(box(0.12, 0.14, 0.4), G.mat('#5c5f63'), fx, 0.07, 0)));
         break;
       }
     }
@@ -725,6 +804,22 @@
     paper.add(page);
     armPivot.add(paper);
 
+    // mittens on both hands (the right one moves with his paper arm)
+    const mitWool = G.mat('#ffffff', { map: G.tex.stripes('#b3261e', '#f3e6c9', 8, false) });
+    const mitL = W('mittens', mesh(sph(0.22, 14, 10), mitWool, 1.17, 1.98, 0.86));
+    mitL.scale.set(1, 1.15, 1.2);
+    man.add(mitL);
+    const mitR = W('mittens', mesh(sph(0.22, 14, 10), mitWool, -0.54, 0.04, 1.08));
+    mitR.scale.set(1, 1.15, 1.2);
+    armPivot.add(mitR);
+    // earmuffs, with the band round the back of his head so the bobble hat still fits
+    const muffs = W('earmuffs', new THREE.Group());
+    [-1, 1].forEach((sd) => { const m = mesh(sph(0.19, 14, 10), G.mat('#e0667a'), sd * 0.56, 0.02, 0); m.scale.set(0.6, 1, 1); muffs.add(m); });
+    const muffBand = mesh(new THREE.TorusGeometry(0.56, 0.04, 8, 24, PI), G.mat('#7a3b1d'), 0, 0.02, 0);
+    muffBand.rotation.x = -PI / 2;
+    muffs.add(muffBand);
+    head.add(muffs);
+
     // blanket and hot water bottle on the lap
     man.add(W('blanket', mesh(box(1.78, 0.1, 1.5), tartan, 0, 1.68, 0.5)));
     man.add(W('blanket', mesh(box(1.78, 1.25, 0.08), tartan, 0, 1.08, 1.3)));
@@ -764,7 +859,7 @@
       // show a worn item arriving: the hat drops on, slippers slide onto his feet, and so on
       putOn(key, ms = 700) {
         const list = wear[key] || [];
-        const from = { hat: [0, 1.3, 0], slippers: [0, 0.1, 0.9], hwb: [0, 1.1, 0.5], blanket: [0, 0.7, 0.8], scarf: [0, 0.6, 0.5], cardigan: [0, 0.2, 0.6] }[key] || [0, 0.6, 0];
+        const from = { hat: [0, 1.3, 0], slippers: [0, 0.1, 0.9], hwb: [0, 1.1, 0.5], blanket: [0, 0.7, 0.8], scarf: [0, 0.6, 0.5], cardigan: [0, 0.2, 0.6], mittens: [0, 0.3, 0.6], earmuffs: [0, 0.8, 0] }[key] || [0, 0.6, 0];
         list.forEach((o) => {
           o.visible = true;
           if (!o.userData.p0) { o.userData.p0 = o.position.clone(); o.userData.s0 = o.scale.clone(); }
@@ -793,6 +888,19 @@
       },
     };
     return api;
+  };
+
+  // a gold fairground token with a star on each face
+  G.makeToken = () => {
+    const face = G.tex.tokenFace();
+    const gold = G.shiny('#e0a526', { metalness: 0.45, roughness: 0.3, emissive: '#3a2400' });
+    const faceM = new THREE.MeshStandardMaterial({ map: face, metalness: 0.35, roughness: 0.35, emissive: '#2a1a00' });
+    const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 32), [gold, faceM, faceM]);
+    coin.rotation.x = PI / 2;
+    coin.castShadow = true;
+    const g = new THREE.Group();
+    g.add(coin);
+    return g;
   };
 
   // ---------- Celebration effects ----------
@@ -945,6 +1053,14 @@
     tea.position.set(0.2, 1.29, -0.05);
     tea.visible = false;
     g.add(tea);
+    const soup = G.makeItem('soup');
+    soup.scale.setScalar(0.7);
+    soup.position.set(-0.24, 1.3, 0.2);
+    soup.visible = false;
+    g.add(soup);
+    const soupPuff = new THREE.Sprite(new THREE.SpriteMaterial({ map: G.tex.puff(), transparent: true, opacity: 0.45, depthWrite: false }));
+    soupPuff.scale.setScalar(0.3);
+    soup.add(soupPuff);
     const puffs = [];
     for (let k = 0; k < 3; k++) {
       const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: G.tex.puff(), transparent: true, opacity: 0.5, depthWrite: false }));
@@ -955,7 +1071,14 @@
     return {
       group: g,
       tea,
+      soup,
       update(t) {
+        if (soup.visible) {
+          const ph = (t * 0.6) % 1;
+          soupPuff.position.set(Math.sin(t * 1.7) * 0.05, 0.4 + ph * 0.8, 0);
+          soupPuff.material.opacity = 0.45 * (1 - ph);
+          soupPuff.scale.setScalar(0.22 + ph * 0.3);
+        }
         if (!tea.visible) return;
         puffs.forEach((p, k) => {
           const ph = (t * 0.5 + k / 3) % 1;

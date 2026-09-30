@@ -1,4 +1,4 @@
-/* Grandad's Cold Snap: the fairground stall games. Win one to take home Grandad's cosy thing. */
+/* Grandad's Cold Snap: the fairground stall games. Each pays out 0 to 3 tokens for the Fair Shop. */
 (function (G) {
   'use strict';
   const V3 = THREE.Vector3;
@@ -17,7 +17,7 @@
   // ---------- HUD bits ----------
   const hud = {};
   function grabHud() {
-    ['miniHud', 'miniTitle', 'miniPrize', 'miniStatus', 'miniTimerWrap', 'miniTimer', 'miniHint', 'power', 'powerLabel', 'powerZone', 'powerFill', 'powerMarker', 'miniCardWrap', 'miniCard', 'fade', 'stage'].forEach((id) => { hud[id] = $(id); });
+    ['miniHud', 'miniTitle', 'miniPrize', 'miniTokens', 'miniNext', 'miniStatus', 'miniTimerWrap', 'miniTimer', 'miniHint', 'power', 'powerLabel', 'powerZone', 'powerFill', 'powerMarker', 'miniCardWrap', 'miniCard', 'fade', 'stage'].forEach((id) => { hud[id] = $(id); });
   }
   const fade = (on) => new Promise((r) => {
     hud.fade.classList.toggle('on', on);
@@ -62,10 +62,15 @@
     setTimeout(() => el.remove(), 600);
   }
 
+  // "every duck" / "every 3 ducks"
+  const every = (n, one, many) => (n === 1 ? `every ${one}` : `every ${n} ${many}`);
+  const plural = (one, many) => (n) => (n === 1 ? one : many);
+
   // ---------- Running a stall ----------
   M.play = async (gameKey, opts = {}) => {
-    const { diff = 'chilly', prizeKey = null, practice = false, playerName = '' } = opts;
-    if (M.autoResult !== null) { await G.sleep(40); return M.autoResult; }
+    const { diff = 'chilly', practice = false, playerName = '' } = opts;
+    // test hook: skip the stall and pay out a fixed number of tokens (true/false mean 3/0)
+    if (M.autoResult !== null) { await G.sleep(40); const r = M.autoResult; return r === true ? 3 : r === false ? 0 : r; }
     if (!hud.fade) grabHud();
     const def = GAMES[gameKey];
     const level = G.DIFFS[diff].level;
@@ -75,13 +80,27 @@
     await fade(true);
     document.body.classList.add('minigame');
     const booth = G.makeBooth({ title: def.title, c1: def.c1, c2: def.c2 });
-    if (prizeKey) {
-      const pm = G.makeItem(prizeKey);
-      pm.scale.setScalar(0.95);
-      booth.prizeSlot.add(pm);
-    }
+    // three gold tokens hang in the prize slot
+    [-0.7, 0, 0.7].forEach((x) => { const tk = G.makeToken(); tk.position.x = x; tk.scale.setScalar(0.72); booth.prizeSlot.add(tk); });
     let state = 'intro';
     let won = null;
+    // tokens: games report a raw score and every p.per of it earns a token, up to three
+    const per = p.per || 1;
+    let tokens = 0;
+    const unit = (n) => (typeof def.unit === 'function' ? def.unit(n) : def.unit || '');
+    const setTokens = (t) => {
+      t = G.clamp(Math.floor(t), 0, G.MAX_TOKENS);
+      if (t > tokens) G.Sound.play('coin');
+      tokens = t;
+      hud.miniTokens.querySelectorAll('.slot').forEach((el, k) => el.classList.toggle('on', k < tokens));
+    };
+    let nextNote = '';
+    const showNext = (score) => {
+      if (!def.unit) { hud.miniNext.textContent = nextNote; return; }
+      if (tokens >= G.MAX_TOKENS) { hud.miniNext.textContent = 'Top prize!'; return; }
+      const need = per * (tokens + 1) - score;
+      hud.miniNext.textContent = `${need} more ${unit(need)} for the next token`;
+    };
     let resolveDone;
     const done = new Promise((r) => { resolveDone = r; });
     const ctx = {
@@ -102,13 +121,25 @@
       },
       float: (text, world, cls) => floatText(text, world, booth.camera, cls),
       sfx: (n) => G.Sound.play(n),
-      end: (w) => { if (state !== 'play') return; state = 'over'; won = w; resolveDone(w); },
+      // score(n): raw progress, turned into tokens; tokens(n): set tokens directly (races and the like)
+      score: (n) => { setTokens(n / per); showNext(n); return tokens; },
+      tokens: (t, note = def.note || '') => { nextNote = note; setTokens(t); showNext(0); return tokens; },
+      full: () => tokens >= G.MAX_TOKENS,
+      end: (w) => {
+        if (state !== 'play') return;
+        if (typeof w === 'number') setTokens(w);
+        state = 'over';
+        won = tokens;
+        resolveDone(tokens);
+      },
       rayZ: (z) => G.rayPlane(planeZ(z), G.ptr.ndc, booth.camera),
       rayY: (y) => G.rayPlane(planeY(y), G.ptr.ndc, booth.camera),
       hits: (objs) => G.raycast(objs, G.ptr.ndc, booth.camera),
     };
     hud.miniTitle.textContent = def.title;
-    hud.miniPrize.textContent = prizeKey ? `Prize: Grandad's ${G.ITEMS[prizeKey].name}` : 'Practice round';
+    hud.miniPrize.textContent = practice ? 'Practice round · up to 3 tokens' : 'Win up to 3 tokens';
+    hud.miniTokens.querySelectorAll('.slot').forEach((el) => el.classList.remove('on'));
+    hud.miniNext.textContent = def.unit ? `${per} ${unit(per)} for each token` : def.note || '';
     hud.miniStatus.textContent = '';
     const keysText = G.isTouch && def.touch ? def.touch : def.keys;
     hud.miniHint.innerHTML = keysText;
@@ -143,7 +174,7 @@
     await card(`
       <p class="kicker">${practice ? 'Practice at the fair' : `${G.esc(playerName)} steps up to the stall`}</p>
       <h2 class="logo small">${def.title}</h2>
-      ${prizeKey ? (practice ? `<p class="prize-line">In the game, this stall has Grandad's <b>${G.ITEMS[prizeKey].name}</b>.</p>` : `<p class="prize-line">Win Grandad's <b>${G.ITEMS[prizeKey].name}</b></p>`) : ''}
+      <p class="prize-line">${practice ? 'In the game this stall pays out' : 'Win'} up to <b>3 tokens</b> ${G.TOKEN_SVG}${G.TOKEN_SVG}${G.TOKEN_SVG} for the Fair Shop</p>
       <p class="goal">${def.goal(p)}</p>
       <p>${def.how}</p>
       <p class="keys">${keysText}</p>
@@ -155,15 +186,18 @@
     await done;
     G.Sound.play(won ? 'cheer' : 'aww');
     if (won) {
-      // a confetti cannon from each side of the stall
-      [-1, 1].forEach((s) => G.spawnConfetti(booth.scene, new V3(s * 3.4, 1.2, 1.5), { n: G.isPhone ? 60 : 110, spread: 1.6, up: 7.5, life: 2.4, size: 0.2 }));
+      // a confetti cannon from each side of the stall, bigger for a bigger win
+      [-1, 1].forEach((s) => G.spawnConfetti(booth.scene, new V3(s * 3.4, 1.2, 1.5), { n: (G.isPhone ? 20 : 36) * won, spread: 1.6, up: 7.5, life: 2.4, size: 0.2 }));
     }
     await G.sleep(1100);
     G.Music.stop();
     hud.power.hidden = true;
-    await card(won
-      ? `<p class="kicker">${def.title}</p><h2 class="logo small">You won!</h2>${prizeKey && !practice ? `<p class="prize-line">Grandad's <b>${G.ITEMS[prizeKey].name}</b> is yours. Take it to one of his doors.</p>` : '<p>Proper fairground champion. Now try it for real.</p>'}`
-      : `<p class="kicker">${def.title}</p><h2 class="logo small cold">So close!</h2><p>${prizeKey && !practice ? `The ${G.ITEMS[prizeKey].name} stays on the stall. Land in the room again to have another go.` : 'Have another go from the fair menu.'}</p>`,
+    const coins = [0, 1, 2].map((k) => `<span class="${k < won ? 'on' : ''}">${G.TOKEN_SVG}</span>`).join('');
+    const heads = ['No tokens!', 'One token!', 'Two tokens!', 'Top prize!'];
+    const notes = practice
+      ? ['Have another go from the fair menu.', 'In the game that would be a token for the Fair Shop.', 'In the game that would be two tokens for the Fair Shop.', 'Three tokens: in the game that buys Grandad something straight away.']
+      : ['Better luck next time. Land on a stall again for another go.', 'Every token counts. Three buys Grandad something at the Fair Shop.', 'Nearly enough for something at the Fair Shop.', 'Three tokens: enough to buy Grandad something at the Fair Shop!'];
+    await card(`<p class="kicker">${def.title}</p><h2 class="logo small${won ? '' : ' cold'}">${heads[won]}</h2><div class="token-row">${coins}</div><p class="prize-line">${notes[won]}</p>`,
       practice ? 'Back to the fair' : 'Back to the board');
     await fade(true);
     hud.miniHud.hidden = true;
@@ -237,8 +271,9 @@
   // ======================================================================
   GAMES.duck = {
     title: 'Hook-a-Duck', c1: '#3f8fa0', c2: '#f6ecd2', blurb: 'Hook a duck as it floats past.',
-    params: (L) => ({ need: 3, dips: L(7, 6, 5), tol: L(0.2, 0.16, 0.12), speed: L(0.5, 0.6, 0.72) }),
-    goal: (p) => `Hook ${p.need} ducks. You get ${p.dips} dips.`,
+    params: (L) => ({ per: L(1, 2, 3), dips: L(6, 9, 12), tol: L(0.2, 0.16, 0.12), speed: L(0.5, 0.6, 0.72) }),
+    unit: plural('duck', 'ducks'),
+    goal: (p) => `A token for ${every(p.per, 'duck', 'ducks')} you hook, up to 3 tokens. You get ${p.dips} dips.`,
     how: "Rubber ducks float round the trough. Dip the hook so it drops through a duck's ring just as it passes the white circle. The hook takes a moment to drop, so go a little early.",
     keys: 'Press <kbd>Space</kbd> or click to dip the hook.',
     touch: 'Tap anywhere to dip the hook.',
@@ -297,7 +332,7 @@
         line.scale.y = top - hookY;
       };
       setHook();
-      const status = () => ctx.status(`Ducks hooked <b>${caught}/${p.need}</b> · Dips left <b>${left}</b>`);
+      const status = () => ctx.status(`Ducks hooked <b>${caught}</b> · Dips left <b>${left}</b>`);
       status();
       const dip = async () => {
         if (dipping || left <= 0 || !ctx.running()) return;
@@ -329,14 +364,15 @@
           const d = carrying;
           carrying = null;
           const from = d.g.position.clone();
-          const to = new V3(-3.5 + caught * 0.9, 1.35, 2.5);
+          const to = new V3(-3.6 + caught * 0.8, 1.35, 2.5);
           caught++;
           status();
           await G.tween(500, (t) => { d.g.position.lerpVectors(from, to, t); d.g.position.y += Math.sin(t * PI) * 1.2; d.g.rotation.y = t * PI * 2; });
-          if (caught >= p.need) ctx.end(true);
+          ctx.score(caught);
+          if (ctx.full()) ctx.end();
         }
         dipping = false;
-        if (caught < p.need && left <= 0) setTimeout(() => ctx.end(false), 300);
+        if (!ctx.full() && left <= 0) setTimeout(() => ctx.end(), 300);
       };
       return {
         always(dt, t) {
@@ -362,8 +398,9 @@
   // ======================================================================
   GAMES.coconut = {
     title: 'Coconut Shy', c1: '#7a3b1d', c2: '#e0a526', cursor: 'none', blurb: 'Throw balls at the coconuts.',
-    params: (L) => ({ balls: L(6, 5, 5), need: L(2, 2, 3), sway: L(0.14, 0.24, 0.3), hitR: L(0.62, 0.54, 0.5) }),
-    goal: (p) => `Knock ${p.need} coconuts off their posts. You get ${p.balls} balls.`,
+    params: (L) => ({ per: L(1, 2, 2), balls: L(6, 9, 10), sway: L(0.14, 0.24, 0.3), hitR: L(0.62, 0.54, 0.5) }),
+    unit: plural('coconut', 'coconuts'),
+    goal: (p) => `A token for ${every(p.per, 'coconut', 'coconuts')} you knock off, up to 3 tokens. You get ${p.balls} balls, and a fresh coconut goes up each time one falls.`,
     how: "Point at a coconut and click to throw. Your aim wobbles a bit, so wait for the crosshair to drift over the coconut before you let go.",
     keys: 'Move the mouse to aim, click to throw.',
     touch: 'Put your finger on the screen to aim (the crosshair sits just above it), slide to adjust, and let go to throw.',
@@ -382,7 +419,7 @@
       });
       const ballM = G.shiny('#b3261e');
       const shelfBalls = [];
-      for (let k = 0; k < p.balls; k++) { const b = mesh(sph(0.16, 14, 10), ballM, 3.2 + (k % 3) * 0.4, 1.28, 2.45 + Math.floor(k / 3) * 0.35); scene.add(b); shelfBalls.push(b); }
+      for (let k = 0; k < p.balls; k++) { const b = mesh(sph(0.16, 14, 10), ballM, 3.0 + (k % 4) * 0.36, 1.28, 2.45 + Math.floor(k / 4) * 0.35); scene.add(b); shelfBalls.push(b); }
       const cross = new THREE.Group();
       const cm = G.glow('#ffffff', { depthTest: false, transparent: true });
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.17, 0.23, 32), cm);
@@ -394,12 +431,12 @@
       let left = p.balls;
       let knocked = 0;
       let flying = false;
-      const status = () => ctx.status(`Coconuts <b>${knocked}/${p.need}</b> · Balls left <b>${left}</b>`);
+      const status = () => ctx.status(`Coconuts <b>${knocked}</b> · Balls left <b>${left}</b>`);
       status();
       const aimNow = (t) => new V3(aimBase.x + Math.sin(t * 1.7) * p.sway + Math.sin(t * 3.1) * p.sway * 0.4, aimBase.y + Math.sin(t * 2.3 + 1) * p.sway * 0.8, Z);
       const checkEnd = () => {
-        if (knocked >= p.need) setTimeout(() => ctx.end(true), 600);
-        else if (left <= 0 && !flying) setTimeout(() => ctx.end(false), 600);
+        if (ctx.full()) setTimeout(() => ctx.end(), 600);
+        else if (left <= 0 && !flying) setTimeout(() => ctx.end(), 600);
       };
       const throwBall = async () => {
         if (flying || left <= 0 || !ctx.running()) return;
@@ -423,7 +460,9 @@
         }
         if (hit) {
           hit.down = true;
+          hit.downAt = G.E.time;
           knocked++;
+          ctx.score(knocked);
           hit.vel.set(G.rand(-0.8, 0.8), 2.2, -3.2);
           hit.spin.set(G.rand(4, 8), G.rand(-3, 3), G.rand(-4, 4));
           ctx.sfx('thud');
@@ -445,6 +484,15 @@
           cross.position.set(a.x, a.y, Z + 0.45);
           cross.visible = ctx.running();
           for (const n of nuts) {
+            // the stall-holder puts a fresh coconut up on the post
+            if (n.down && n.downAt && t - n.downAt > 1.4 && ctx.running()) {
+              n.down = false;
+              n.downAt = 0;
+              n.m.position.copy(n.home);
+              n.m.rotation.set(0.3, Math.random() * 6, 0.2);
+              n.pop = 0;
+            }
+            if (n.pop !== undefined && n.pop < 1) { n.pop = Math.min(1, n.pop + dt * 4); n.m.scale.setScalar(Math.max(0.01, G.ease.back(n.pop))); }
             if (n.down) {
               if (n.m.position.y > 0.38) {
                 n.vel.y -= 9.8 * dt;
@@ -471,8 +519,9 @@
   // ======================================================================
   GAMES.cans = {
     title: 'Tin Can Alley', c1: '#2a7a8c', c2: '#f6ecd2', blurb: 'Knock the tins off the shelf.',
-    params: (L) => ({ balls: L(5, 4, 3), px: L(1.7, 1.35, 1.1), py: L(1.5, 1.2, 0.95) }),
-    goal: (p) => `Knock all 6 cans off the shelf. You get ${p.balls} balls.`,
+    params: (L) => ({ per: L(1, 2, 2), balls: L(4, 4, 3), px: L(1.7, 1.35, 1.1), py: L(1.5, 1.2, 0.95) }),
+    unit: plural('can', 'cans'),
+    goal: (p) => `A token for ${every(p.per, 'can', 'cans')} you knock off the shelf, up to 3 tokens. You get ${p.balls} balls.`,
     how: 'A line sweeps side to side: stop it to pick where across you throw. Then a second line sweeps up and down: stop it to pick the height. Hit the bottom row and the cans above come down too.',
     keys: 'Press <kbd>Space</kbd> or click twice: once to set across, once to set height.',
     touch: 'Tap twice: once to set across, once to set the height.',
@@ -557,8 +606,8 @@
         await G.sleep(700);
         busy = false;
         const down = cans.filter((c) => !c.standing).length;
-        if (down === 6) ctx.end(true);
-        else if (left <= 0) ctx.end(false);
+        ctx.score(down);
+        if (ctx.full() || down === 6 || left <= 0) ctx.end();
         else { stage = 'x'; tStage = G.E.time; }
       };
       const press = () => {
@@ -597,8 +646,9 @@
   // ======================================================================
   GAMES.mole = {
     title: 'Whack-a-Mole', c1: '#6f7d32', c2: '#f6ecd2', cursor: 'none', blurb: 'Whack the moles, not the cat.',
-    params: (L) => ({ need: L(8, 10, 12), up: L(1.05, 0.85, 0.66), gap: L([0.5, 0.85], [0.42, 0.72], [0.36, 0.6]), time: 20 }),
-    goal: (p) => `Whack ${p.need} moles in ${p.time} seconds.`,
+    params: (L) => ({ per: L(3, 4, 4), up: L(1.05, 0.85, 0.66), gap: L([0.5, 0.85], [0.42, 0.72], [0.36, 0.6]), time: 20 }),
+    unit: plural('mole', 'moles'),
+    goal: (p) => `A token for every ${p.per} moles you whack, up to 3 tokens. You have ${p.time} seconds.`,
     how: "Moles pop up out of the holes. Whack them before they duck back down. If Tiddles the cat pops up, leave her alone: whacking the cat costs you a mole.",
     keys: 'Click the moles, or use <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> / <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd> for the holes.',
     touch: 'Tap the moles as they pop up. Two thumbs work well.',
@@ -652,7 +702,7 @@
       let score = 0;
       let nextSpawn = 0.4;
       let elapsed = 0;
-      const status = () => ctx.status(`Moles whacked <b>${score}/${p.need}</b>`);
+      const status = () => ctx.status(`Moles whacked <b>${score}</b>`);
       status();
       ctx.timer(1);
       const whack = (i) => {
@@ -673,7 +723,8 @@
           ctx.float('Not Tiddles!', new V3(h.x, 2.2, h.z), 'bad');
         }
         status();
-        if (score >= p.need) setTimeout(() => ctx.end(true), 350);
+        ctx.score(score);
+        if (ctx.full()) setTimeout(() => ctx.end(), 350);
       };
       return {
         always(dt) {
@@ -695,7 +746,7 @@
         update(dt, t, e) {
           elapsed = e;
           ctx.timer(1 - e / p.time);
-          if (e >= p.time) { ctx.end(score >= p.need); return; }
+          if (e >= p.time) { ctx.end(); return; }
           if (e >= nextSpawn) {
             const free = holes.filter((h) => !h.active);
             if (free.length) {
@@ -740,7 +791,8 @@
   GAMES.water = {
     title: 'Water Pistol Race', c1: '#3f8fa0', c2: '#f3efe4', cursor: 'none', blurb: 'Squirt the clown to pop your balloon.',
     params: (L) => ({ rival: L(11, 9, 7.8), fill: 6, r: L(0.62, 0.52, 0.44), mx: L(0.6, 0.95, 1.2), my: L(0.25, 0.4, 0.5) }),
-    goal: () => 'Pop your balloon before the other two players pop theirs.',
+    note: 'Pop your balloon first for all 3',
+    goal: () => 'Pop your balloon first for 3 tokens. Lose the race and you still get a token for every third of your balloon you filled.',
     how: "Squirt water into the clown's mouth in the middle lane. The balloon above only fills while you're on target, and the clown keeps moving, so follow it.",
     keys: 'Move the mouse to aim. Hold the mouse button (or <kbd>Space</kbd>) to squirt.',
     touch: 'Hold your finger just below the clown to squirt, and follow it as it moves.',
@@ -831,12 +883,13 @@
           lanes.forEach((l, k) => { if (k !== 1) l.fill = Math.min(1, l.fill + dt * l.speed * G.rand(0.7, 1.3)); });
           cross.material.color.set(onTarget ? '#7ee07e' : '#ffffff');
           ctx.status(`Your balloon <b>${Math.round(me.fill * 100)}%</b> · Rivals <b>${Math.round(lanes[0].fill * 100)}%</b> and <b>${Math.round(lanes[2].fill * 100)}%</b>`);
+          ctx.tokens(me.fill >= 1 ? 3 : Math.floor(me.fill * 3), 'Pop your balloon first for all 3');
           const popped = lanes.find((l) => l.fill >= 1);
           if (popped) {
             over = true;
             burst(popped);
             ctx.float(popped === me ? 'POP! You win!' : 'POP! Too slow...', popped.bal.position.clone(), popped === me ? 'good' : 'bad');
-            setTimeout(() => ctx.end(popped === me), 500);
+            setTimeout(() => ctx.end(popped === me ? 3 : Math.min(2, Math.floor(me.fill * 3))), 500);
           }
         },
         pointerMove(ptr, e) { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -4.5, 4.5), G.clamp(h.y + lift(e), 0.6, 4.6), Z); },
@@ -852,8 +905,9 @@
   // ======================================================================
   GAMES.hoopla = {
     title: 'Hoopla', c1: '#c9648c', c2: '#f6ecd2', blurb: 'Throw rings over the pegs.',
-    params: (L) => ({ rings: L(7, 6, 5), need: 2, pegR: L(0.3, 0.25, 0.21), scatter: L(0.05, 0.08, 0.11), period: L(1.6, 1.3, 1.05) }),
-    goal: (p) => `Land ${p.need} rings over the pegs. You get ${p.rings} rings.`,
+    params: (L) => ({ per: 1, rings: L(7, 7, 6), pegR: L(0.3, 0.25, 0.21), scatter: L(0.05, 0.08, 0.11), period: L(1.6, 1.3, 1.05) }),
+    unit: plural('ringer', 'ringers'),
+    goal: (p) => `A token for every ring you land over a peg, up to 3 tokens. You get ${p.rings} rings.`,
     how: 'Move the mouse left and right to line up with a peg. Hold the button down to charge your throw, and let go when the power is right: more power throws further back.',
     keys: 'Mouse to aim. Hold the mouse button (or <kbd>Space</kbd>) to charge, release to throw.',
     touch: 'Touch and slide left or right to aim, hold to charge, and let go to throw.',
@@ -885,7 +939,7 @@
       let flying = false;
       ctx.power.show(true, 'Throw power');
       ctx.power.zone(null);
-      const status = () => ctx.status(`Ringers <b>${ringers}/${p.need}</b> · Rings left <b>${left}</b>`);
+      const status = () => ctx.status(`Ringers <b>${ringers}</b> · Rings left <b>${left}</b>`);
       status();
       const release = async () => {
         if (!charging) return;
@@ -910,6 +964,7 @@
         for (const pg of pegs) { const d = Math.hypot(land.x - pg.x, land.z - pg.z); if (d < bestD) { bestD = d; best = pg; } }
         if (best && bestD < p.pegR) {
           ringers++;
+          ctx.score(ringers);
           ctx.sfx('ding');
           ctx.float('Ringer!', new V3(best.x, 2.4, best.z), 'good');
           await G.tween(300, (t) => { ring.position.set(G.lerp(land.x, best.x, t), G.lerp(1.8, 1.25, t), G.lerp(land.z, best.z, t)); ring.rotation.set(PI / 2, 0, 0); });
@@ -927,8 +982,8 @@
         }
         status();
         flying = false;
-        if (ringers >= p.need) setTimeout(() => ctx.end(true), 500);
-        else if (left <= 0) setTimeout(() => ctx.end(false), 600);
+        if (ctx.full()) setTimeout(() => ctx.end(), 500);
+        else if (left <= 0) setTimeout(() => ctx.end(), 600);
       };
       const press = () => { if (!flying && left > 0 && ctx.running()) { charging = true; chargeT0 = G.E.time; } };
       return {
@@ -952,8 +1007,9 @@
   // ======================================================================
   GAMES.gallery = {
     title: 'Shooting Gallery', c1: '#8a7452', c2: '#f6ecd2', cursor: 'crosshair', blurb: 'Fire corks at the tin ducks.',
-    params: (L) => ({ corks: 12, need: L(5, 6, 7), sp: L([1.2, 1.6], [1.5, 2.0], [1.8, 2.4]), time: 30 }),
-    goal: (p) => `Score ${p.need} points with ${p.corks} corks. Gold ducks score 2.`,
+    params: (L) => ({ per: L(2, 3, 4), corks: L(12, 14, 16), sp: L([1.2, 1.6], [1.5, 2.0], [1.8, 2.4]), time: L(30, 30, 34) }),
+    unit: plural('point', 'points'),
+    goal: (p) => `A token for every ${p.per} points, up to 3 tokens. Gold ducks score 2. You have ${p.corks} corks and ${p.time} seconds.`,
     how: 'Tin ducks sail along two rows. Click to fire a cork at them. Every cork counts, so pick your shots.',
     keys: 'Move the mouse to aim, click to fire.',
     touch: 'Tap the ducks to fire.',
@@ -1008,7 +1064,7 @@
       let corks = p.corks;
       let score = 0;
       let ending = false;
-      const status = () => ctx.status(`Points <b>${score}/${p.need}</b> · Corks <b>${corks}</b>`);
+      const status = () => ctx.status(`Points <b>${score}</b> · Corks <b>${corks}</b>`);
       status();
       ctx.timer(1);
       const fire = () => {
@@ -1026,12 +1082,13 @@
           if (d && !d.down) {
             d.down = true;
             score += d.gold ? 2 : 1;
+            ctx.score(score);
             ctx.sfx('clatter');
             ctx.float(d.gold ? '+2' : '+1', hits[0].point.clone().add(new V3(0, 0.5, 0)), 'good');
           }
         }
         status();
-        if (score >= p.need) { ending = true; setTimeout(() => ctx.end(true), 500); } else if (corks <= 0) { ending = true; setTimeout(() => ctx.end(false), 700); }
+        if (ctx.full()) { ending = true; setTimeout(() => ctx.end(), 500); } else if (corks <= 0) { ending = true; setTimeout(() => ctx.end(), 700); }
       };
       return {
         always(dt) {
@@ -1048,7 +1105,7 @@
         },
         update(dt, t, e) {
           ctx.timer(1 - e / p.time);
-          if (e >= p.time && !ending) { ending = true; ctx.end(score >= p.need); }
+          if (e >= p.time && !ending) { ending = true; ctx.end(); }
         },
         pointerMove() { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -5, 5), G.clamp(h.y, 0.8, 4.6), Z); },
         pointerDown() { const h = ctx.rayZ(Z); if (h) aim = new V3(G.clamp(h.x, -5, 5), G.clamp(h.y, 0.8, 4.6), Z); fire(); },
@@ -1061,8 +1118,9 @@
   // ======================================================================
   GAMES.strength = {
     title: 'Test Your Strength', c1: '#4a6b3a', c2: '#f6ecd2', blurb: 'Swing the hammer, ring the bell.',
-    params: (L) => ({ swings: L(4, 3, 3), period: L(1.15, 0.95, 0.8), ring: 0.9 }),
-    goal: (p) => `Ring the bell at the top. You get ${p.swings} swings.`,
+    params: (L) => ({ per: 1, swings: L(4, 4, 4), period: L(1.15, 0.95, 0.8), ring: L(0.85, 0.9, 0.92) }),
+    unit: plural('ring of the bell', 'rings of the bell'),
+    goal: (p) => `A token every time you ring the bell, up to 3 tokens. You get ${p.swings} swings.`,
     how: 'The power needle races back and forth. Swing the hammer when it is in the red zone at the far end, and the puck will fly all the way up to the bell.',
     keys: 'Press <kbd>Space</kbd> or click to swing the hammer.',
     touch: 'Tap to swing the hammer.',
@@ -1101,11 +1159,12 @@
       hammer.rotation.z = UP;
       const bottom = 0.55, topY = 7.0;
       let left = p.swings;
+      let dings = 0;
       let busy = false;
       let t0 = 0;
       ctx.power.show(true, 'Power');
       ctx.power.zone(p.ring, 1);
-      const status = () => ctx.status(`Swings left <b>${left}</b>`);
+      const status = () => ctx.status(`Bells rung <b>${dings}</b> · Swings left <b>${left}</b>`);
       status();
       const swing = async () => {
         if (busy || left <= 0 || !ctx.running()) return;
@@ -1122,6 +1181,9 @@
         G.tween(400, (t) => { hammer.rotation.z = G.lerp(0.12, UP, t); });
         await G.tween(650, (t) => { puck.position.y = G.lerp(bottom, peak, t); }, G.ease.out);
         if (rings) {
+          dings++;
+          ctx.score(dings);
+          status();
           ctx.sfx('ding');
           ctx.float('DING!', new V3(0, 7.2, Z + 0.4), 'good');
           G.tween(1200, (t) => { bellGlow.material.opacity = Math.sin(t * PI) * 0.9; bell.rotation.z = Math.sin(t * PI * 8) * 0.12 * (1 - t); });
@@ -1133,8 +1195,7 @@
         await G.tween(700, (t) => { puck.position.y = G.lerp(peak, bottom, t); }, G.ease.in);
         busy = false;
         t0 = G.E.time;
-        if (rings) ctx.end(true);
-        else if (left <= 0) ctx.end(false);
+        if (ctx.full() || left <= 0) ctx.end();
       };
       return {
         start() { t0 = G.E.time; },
@@ -1149,8 +1210,9 @@
   // ======================================================================
   GAMES.dodgems = {
     title: 'Dodgems', c1: '#8e6cc4', c2: '#f6ecd2', blurb: 'Drive your car and bump the others.',
-    params: (L) => ({ need: L(4, 5, 6), time: 25, rival: L(1.6, 2.1, 2.6), speed: 4.4 }),
-    goal: (p) => `Bump ${p.need} of the other cars in ${p.time} seconds.`,
+    params: (L) => ({ per: L(1, 2, 4), time: L(20, 25, 35), rival: L(1.6, 2.1, 2.6), speed: 4.4 }),
+    unit: plural('bump', 'bumps'),
+    goal: (p) => `A token for ${every(p.per, 'bump', 'bumps')} you give the other cars, up to 3 tokens. You have ${p.time} seconds.`,
     how: "Your car is the red one. It drives towards wherever you point, so steer it into the other cars. They'll try to get out of your way, and a car needs a moment to recover before you can bump it again.",
     keys: 'Point with the mouse to steer, or drive with the arrow keys.',
     touch: 'Touch where you want your car to go.',
@@ -1204,7 +1266,7 @@
       const keys = {};
       let target = null;
       let score = 0;
-      const status = () => ctx.status(`Bumps <b>${score}/${p.need}</b>`);
+      const status = () => ctx.status(`Bumps <b>${score}</b>`);
       status();
       ctx.timer(1);
       const turn = (c, want, rate, dt) => { const d = Math.atan2(Math.sin(want - c.a), Math.cos(want - c.a)); c.a += G.clamp(d, -rate * dt, rate * dt); };
@@ -1226,7 +1288,7 @@
         },
         update(dt, t, e) {
           ctx.timer(1 - e / p.time);
-          if (e >= p.time) { ctx.end(score >= p.need); return; }
+          if (e >= p.time) { ctx.end(); return; }
           const kx = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
           const kz = (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
           if (kx || kz) {
@@ -1264,7 +1326,8 @@
                 ctx.sfx('bonk'); ctx.sfx('thud');
                 ctx.float('BUMP!', r.g.position.clone().add(new V3(0, 1.8, 0)), 'good');
                 status();
-                if (score >= p.need) setTimeout(() => ctx.end(true), 400);
+                ctx.score(score);
+                if (ctx.full()) setTimeout(() => ctx.end(), 400);
               }
             }
           }
@@ -1288,7 +1351,8 @@
   GAMES.floss = {
     title: 'Candy Floss', c1: '#e0667a', c2: '#f6ecd2', blurb: 'Spin the floss at a steady speed.',
     params: (L) => ({ time: L(24, 20, 17), fill: L(8, 10, 11), lo: L(0.8, 1.0, 1.2), hi: L(2.9, 2.5, 2.2) }),
-    goal: (p) => `Spin a full stick of candy floss in ${p.time} seconds.`,
+    note: 'Fill the whole stick for all 3',
+    goal: (p) => `A token for every third of a stick of candy floss you spin, and 3 for a full stick. You have ${p.time} seconds.`,
     how: "Move the mouse round and round the machine to spin it. Keep the speed in the green: too slow and the sugar won't stick, too fast and the floss flies off the stick.",
     keys: 'Circle the mouse round the machine, or tap <kbd>←</kbd> and <kbd>→</kbd> one after the other.',
     touch: 'Draw circles round the machine with your finger, at a steady speed.',
@@ -1324,6 +1388,7 @@
       let acc = 0;
       let speed = 0;
       let prog = 0;
+      let best = 0;
       let spin = 0;
       let lastWhirr = 0;
       let lastWarn = 0;
@@ -1349,7 +1414,7 @@
         },
         update(dt, t, e) {
           ctx.timer(1 - e / p.time);
-          if (e >= p.time) { ctx.end(prog >= 1); return; }
+          if (e >= p.time) { ctx.end(); return; }
           const inst = acc / (PI * 2) / Math.max(dt, 1e-3);
           acc = 0;
           speed += (inst - speed) * Math.min(1, dt * 3);
@@ -1370,7 +1435,10 @@
             if (t - lastWarn > 1.4) { lastWarn = t; ctx.float('Too fast!', new V3(C.x, 3.6, C.z), 'bad'); }
           } else ctx.hint(speed > 0.2 ? '<b>Faster!</b> The sugar needs a proper spin.' : G.isTouch ? 'Draw circles round the machine with your finger.' : 'Circle the mouse round the machine, or tap <kbd>←</kbd> <kbd>→</kbd> in turn.');
           ctx.status(`Candy floss <b>${Math.round(prog * 100)}%</b>`);
-          if (prog >= 1) ctx.end(true);
+          // tokens you've spun stay yours, even if the floss droops a little
+          best = Math.max(best, prog >= 1 ? 3 : Math.floor(prog * 3));
+          ctx.tokens(best, 'Fill the whole stick for all 3');
+          if (prog >= 1) ctx.end(3);
         },
         pointerMove(ptr) {
           const c = G.toScreen(new V3(C.x, 1.7, C.z), camera);
@@ -1397,7 +1465,8 @@
   GAMES.derby = {
     title: 'Duck Derby', c1: '#2a7a8c', c2: '#f2c230', blurb: 'Paddle your duck to the finish line.',
     params: (L) => ({ rival: L(0.62, 0.74, 0.86), beat: L(0.6, 0.55, 0.5), win: L(0.15, 0.13, 0.11) }),
-    goal: () => 'Get your duck over the finish line before the other three.',
+    note: '1st: 3 tokens · 2nd: 2 · 3rd: 1',
+    goal: () => 'Race your duck to the finish: 3 tokens for 1st place, 2 for 2nd and 1 for 3rd.',
     how: 'Tap to paddle. A ring shrinks down onto your duck: tap just as it lands for a big push. Tapping too fast only splashes about.',
     keys: 'Tap <kbd>Space</kbd> or click to paddle, in time with the ring.',
     touch: 'Tap in time with the ring to paddle.',
@@ -1493,8 +1562,10 @@
           const winner = ducks.find((d) => d.x >= FINISH);
           if (winner) {
             done = true;
-            ctx.float(winner === me ? 'Winner!' : 'Pipped at the post!', winner.g.position.clone().add(new V3(0, 1.4, 0)), winner === me ? 'good' : 'bad');
-            setTimeout(() => ctx.end(winner === me), 600);
+            const place = ducks.slice().sort((a, b) => b.x - a.x).indexOf(me);
+            ctx.float(['Winner!', '2nd place!', '3rd place!', 'Last!'][place], me.g.position.clone().add(new V3(0, 1.4, 0)), place < 3 ? 'good' : 'bad');
+            ctx.tokens([3, 2, 1, 0][place]);
+            setTimeout(() => ctx.end([3, 2, 1, 0][place]), 600);
           }
         },
         keyDown(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (!e.repeat) tap(); } },
@@ -1509,7 +1580,8 @@
   GAMES.buzz = {
     title: 'Buzz Wire', c1: '#2a9d8f', c2: '#f6ecd2', cursor: 'none', blurb: 'Steady hand: guide the loop along the wire.',
     params: (L) => ({ r: L(0.46, 0.38, 0.32), buzzes: L(4, 2, 1), time: L(40, 32, 28) }),
-    goal: (p) => `Carry the loop from the green post to the gold one in ${p.time} seconds. You can set the buzzer off ${p.buzzes} time${p.buzzes === 1 ? '' : 's'}; one more and you're out.`,
+    note: 'Reach the gold post for all 3',
+    goal: (p) => `Carry the loop along the wire: a token for every third of the way, and 3 if you reach the gold post. You have ${p.time} seconds, and you can set the buzzer off ${p.buzzes} time${p.buzzes === 1 ? '' : 's'}; one more and you're out.`,
     how: 'Move the mouse onto the loop at the green post to pick it up, then guide it along the twisty wire. Go steady: if the loop touches the wire, the buzzer goes off.',
     keys: 'Move the mouse slowly and steadily. No clicking needed.',
     touch: 'Drag the loop along the wire. It sits just above your fingertip so you can see it.',
@@ -1548,6 +1620,7 @@
       scene.add(loop);
       let pos = poly[0].clone();
       let idx = 0;
+      let bestIdx = 0;
       let carrying = false;
       let buzzes = 0;
       let grace = 0;
@@ -1579,7 +1652,7 @@
         update(dt, t, e) {
           ctx.timer(1 - e / p.time);
           if (over) return;
-          if (e >= p.time) { over = true; ctx.float("Time's up!", pos.clone().add(new V3(0, 0.8, 0)), 'bad'); setTimeout(() => ctx.end(false), 400); return; }
+          if (e >= p.time) { over = true; ctx.float("Time's up!", pos.clone().add(new V3(0, 0.8, 0)), 'bad'); setTimeout(() => ctx.end(), 400); return; }
           grace = Math.max(0, grace - dt);
           if (!aim) return;
           if (!carrying) {
@@ -1603,10 +1676,13 @@
             grace = 0.9;
             ctx.sfx('buzz');
             ctx.float('BZZZT!', pos.clone().add(new V3(0, 0.7, 0)), 'bad');
-            if (buzzes > p.buzzes) { over = true; setTimeout(() => ctx.end(false), 500); }
+            if (buzzes > p.buzzes) { over = true; setTimeout(() => ctx.end(), 500); }
           }
           status();
-          if (idx >= poly.length - 3 && !over) { over = true; ctx.sfx('ding'); ctx.float('Made it!', pos.clone().add(new V3(0, 0.8, 0)), 'good'); setTimeout(() => ctx.end(true), 500); }
+          // the furthest you've got along the wire earns tokens: a third, two thirds, then the gold post
+          bestIdx = Math.max(bestIdx, idx);
+          if (!over) ctx.tokens(Math.min(2, Math.floor((3 * bestIdx) / (poly.length - 1))), 'Reach the gold post for all 3');
+          if (idx >= poly.length - 3 && !over) { over = true; ctx.sfx('ding'); ctx.float('Made it!', pos.clone().add(new V3(0, 0.8, 0)), 'good'); ctx.tokens(3); setTimeout(() => ctx.end(3), 500); }
         },
         pointerMove(ptr, e) { const h = ctx.rayZ(Z); if (h) { h.y += lift(e); aim = h; } },
         pointerDown(ptr, e) { const h = ctx.rayZ(Z); if (h) { h.y += lift(e); aim = h; } },
@@ -1619,8 +1695,9 @@
   // ======================================================================
   GAMES.rat = {
     title: 'Splat the Rat', c1: '#3f7d3a', c2: '#e0a526', blurb: 'Whack the rat as it shoots out of the pipe.',
-    params: (L) => ({ rats: 5, need: L(2, 3, 3), speed: L(3.0, 4.0, 5.0), zone: L(1.5, 1.15, 0.9) }),
-    goal: (p) => `Splat ${p.need} of the ${p.rats} rats. You get one swing per rat.`,
+    params: (L) => ({ per: L(1, 1, 2), rats: L(5, 5, 8), speed: L(3.0, 4.0, 5.0), zone: L(1.5, 1.15, 0.9) }),
+    unit: plural('rat', 'rats'),
+    goal: (p) => `A token for ${every(p.per, 'rat', 'rats')} you splat, up to 3 tokens. There are ${p.rats} rats, and you get one swing at each.`,
     how: "The stall-holder drops a rat down the drainpipe, and you won't know when. It shoots out of the bottom and along the plank: swing the bat when it's on the red target. One swing per rat, so don't jump the gun.",
     keys: 'Press <kbd>Space</kbd> or click to swing the bat.',
     touch: 'Tap to swing the bat.',
@@ -1677,7 +1754,7 @@
       let fakes = 0;
       let ending = false;
       const inFlight = () => ['pipe', 'plank', 'fall'].includes(state);
-      const status = () => ctx.status(`Splats <b>${splats}/${p.need}</b> · Rats left <b>${p.rats - ratNo - (inFlight() ? 1 : 0)}</b>`);
+      const status = () => ctx.status(`Splats <b>${splats}</b> · Rats left <b>${p.rats - ratNo - (inFlight() ? 1 : 0)}</b>`);
       const newRat = () => {
         state = 'hold';
         timer = G.rand(1.0, 3.2);
@@ -1699,8 +1776,7 @@
         ratNo++;
         status();
         const left = p.rats - ratNo;
-        if (!ending && splats >= p.need) { ending = true; setTimeout(() => ctx.end(true), 700); }
-        else if (!ending && splats + left < p.need) { ending = true; setTimeout(() => ctx.end(false), 700); }
+        if (!ending && (ctx.full() || left <= 0)) { ending = true; setTimeout(() => ctx.end(), 700); }
       };
       const swing = async () => {
         if (!ctx.running() || swung || state === 'done' || ending) return;
@@ -1710,6 +1786,7 @@
         const hitNow = state === 'plank' && Math.abs(x - TX) < p.zone / 2 + 0.22;
         if (hitNow) {
           splats++;
+          ctx.score(splats);
           ctx.sfx('splat');
           ctx.float('SPLAT!', new V3(TX, 2.3, Z), 'good');
           rat.scale.set(1.2, 0.3, 1.3);

@@ -9,13 +9,12 @@
   const PAWN_COLORS = ['#e8432f', '#2a9d8f', '#f2c230', '#8e6cc4'];
   B.PAWN_COLORS = PAWN_COLORS;
 
-  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, crown, zzz;
+  let scene, camera, orbit, grandad, fire, table, lamp, thermo, die, hemi, key, topMat, snow, snowGeo, curRing, crown, zzz, heater;
   let napping = false;
   let crownFor = null;
   const props = [];
+  // a gold token spins over every stall: that's what you win there
   const prizes = {};
-  // once a room's prize has gone, a mystery parcel floats over its stall: have a rummage
-  const parcels = {};
   const pawns = [];
   let targets = [];
   let shiverAmp = 0;
@@ -75,6 +74,13 @@
     lamp = G.makeLamp();
     lamp.group.position.set(-2.3, 0, -2.3);
     scene.add(lamp.group);
+    // an electric heater by his chair, switched on when you buy it
+    heater = G.makeItem('heater');
+    heater.position.set(2.25, 0, 0.75);
+    heater.rotation.y = Math.atan2(-2.25, -1.25);
+    heater.scale.setScalar(1.15);
+    heater.visible = false;
+    scene.add(heater);
     thermo = G.makeThermometer();
     thermo.group.position.set(-5.7, 0, 2.3);
     thermo.group.rotation.y = 0.35;
@@ -104,21 +110,15 @@
       stall.position.set(c.x, 0, c.z - 0.5);
       scene.add(stall);
       const prize = new THREE.Group();
-      const model = G.makeItem(d.item);
-      model.scale.setScalar(0.62);
-      model.position.y = -0.2;
+      const model = G.makeToken();
+      model.scale.setScalar(0.75);
       prize.add(model);
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: G.tex.skyGlow(), transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
       glow.scale.setScalar(1.6);
       prize.add(glow);
       prize.position.set(c.x, 3.05, c.z - 0.55);
       scene.add(prize);
-      prizes[d.item] = { group: prize, model, base: prize.position.clone() };
-      const parcel = makeParcel();
-      parcel.position.copy(prize.position);
-      parcel.visible = false;
-      scene.add(parcel);
-      parcels[d.item] = parcel;
+      prizes[i] = { group: prize, model, base: prize.position.clone() };
     }
 
     die = G.makeDie();
@@ -220,16 +220,12 @@
     for (const k in prizes) {
       const p = prizes[k];
       p.group.position.y = p.base.y + Math.sin(t * 2 + p.base.x) * 0.12;
-      p.model.rotation.y = t * 1.3;
-      const pc = parcels[k];
-      if (pc.visible) {
-        pc.position.y = p.base.y - 0.2 + Math.sin(t * 2.4 + p.base.z) * 0.1;
-        pc.children[0].rotation.y = t * 0.9;
-      }
+      p.model.rotation.y = t * 1.6;
     }
     props.forEach((p) => p.update(t));
     fire.update(t, dt);
     table.update(t);
+    if (heater.visible) heater.userData.bars.forEach((b, j) => { b.material.color.setHSL(0.06, 1, 0.55 + Math.sin(t * 7 + j) * 0.05); });
     grandad.man.position.x = shiverAmp ? Math.sin(t * 60) * shiverAmp : 0;
     const n = snowGeo.drawRange.count;
     if (n) {
@@ -267,13 +263,10 @@
       tg.arrow.position.y = 2.1 + Math.sin(t * 5 + k) * 0.18;
       tg.ring.material.opacity = 0.55 + Math.sin(t * 6) * 0.35;
     });
-    pawns.forEach((pw) => {
-      pw.carry.children.forEach((c, k, all) => {
-        const a = t * 1.6 + (k / all.length) * PI * 2;
-        const r = all.length > 1 ? 0.38 : 0;
-        c.position.set(Math.cos(a) * r, Math.sin(t * 3 + k) * 0.05, Math.sin(a) * r);
-        c.rotation.y = t * 2;
-      });
+    // each pawn carries its tokens as a little stack that bobs and turns
+    pawns.forEach((pw, j) => {
+      pw.carry.position.y = 1.75 + Math.sin(t * 2.5 + j) * 0.05;
+      pw.carry.rotation.y = t * 1.2;
     });
   }
 
@@ -340,18 +333,21 @@
     const pw = pawns[k].group;
     return G.tween(G.ms(600), (t) => { const s = Math.sin(t * PI); pw.scale.set(1 + s * 0.25, 1 - s * 0.55, 1 + s * 0.25); });
   };
-  B.setCarry = (players) => {
+  // a stack of tokens above each pawn (up to ten shown; the score pad has the exact count)
+  B.setTokens = (players) => {
     players.forEach((pl, k) => {
       const pw = pawns[k];
-      const keys = pl.carry.join(',');
-      if (!pw || pw.keys === keys) return;
-      pw.keys = keys;
+      const n = Math.min(10, pl.tokens);
+      if (!pw || pw.keys === n) return;
+      pw.keys = n;
       while (pw.carry.children.length) { const c = pw.carry.children[0]; pw.carry.remove(c); c.traverse((q) => { if (q.geometry) q.geometry.dispose(); }); }
-      pl.carry.forEach((key) => {
-        const m = G.makeItem(key);
-        m.scale.setScalar(0.34);
-        pw.carry.add(m);
-      });
+      for (let j = 0; j < n; j++) {
+        const tk = G.makeToken();
+        tk.scale.setScalar(0.42);
+        tk.children[0].rotation.set(0, 0, 0);
+        tk.position.set(Math.sin(j * 2.4) * 0.04, j * 0.07, Math.cos(j * 2.4) * 0.04);
+        pw.carry.add(tk);
+      }
     });
   };
 
@@ -401,56 +397,53 @@
     if (G.E.canvas) G.E.canvas.style.cursor = 'grab';
   };
 
-  // ---------- Prizes and cosy things ----------
-  B.setPrizes = (items) => {
-    for (const k in prizes) {
-      prizes[k].group.visible = items[k].state === 'room';
-      parcels[k].visible = items[k].state !== 'room';
-    }
-  };
-  async function flyModel(key, from, to, ms, s0, s1, arc = 2.5) {
-    const m = G.makeItem(key);
-    scene.add(m);
-    await G.tween(G.ms(ms), (t) => {
-      m.position.lerpVectors(from, to, t);
-      m.position.y += Math.sin(t * PI) * arc;
-      m.scale.setScalar(G.lerp(s0, s1, t));
-      m.rotation.y = t * PI * 3;
+  // ---------- Tokens flying about ----------
+  function flyToken(from, to, ms, delay = 0, arc = 2, s0 = 0.5, s1 = 0.42) {
+    return G.sleep(G.ms(delay)).then(() => {
+      const m = G.makeToken();
+      scene.add(m);
+      return G.tween(G.ms(ms), (t) => {
+        m.position.lerpVectors(from, to, t);
+        m.position.y += Math.sin(t * PI) * arc;
+        m.scale.setScalar(G.lerp(s0, s1, t));
+        m.rotation.y = t * PI * 4;
+      }).then(() => drop(m));
     });
-    drop(m);
   }
-  B.prizeToPawn = (key, k) => { prizes[key].group.visible = false; return flyModel(key, prizes[key].group.position.clone(), B.pawnWorld(k).add(new V3(0, 0.6, 0)), 800, 0.62, 0.34, 2); };
-  B.backToStall = (key, k) => flyModel(key, B.pawnWorld(k), prizes[key].base.clone(), 900, 0.34, 0.62, 4);
-  B.passItem = (key, from, to) => flyModel(key, B.pawnWorld(from).add(new V3(0, 0.6, 0)), B.pawnWorld(to).add(new V3(0, 0.6, 0)), 700, 0.34, 0.34, 1.6);
+  const stackTop = (k) => B.pawnWorld(k).add(new V3(0, 0.75, 0));
+  // won at a stall: the tokens fly off the stall and onto your stack
+  B.tokensFromStall = (i, k, n) => {
+    const from = prizes[i] ? prizes[i].group.position.clone() : G.tileCentre(i).clone().setY(3);
+    return Promise.all(Array.from({ length: n }, (_, j) => flyToken(from, stackTop(k), 700, j * 170, 1.6, 0.75, 0.42)));
+  };
+  // found or given: tokens pop up from the square
+  B.tokensUp = (k, n) => {
+    const at = B.pawnWorld(k).add(new V3(0, -0.8, 0));
+    return Promise.all(Array.from({ length: n }, (_, j) => flyToken(at.clone().add(new V3(G.rand(-0.4, 0.4), 0, G.rand(-0.4, 0.4))), stackTop(k), 600, j * 150, 1.4, 0.2, 0.42)));
+  };
+  // lost: tokens fly off the stack and away
+  B.tokensAway = (k, n) => {
+    const from = stackTop(k);
+    return Promise.all(Array.from({ length: n }, (_, j) => {
+      const a = Math.random() * PI * 2;
+      return flyToken(from, from.clone().add(new V3(Math.cos(a) * 3, -1.8, Math.sin(a) * 3)), 700, j * 140, 1.8, 0.42, 0.1);
+    }));
+  };
+  // pinched: tokens hop from one pawn's stack to another's
+  B.tokensBetween = (from, to, n) => Promise.all(Array.from({ length: n }, (_, j) => flyToken(stackTop(from), stackTop(to), 650, j * 150, 1.5)));
+  // bought at the shop: the tokens fly up and vanish in a sparkle
+  B.spendTokens = (k, n) => Promise.all(Array.from({ length: n }, (_, j) => flyToken(stackTop(k), stackTop(k).add(new V3(0, 2.2, 0)), 500, j * 110, 0.3, 0.42, 0.05)))
+    .then(() => G.spawnSparkles(scene, stackTop(k).add(new V3(0, 2.2, 0)), { n: 16, speed: 1.8, life: 0.7, size: 0.45 }));
   B.setCrown = (k) => { crownFor = k; };
   B.setWorn = (keys) => {
     grandad.setWorn(keys);
     table.tea.visible = keys.includes('tea');
+    table.soup.visible = keys.includes('soup');
+    heater.visible = keys.includes('heater');
     fire.setLit(keys.includes('logs'));
   };
 
   // ---------- Rummaging ----------
-  function makeParcel() {
-    const g = new THREE.Group();
-    const box = new THREE.Group();
-    const ribbon = G.mat('#b3261e');
-    box.add(G.mesh(G.geo.box(0.6, 0.46, 0.6), G.mat('#c9985a'), 0, 0, 0));
-    box.add(G.mesh(G.geo.box(0.64, 0.48, 0.12), ribbon, 0, 0, 0));
-    box.add(G.mesh(G.geo.box(0.12, 0.48, 0.64), ribbon, 0, 0, 0));
-    [-1, 1].forEach((sd) => {
-      const bow = G.mesh(new THREE.TorusGeometry(0.1, 0.035, 6, 14), ribbon, sd * 0.1, 0.3, 0);
-      bow.rotation.y = PI / 2;
-      bow.rotation.x = sd * 0.5;
-      box.add(bow);
-    });
-    g.add(box);
-    const tex = G.tex.label('?', { size: 72, bg: '#e0a526', fg: '#2b1a10', font: G.FONT_DISPLAY, weight: '400' });
-    const q = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-    q.scale.set(0.5 * tex.userData.aspect, 0.5, 1);
-    q.position.y = 0.72;
-    g.add(q);
-    return g;
-  }
   // the pawn has a good root around, kicking up dust
   B.rummage = (k) => {
     const pw = pawns[k] && pawns[k].group;
@@ -498,7 +491,7 @@
   B.cineSide = () => camera.aspect > 1.05;
   function shot(key) {
     // [target x, y, z, camera angle, shift Grandad right?]: the logs shot takes in the fireplace and Grandad together
-    const [x, y, z, az, shift] = { logs: [2.8, 1.8, -2.4, -0.35, 0], tea: [-1.1, 1.9, 0.1, -0.22, 1] }[key] || [0.25, 2.05, -0.2, 0.3, 1];
+    const [x, y, z, az, shift] = { logs: [2.8, 1.8, -2.4, -0.35, 0], tea: [-1.1, 1.9, 0.1, -0.22, 1], soup: [-1.1, 1.9, 0.1, -0.22, 1], heater: [1.3, 1.6, 0.1, 0.55, 0] }[key] || [0.25, 2.05, -0.2, 0.3, 1];
     const tanV = Math.tan((camera.fov * PI) / 360);
     const wide = B.cineSide();
     // on upright screens the card sits underneath, so stand back a little and lift Grandad up the frame
@@ -545,7 +538,9 @@
 
   function anchorOf(key) {
     if (key === 'tea') return table.tea.getWorldPosition(new V3());
+    if (key === 'soup') return table.soup.getWorldPosition(new V3());
     if (key === 'logs') return fire.group.localToWorld(new V3(0, 0.55, 0.5));
+    if (key === 'heater') return heater.position.clone().add(new V3(0, 0.5, 0));
     return grandad.anchor(key);
   }
   // The item lifts off the pawn with a trail of sparkles, hovers in front of Grandad glowing,
@@ -555,7 +550,8 @@
     // hover in clear air: above the fireplace or the side table, otherwise beside Grandad's head, nearer the camera
     const az = orbit.goal.az;
     const hover = key === 'logs' ? fire.group.localToWorld(new V3(0, 3.7, 1.4))
-      : key === 'tea' ? table.group.localToWorld(new V3(0, 2.6, 0.5))
+      : key === 'tea' || key === 'soup' ? table.group.localToWorld(new V3(0, 2.6, 0.5))
+      : key === 'heater' ? heater.position.clone().add(new V3(-0.4, 3, 0.8))
         : new V3(0, 4.2, 0.2).add(new V3(-Math.cos(az), 0, Math.sin(az)).multiplyScalar(2.1)).add(new V3(Math.sin(az), 0, Math.cos(az)).multiplyScalar(1.2));
     const holder = new THREE.Group();
     const m = G.makeItem(key);
@@ -602,6 +598,16 @@
       const tea = table.tea;
       tea.visible = true;
       G.tween(G.ms(600), (t) => { tea.position.y = 1.29 + 1.2 * (1 - t); tea.scale.setScalar(0.72 * Math.max(0.01, G.ease.back(t))); }, G.ease.out);
+    } else if (key === 'soup') {
+      const soup = table.soup;
+      soup.visible = true;
+      G.tween(G.ms(600), (t) => { soup.position.y = 1.3 + 1.2 * (1 - t); soup.scale.setScalar(0.7 * Math.max(0.01, G.ease.back(t))); }, G.ease.out);
+    } else if (key === 'heater') {
+      // it drops into place, then both bars glow orange
+      heater.visible = true;
+      G.tween(G.ms(650), (t) => { heater.position.y = 1.4 * (1 - t); heater.scale.setScalar(1.15 * Math.max(0.01, G.ease.back(t))); }, G.ease.out);
+      G.Sound.play('ignite');
+      G.spawnSparkles(scene, to, { n: 24, speed: 2.2, life: 1, size: 0.5, color: '#ff9a3c' });
     } else if (key === 'logs') {
       fire.ignite();
       G.Sound.play('ignite');
