@@ -184,3 +184,5 @@ All the sound effects and the fairground organ music are generated live in the b
 | `make-mac-app.sh` | Wraps the game as a Mac app |
 | `docs/ideas.md` | Ideas for making it even more fun, and which ones are built |
 | `tools/simulate.js` | Simulates thousands of games to set the round limits (`node tools/simulate.js`) |
+| `tools/build-artifact.js` | Builds a play-test copy to publish as a claude.ai Artifact (see `AGENTS.md`) |
+| `AGENTS.md` | Rules for anyone (or any AI agent) making changes, including the test build every pull request needs |
