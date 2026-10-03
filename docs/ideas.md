@@ -94,7 +94,9 @@ The stalls now pay out fairground tokens instead of one fixed prize: up to 3 a g
 
 Rolling the dice felt pointless: every stall paid the same and everything cost the same at one shop, so where you landed hardly mattered. Now every stall has one of Grandad's things spinning over it as its top prize. Before you roll, the board shows which numbers land on one ("Roll a 2 for the Slippers or a 5 for the Tea"). Light up all 3 tokens at that stall and the prize flies straight to Grandad; light fewer and you keep the tokens, and the prize stays up for the next go. In Versus that makes a race for it: "She missed! The slippers are still there, I need a 3!"
 
-The Fair Shop is still there as the slow, safe route, but things now cost 4 tokens, so winning at the stall is the shortcut. Straight after rolling you can pay a token on the spot for roller skates (one square on or one short, offered only when that reaches a prize you need) or the lucky dice (roll again, once a go). A stall only packs up when its prize is won, so after a miss the next player knows what they're facing. The round limits were re-run through a simulation, now kept in `tools/simulate.js`.
+The Fair Shop is still there as the slow, safe route, but things now cost 4 tokens, so winning at the stall is the shortcut. A stall only packs up when its prize is won, so after a miss the next player knows what they're facing. The round limits were re-run through a simulation, now kept in `tools/simulate.js`.
+
+Roller skates (one square on or one short, to land on a prize) and the lucky dice (roll again) first went in as things you paid for on the spot, straight after a roll. That made it too easy, so now you buy them at the Fair Shop at the end of your go and carry them (one of each) for a later go. If you're not carrying them, you don't get offered them. Each one costs you a token more than your last (1, 2, 3...). In the simulation they roughly pay for themselves at 1 or 2 tokens and cost you at 3 or more, so they're a real choice rather than a shortcut.
 
 ### Grandad's errands — Idea
 

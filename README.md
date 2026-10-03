@@ -34,9 +34,9 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 
 1. **Pick how many things Grandad needs** on the start screen: 3 for a quick game, 6 for a standard one, 9, or 12 for a marathon. With two or more players, also pick **Co-op** or **Versus**.
 2. **Look at what's up for grabs.** Every fairground stall has one of Grandad's things spinning over it as its **top prize**. Before you roll, gold markers on the board show which numbers land on one, and the score pad spells it out: "Roll a 2 for the Slippers or a 5 for the Cup of Tea."
-3. **Roll the dice.** Everyone moves clockwise round the house. The score pad tells you where you'll land and what's there, and your pawn sets off by itself a moment later (press <kbd>Space</kbd> to hurry it along). Just missed a prize? You can pay a token on the spot for **roller skates** or the **lucky dice** (see below).
+3. **Roll the dice.** Everyone moves clockwise round the house. The score pad tells you where you'll land and what's there, and your pawn sets off by itself a moment later (press <kbd>Space</kbd> to hurry it along). Just missed a prize? If you've got **roller skates** or the **lucky dice** in your pocket, you can use them (see below).
 4. **Win the prize.** At a stall, light up all 3 tokens and you win its prize: it flies straight off the stall to Grandad, the camera swoops in to watch him put it on, and the stall packs up for a different game with a new prize. Light up fewer and you keep the tokens instead, and the prize stays up for the next go.
-5. **Or go to the Fair Shop.** At the end of your go, if you've got 4 tokens, you're taken to the Fair Shop to buy Grandad something. Everything costs 4 tokens. You can also save your tokens for later. Get him the number of things you picked at the start and he's saved.
+5. **Or go to the Fair Shop.** At the end of your go, if you've got enough tokens for anything, you're taken to the Fair Shop. Grandad's things cost 4 tokens, and the extras for your pocket start at 1. You can also save your tokens for later. Get him the number of things you picked at the start and he's saved.
 6. **Every other square wins or loses you tokens**, and each one pops up a card saying exactly what happened (see "Around the board" below). The card stays up until you press **OK** (or <kbd>Space</kbd>).
 7. **Watch the rounds.** You get a fixed number of rounds (a round is everyone having one go). The thermometer counts them down, a notch at the end of every round. Get everything before it runs out, or Grandad gets hypothermia.
 8. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop tokens, or you miss a go if you've none. He throws more often as he gets colder, and more often still if you hang about in his doorway.
@@ -44,16 +44,21 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 
 ### Roller skates and the lucky dice
 
-Straight after you roll, if you haven't landed on a prize you need and you've got a token, the score pad can offer you an extra, paid for on the spot:
+These are extras you buy at the Fair Shop at the end of your go and keep in your pocket for a later go. You can carry one of each, and the players list shows what everyone's carrying.
 
-- **Roller skates** (1 token): go one square further, or stop one square short. They're only offered when that lands you on a prize you need, and the square they'd take you to lights up green on the board (you can tap it).
-- **Lucky dice** (1 token): roll again. Once a go, and only when there's a prize you need somewhere within reach. If the new roll just misses too, you can still use the skates.
+- **Roller skates:** go one square further, or stop one square short, to land on a prize you need. After a roll that just misses one, you're offered the skates, and the square they'd take you to lights up green on the board (you can tap it).
+- **Lucky dice:** after a roll that misses every prize you need, roll again. If the new roll just misses too, you can still use the skates.
 
-Or say **No thanks** (<kbd>Space</kbd>) and off you go. With nothing worth offering, your pawn just sets off as normal.
+Your first pair of skates costs 1 token, and so do your first lucky dice. After that, each one costs you a token more than your last (1, 2, 3...), so you can't lean on them every go. Each player's prices are their own.
+
+If you're not carrying anything, you won't be offered anything: plan ahead. If you are, you can say **No thanks** (<kbd>Space</kbd>) and keep them for later.
 
 ### The Fair Shop
 
-There are 12 of Grandad's things: slippers, a cup of tea, a tartan blanket, a woolly scarf, a hot water bottle, his cardigan, a bobble hat, logs for the fire, woolly mittens, earmuffs, a bowl of soup and an electric heater. They all count the same. Up to 10 of them hang on the stalls as top prizes at any one time, and the Fair Shop sells every one of them for 4 tokens. The Fair Shop card in the score pad says which stall each thing is hanging on.
+The Fair Shop opens at the end of your go whenever you can afford something in it. It sells two kinds of thing:
+
+- **Extras for your pocket:** roller skates and the lucky dice (see above).
+- **Grandad's things**, 4 tokens each: slippers, a cup of tea, a tartan blanket, a woolly scarf, a hot water bottle, his cardigan, a bobble hat, logs for the fire, woolly mittens, earmuffs, a bowl of soup and an electric heater. They all count the same. Up to 10 of them hang on the stalls as top prizes at any one time. The Fair Shop card in the score pad says which stall each thing is hanging on.
 
 Only things somebody still needs go up as prizes. Once Grandad's got something (bought or won), it comes down off its stall and something else goes up. Late in a long game there can be more stalls than things left to win, and a stall with no prize goes back to a gold token and pays up to 3 tokens.
 
@@ -136,10 +141,10 @@ When you win, you get stars for the rounds you had to spare: 1 star for winning 
 
 | Things | Solo | Co-op, 2 / 3 / 4 players | Versus, 2 / 3 / 4 players |
 | --- | --- | --- | --- |
-| 3 | 15 | 8 / 6 / 5 | 11 / 10 / 10 |
-| 6 | 27 | 14 / 10 / 8 | 23 / 21 / 20 |
-| 9 | 40 | 21 / 14 / 11 | 34 / 32 / 31 |
-| 12 | 53 | 27 / 19 / 15 | 47 / 44 / 42 |
+| 3 | 19 | 11 / 8 / 7 | 15 / 13 / 12 |
+| 6 | 35 | 18 / 13 / 10 | 28 / 26 / 24 |
+| 9 | 50 | 26 / 18 / 14 | 42 / 39 / 37 |
+| 12 | 65 | 33 / 23 / 18 | 57 / 53 / 50 |
 
 Everything you win or buy him goes on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the mittens go on his hands, the earmuffs over his ears, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea and the soup land on the side table, the logs light the fire and the heater switches on. A card shows how many of the things he needs he has so far (in Versus, how many are in your set). As the rounds run down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
 
@@ -157,11 +162,12 @@ You get the same number of rounds on every setting. The harder settings are hard
 
 | Key | Does |
 | --- | --- |
-| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice (and hurry your pawn along), say no thanks to the skates and lucky dice, duck, take your go at a stall, close a card, or skip a cutscene |
-| <kbd>→</kbd> / <kbd>←</kbd> | Roller skates: one square on, or stop one short |
-| <kbd>R</kbd> | Lucky dice: roll again |
-| <kbd>1</kbd>–<kbd>9</kbd> | Buy something at the Fair Shop |
-| <kbd>Esc</kbd> | Leave the Fair Shop and save your tokens |
+| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice (and hurry your pawn along), keep your skates or lucky dice for later, duck, take your go at a stall, close a card, or skip a cutscene |
+| <kbd>→</kbd> / <kbd>←</kbd> | Use your roller skates: one square on, or stop one short |
+| <kbd>R</kbd> | Use your lucky dice: roll again |
+| <kbd>1</kbd>–<kbd>9</kbd> | Buy Grandad something at the Fair Shop |
+| <kbd>S</kbd> / <kbd>D</kbd> | Buy roller skates or the lucky dice at the Fair Shop |
+| <kbd>Esc</kbd> | Leave the Fair Shop |
 | <kbd>Y</kbd> / <kbd>N</kbd> | Pinch another player's token, or leave it |
 | <kbd>M</kbd> | Sound on or off |
 | Drag / scroll | Look around the board / zoom |

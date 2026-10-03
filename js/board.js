@@ -442,6 +442,11 @@
   // bought at the shop: the tokens fly up and vanish in a sparkle
   B.spendTokens = (k, n) => Promise.all(Array.from({ length: n }, (_, j) => flyToken(stackTop(k), stackTop(k).add(new V3(0, 2.2, 0)), 500, j * 110, 0.3, 0.42, 0.05)))
     .then(() => G.spawnSparkles(scene, stackTop(k).add(new V3(0, 2.2, 0)), { n: 16, speed: 1.8, life: 0.7, size: 0.45 }));
+  // using an extra from your pocket: a puff of sparkles round your pawn (teal for the skates, gold for the dice)
+  B.useExtra = (k, kind) => {
+    if (pawns[k]) G.spawnSparkles(scene, B.pawnWorld(k).add(new V3(0, -0.6, 0)), { n: 20, speed: 2, life: 0.7, size: 0.45, color: kind === 'skates' ? '#2a9d8f' : '#e0a526' });
+    return G.sleep(G.ms(400));
+  };
   // a new deal of stalls for a new game
   B.setStalls = () => { for (const i of G.STALL_SQUARES) buildStall(i); B.refreshTop(); };
   // what's hanging over each stall: { square: item key, or null for a token }

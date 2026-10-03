@@ -21,8 +21,12 @@
  *   OLD rules: a stall pays t tokens; items cost 3; buy whenever you can at the end of a go.
  *   NEW rules: each stall displays a prize item (distinct, dealt from the "wanted" pool). On a stall
  *     whose prize you still need, t == 3 wins the item (no tokens); otherwise you get t tokens.
- *     Items cost 4 (shop prefers items not on a stall). Roller skates (1 token: move roll+1/roll-1)
- *     and lucky dice (1 token: re-roll) are bought on the spot to reach a prize stall / dodge a loss.
+ *     Items cost 4 (shop prefers items not on a stall). Roller skates (move roll+1/roll-1) and lucky
+ *     dice (re-roll) are bought at the Fair Shop at the end of a go and carried (one of each) until
+ *     used. Each player's first of each costs 1 token, and every one after that a token more than
+ *     their last. The bot buys them with tokens left over after shopping for items, skates while
+ *     they cost up to --skatesMax (default 2) and dice up to --diceMax (default 1). It uses skates
+ *     when they reach a prize it needs, and the dice when a roll misses one and skates can't fix it.
  *     When a stall's prize is won it is restocked with a different wanted item if one is free
  *     (falling back to the same item in Versus if someone else still lacks it and nothing else is free).
  *
@@ -40,6 +44,7 @@
  *   node simulate.js                     full run (calibrate, search, report)
  *   node simulate.js --games=20000 --search=4000 --s=0.62,0.55,0.50 (skip calibration with given s)
  *   node simulate.js --s=0.754,0.634,0.517   the skill it calibrated when the prizes went in (quicker)
+ *   node simulate.js --skatesMax=3 --diceMax=2 --itemCost=3   try other buying habits or shop prices
  *   node simulate.js --json=out.json     also write all numbers to a JSON file
  */
 'use strict';
@@ -52,6 +57,11 @@ const ARGS = Object.fromEntries(process.argv.slice(2).map((a) => {
 const FINAL_GAMES = +(ARGS.games || 20000);   // games per config/difficulty point for reported numbers
 const SEARCH_GAMES = +(ARGS.search || 4000);  // games per point while bisecting / bracketing
 const TARGET = { mild: 0.98, chilly: 0.90, freeze: 0.60 };
+// the bot's limits for buying extras at the Fair Shop (new rules)
+const SKATES_MAX = +(ARGS.skatesMax || 2);
+const DICE_MAX = +(ARGS.diceMax || 1);
+// what Grandad's things cost at the Fair Shop under the new rules
+const ITEM_COST = +(ARGS.itemCost || 4);
 
 // The limits from before the stall prizes. The old rules were tuned to these, so they're what the
 // stall skill is calibrated against (step 1). The new limits it found are the ones in js/core.js.
@@ -124,7 +134,6 @@ for (const i of [1, 3, 9, 13, 17, 21, 23, 25, 27, 29, 31]) BOARD[i] = SQ.RUMMAGE
 if (BOARD.includes(-1)) throw new Error('board has an unassigned square');
 const STALL_OF = new Int8Array(N).fill(-1);
 STALLS.forEach((sq, k) => { STALL_OF[sq] = k; });
-const LOSING = BOARD.map((t) => t === SQ.WINDOW || t === SQ.CAT || t === SQ.DRAUGHT);
 
 const N_ITEMS = 12;                   // slippers, tea, blanket, scarf, hwb, cardigan, hat, logs, mittens, earmuffs, soup, heater
 const ALL_ITEMS = (1 << N_ITEMS) - 1; // items are bits 0..11 of a mask
@@ -149,10 +158,15 @@ class Game {
     this.R = o.rounds;
     this.s = o.s;
     this.D = DIFFS[o.diff];
-    this.cost = this.isNew ? 4 : 3;
+    this.cost = this.isNew ? ITEM_COST : 3;
     this.pos = new Int32Array(this.P);
     this.tokens = new Int32Array(this.P);
     this.charm = new Uint8Array(this.P);
+    // extras carried (one of each), and how many of each this player has bought (the next costs one more)
+    this.skates = new Uint8Array(this.P);
+    this.dice = new Uint8Array(this.P);
+    this.skatesBought = new Int32Array(this.P);
+    this.diceBought = new Int32Array(this.P);
     this.skip = new Uint8Array(this.P);
     this.have = new Int32Array(this.P); // Versus: each player's own set
     this.delivered = 0;                 // Co-op: the shared list
@@ -214,29 +228,42 @@ class Game {
     }
   }
 
-  // NEW rules: roller skates / lucky dice, decided right after the roll. Returns the distance to move.
+  // NEW rules: use the roller skates or lucky dice you're carrying, right after the roll.
+  // Returns the distance to move.
   extras(p, roll) {
     const at = (r) => (this.pos[p] + r) % N;
-    let skatesUsed = false;
     const trySkates = () => {
-      if (skatesUsed || this.tokens[p] < 1) return false;
+      if (!this.skates[p]) return false;
       let d = 0;
       if (this.isPrizeSquare(p, at(roll + 1))) d = 1;
       else if (roll - 1 >= 1 && this.isPrizeSquare(p, at(roll - 1))) d = -1;
       if (!d) return false;
-      this.tokens[p]--; roll += d; skatesUsed = true;
+      this.skates[p] = 0; roll += d;
       if (this.stats) this.stats.skates++;
       return true;
     };
     if (this.isPrizeSquare(p, at(roll))) return roll;
     if (trySkates()) return roll;
-    if (this.tokens[p] >= 1 && LOSING[at(roll)]) {
-      this.tokens[p]--;
+    if (this.dice[p]) {
+      this.dice[p] = 0;
       if (this.stats) this.stats.dice++;
       roll = this.d6();
       if (!this.isPrizeSquare(p, at(roll))) trySkates();
     }
     return roll;
+  }
+  // NEW rules: extras at the Fair Shop with whatever's left after buying items
+  buyExtras(p) {
+    const skatesPrice = 1 + this.skatesBought[p];
+    if (!this.skates[p] && skatesPrice <= SKATES_MAX && this.tokens[p] >= skatesPrice) {
+      this.tokens[p] -= skatesPrice; this.skates[p] = 1; this.skatesBought[p]++;
+      if (this.stats) this.stats.skatesBought++;
+    }
+    const dicePrice = 1 + this.diceBought[p];
+    if (!this.dice[p] && dicePrice <= DICE_MAX && this.tokens[p] >= dicePrice) {
+      this.tokens[p] -= dicePrice; this.dice[p] = 1; this.diceBought[p]++;
+      if (this.stats) this.stats.diceBought++;
+    }
   }
 
   // resolve the square the player is standing on; returns true if the goal was reached mid-go
@@ -306,7 +333,9 @@ class Game {
       this.tokens[p] -= this.cost;
       this.gainItem(p, this.pickBit(m), false);
     }
-    return this.finished(p);
+    if (this.finished(p)) return true;
+    if (this.isNew) this.buyExtras(p);
+    return false;
   }
 
   // one go for player p; returns true if the game is won
@@ -342,7 +371,7 @@ class Game {
 
 // ---------------------------------------------------------------- running many games
 function newStats() {
-  return { games: 0, goes: 0, stallItems: 0, shopItems: 0, skates: 0, dice: 0, shownSum: 0, wantedSum: 0,
+  return { games: 0, goes: 0, stallItems: 0, shopItems: 0, skates: 0, dice: 0, skatesBought: 0, diceBought: 0, shownSum: 0, wantedSum: 0,
     prizeLandings: 0, rawPrizeRolls: 0, stallVisits: 0, prizeStallVisits: 0 };
 }
 // success rate for one config / difficulty / skill / round limit.
@@ -486,7 +515,7 @@ function main() {
   const st = dn.st;
   console.log(`NEW: success ${pct(dn.win)}%, goes/game ${per(st, 'goes')}`);
   console.log(`  items per game: won at stalls ${per(st, 'stallItems')}, bought in shop ${per(st, 'shopItems')} (stall share ${pct(st.stallItems / (st.stallItems + st.shopItems))}%)`);
-  console.log(`  extras per game: roller skates ${per(st, 'skates')}, lucky dice ${per(st, 'dice')}`);
+  console.log(`  extras per game: roller skates bought ${per(st, 'skatesBought')}, used ${per(st, 'skates')}; lucky dice bought ${per(st, 'diceBought')}, used ${per(st, 'dice')}`);
   console.log(`  prize stalls displayed (avg at start of a go): ${(st.shownSum / st.goes).toFixed(2)} of 10 (needed by the mover: ${(st.wantedSum / st.goes).toFixed(2)})`);
   console.log(`  per go: landed on a prize square ${pct(st.prizeLandings / st.goes)}% (raw roll would have: ${pct(st.rawPrizeRolls / st.goes)}%)`);
   console.log(`  stall visits per game ${per(st, 'stallVisits')}, of which on a prize stall ${per(st, 'prizeStallVisits')}; P(win prize | prize stall) = s^3 = ${pct(S.chilly ** 3)}%`);
