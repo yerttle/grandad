@@ -1,6 +1,6 @@
 # Grandad's Cold Snap
 
-The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Grandad sits in his armchair in the middle of the board, getting colder by the minute. Race round the rooms winning tokens at the fairground games, and buy him his things back before the rounds run out and he gets hypothermia. The colder he gets, the grumpier he gets, and every so often he'll throw his rolled-up newspaper at you.
+The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's hung all his cosy things up as prizes. Grandad sits in his armchair in the middle of the board, getting colder by the minute. Race round the rooms winning his things back at the fairground games (or winning tokens and buying them at the Fair Shop) before the rounds run out and he gets hypothermia. The colder he gets, the grumpier he gets, and every so often he'll throw his rolled-up newspaper at you.
 
 It's a 3D board game for 1 to 4 players: play together to save Grandad (Co-op), or race each other to be the first to buy him a full set (Versus). It runs in the browser, with nothing to install.
 
@@ -33,23 +33,40 @@ On tablets with a big screen you get the desktop layout, with the same touch con
 ## How to play
 
 1. **Pick how many things Grandad needs** on the start screen: 3 for a quick game, 6 for a standard one, 9, or 12 for a marathon. With two or more players, also pick **Co-op** or **Versus**.
-2. **Roll the dice.** Everyone moves clockwise round the house. The score pad tells you where you'll land and what's there, and your pawn sets off by itself a moment later (press <kbd>Space</kbd> to hurry it along).
-3. **Land on a fairground stall** (a gold token spins above each one) and play for **tokens**: up to 3 each time, depending on how well you do. When a stall pays out, it packs up and a different game from the fair takes its place, so you won't keep playing the same one.
-4. **Go to the Fair Shop.** At the end of your go, if you've got 3 tokens, you're taken to the Fair Shop to buy Grandad something. Everything costs 3 tokens. The camera swoops in to watch him put it on. Buy the number of things you picked at the start and he's saved. You can also save your tokens for later.
-5. **Every other square wins or loses you tokens**, and each one pops up a card saying exactly what happened (see "Around the board" below). The card stays up until you press **OK** (or <kbd>Space</kbd>).
-6. **Watch the rounds.** You get a fixed number of rounds (a round is everyone having one go). The thermometer counts them down, a notch at the end of every round. Get everything before it runs out, or Grandad gets hypothermia.
-7. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop tokens, or you miss a go if you've none. He throws more often as he gets colder, and more often still if you hang about in his doorway.
-8. **Playing together?** In Co-op you fill one list between you. In Versus you each need your own full set, and the first to get one wins (see below).
+2. **Look at what's up for grabs.** Every fairground stall has one of Grandad's things spinning over it as its **top prize**. Before you roll, gold markers on the board show which numbers land on one, and the score pad spells it out: "Roll a 2 for the Slippers or a 5 for the Cup of Tea."
+3. **Roll the dice.** Everyone moves clockwise round the house. The score pad tells you where you'll land and what's there, and your pawn sets off by itself a moment later (press <kbd>Space</kbd> to hurry it along). Just missed a prize? If you've got **roller skates** or the **lucky dice** in your pocket, you can use them (see below).
+4. **Win the prize.** At a stall, light up all 3 tokens and you win its prize: it flies straight off the stall to Grandad, the camera swoops in to watch him put it on, and the stall packs up for a different game with a new prize. Light up fewer and you keep the tokens instead, and the prize stays up for the next go.
+5. **Or go to the Fair Shop.** At the end of your go, if you've got enough tokens for anything, you're taken to the Fair Shop. Grandad's things cost 4 tokens, and the extras for your pocket start at 1. You can also save your tokens for later. Get him the number of things you picked at the start and he's saved.
+6. **Every other square wins or loses you tokens**, and each one pops up a card saying exactly what happened (see "Around the board" below). The card stays up until you press **OK** (or <kbd>Space</kbd>).
+7. **Watch the rounds.** You get a fixed number of rounds (a round is everyone having one go). The thermometer counts them down, a notch at the end of every round. Get everything before it runs out, or Grandad gets hypothermia.
+8. **When Grandad throws his paper**, press <kbd>Space</kbd> (or tap **Duck!**) while the marker is in the green. If he hits you, you drop tokens, or you miss a go if you've none. He throws more often as he gets colder, and more often still if you hang about in his doorway.
+9. **Playing together?** In Co-op you fill one list between you. In Versus you each need your own full set, and the first to get one wins (see below).
+
+### Roller skates and the lucky dice
+
+These are extras you buy at the Fair Shop at the end of your go and keep in your pocket for a later go. You can carry one of each, and the players list shows what everyone's carrying.
+
+- **Roller skates:** go one square further, or stop one square short, to land on a prize you need. After a roll that just misses one, you're offered the skates, and the square they'd take you to lights up green on the board (you can tap it).
+- **Lucky dice:** after a roll that misses every prize you need, roll again. If the new roll just misses too, you can still use the skates.
+
+Your first pair of skates costs 1 token, and so do your first lucky dice. After that, each one costs you a token more than your last (1, 2, 3...), so you can't lean on them every go. Each player's prices are their own.
+
+If you're not carrying anything, you won't be offered anything: plan ahead. If you are, you can say **No thanks** (<kbd>Space</kbd>) and keep them for later.
 
 ### The Fair Shop
 
-There are 12 things to buy, all for 3 tokens each: slippers, a cup of tea, a tartan blanket, a woolly scarf, a hot water bottle, his cardigan, a bobble hat, logs for the fire, woolly mittens, earmuffs, a bowl of soup and an electric heater. They all count the same, so buy whichever you like.
+The Fair Shop opens at the end of your go whenever you can afford something in it. It sells two kinds of thing:
+
+- **Extras for your pocket:** roller skates and the lucky dice (see above).
+- **Grandad's things**, 4 tokens each: slippers, a cup of tea, a tartan blanket, a woolly scarf, a hot water bottle, his cardigan, a bobble hat, logs for the fire, woolly mittens, earmuffs, a bowl of soup and an electric heater. They all count the same. Up to 10 of them hang on the stalls as top prizes at any one time. The Fair Shop card in the score pad says which stall each thing is hanging on.
+
+Only things somebody still needs go up as prizes. Once Grandad's got something (bought or won), it comes down off its stall and something else goes up. Late in a long game there can be more stalls than things left to win, and a stall with no prize goes back to a gold token and pays up to 3 tokens.
 
 ### The fair
 
-There are 13 games and 10 stall squares: the middle square of every room, plus the Larder in the Kitchen and the Sideboard in the Living Room. Each game deals 10 of the games onto the board at random, and the other 3 wait in reserve. Whenever a stall pays out tokens, it packs up and one from the reserve pops up in its place. Untick **Shuffle the stalls** on the start screen for the classic starting line-up (the squares listed below).
+There are 13 games and 10 stall squares: the middle square of every room, plus the Larder in the Kitchen and the Sideboard in the Living Room. Each game deals 10 of the games onto the board at random, and the other 3 wait in reserve. Whenever a stall's prize is won, it packs up and one from the reserve pops up in its place, with a new prize. While its prize is still up it stays put, so the next player knows what they're up against. Untick **Shuffle the stalls** on the start screen for the classic starting line-up (the squares listed below).
 
-Every stall pays up to 3 tokens. On the harder settings you need to do more to earn each token. On Dodgems, for example, each token takes 1 bump on Mild, 2 on Chilly and 4 on the Big Freeze.
+Every stall has 3 tokens to light up. Light all 3 to win the prize hanging on it; light fewer and you keep that many tokens. On the harder settings you need to do more to light each one. On Dodgems, for example, each token takes 1 bump on Mild, 2 on Chilly and 4 on the Big Freeze.
 
 | Stall | Classic square | How it works | Tokens (Mild / Chilly / Big Freeze) |
 | --- | --- | --- | --- |
@@ -107,8 +124,8 @@ Every room has its own finds, and you won't get the same thing twice in a row. T
 
 With two or more players you pick how to play on the start screen:
 
-- **Co-op:** you're all on the same side and fill one list for Grandad between you. You win or lose together. At the end you'll see how many tokens each of you won and how many things you each bought him.
-- **Versus:** you each need your own full set of the number of things you picked, and the first to get one wins. The Fair Shop shows what's already in your set and who else has bought what. Grandad wears everything anyone buys him. If the rounds run out before anyone finishes, Grandad gets hypothermia and nobody wins, though the end screen shows who got closest.
+- **Co-op:** you're all on the same side and fill one list for Grandad between you. You win or lose together. At the end you'll see how many prizes and tokens each of you won and how many things you each got him.
+- **Versus:** you each need your own full set of the number of things you picked, and the first to get one wins. Race each other to the prizes: miss one and it's still there for the next player. A prize you've already got in your set pays up to 3 tokens instead. The Fair Shop shows what's already in your set and who else has bought what. Grandad wears everything anyone wins or buys him. If the rounds run out before anyone finishes, Grandad gets hypothermia and nobody wins, though the end screen shows who got closest.
 
 In either mode, land on the same square as another player who has tokens and you can **pinch** one. Grandad might spot you doing it, and then he's much more likely to throw his paper at you.
 
@@ -124,12 +141,12 @@ When you win, you get stars for the rounds you had to spare: 1 star for winning 
 
 | Things | Solo | Co-op, 2 / 3 / 4 players | Versus, 2 / 3 / 4 players |
 | --- | --- | --- | --- |
-| 3 | 15 | 9 / 6 / 5 | 11 / 10 / 9 |
-| 6 | 27 | 14 / 10 / 8 | 22 / 20 / 19 |
-| 9 | 37 | 20 / 14 / 11 | 32 / 30 / 28 |
-| 12 | 48 | 25 / 18 / 14 | 42 / 39 / 38 |
+| 3 | 19 | 11 / 8 / 7 | 15 / 13 / 12 |
+| 6 | 35 | 18 / 13 / 10 | 28 / 26 / 24 |
+| 9 | 50 | 26 / 18 / 14 | 42 / 39 / 37 |
+| 12 | 65 | 33 / 23 / 18 | 57 / 53 / 50 |
 
-Everything you buy him goes on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the mittens go on his hands, the earmuffs over his ears, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea and the soup land on the side table, the logs light the fire and the heater switches on. A card shows how many of the things he needs he has so far (in Versus, how many are in your set). As the rounds run down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
+Everything you win or buy him goes on in a little cutscene: the hat drops onto his head, the slippers slide onto his feet, the mittens go on his hands, the earmuffs over his ears, the blanket and hot water bottle land on his lap, the scarf and cardigan go on, the tea and the soup land on the side table, the logs light the fire and the heater switches on. A card shows how many of the things he needs he has so far (in Versus, how many are in your set). As the rounds run down he turns blue, shivers harder, grows an icicle on his nose, the snow gets heavier and frost creeps in round the edges.
 
 ### How cold is it?
 
@@ -139,15 +156,18 @@ Everything you buy him goes on in a little cutscene: the hat drops onto his head
 | Chilly Winter | The proper game. |
 | The Big Freeze | Stalls need more for each token, bigger token losses, tight ducking window. |
 
-You get the same number of rounds on every setting. The harder settings are harder because the stalls pay out less and the bad squares cost more. The round limits come from simulated games: a steady player gets there about 9 times in 10 on Chilly Winter, nearly always on Mild Autumn and about 6 times in 10 on the Big Freeze. In Versus, someone finishes about 9 times in 10 on Chilly Winter.
+You get the same number of rounds on every setting. The harder settings are harder because a full score at a stall is harder to get, the stalls pay out less and the bad squares cost more. The round limits come from simulated games (`tools/simulate.js`): a steady player gets there about 9 times in 10 on Chilly Winter, nearly always on Mild Autumn and about 4 times in 10 on the Big Freeze. In Versus, someone finishes about 9 times in 10 on Chilly Winter.
 
 ### Keys
 
 | Key | Does |
 | --- | --- |
-| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice (and hurry your pawn along), duck, take your go at a stall, close a card, or skip a cutscene |
-| <kbd>1</kbd>–<kbd>9</kbd> | Buy something at the Fair Shop |
-| <kbd>Esc</kbd> | Leave the Fair Shop and save your tokens |
+| <kbd>Space</kbd> / <kbd>Enter</kbd> | Roll the dice (and hurry your pawn along), keep your skates or lucky dice for later, duck, take your go at a stall, close a card, or skip a cutscene |
+| <kbd>→</kbd> / <kbd>←</kbd> | Use your roller skates: one square on, or stop one short |
+| <kbd>R</kbd> | Use your lucky dice: roll again |
+| <kbd>1</kbd>–<kbd>9</kbd> | Buy Grandad something at the Fair Shop |
+| <kbd>S</kbd> / <kbd>D</kbd> | Buy roller skates or the lucky dice at the Fair Shop |
+| <kbd>Esc</kbd> | Leave the Fair Shop |
 | <kbd>Y</kbd> / <kbd>N</kbd> | Pinch another player's token, or leave it |
 | <kbd>M</kbd> | Sound on or off |
 | Drag / scroll | Look around the board / zoom |
@@ -169,3 +189,6 @@ All the sound effects and the fairground organ music are generated live in the b
 | `classic.html` | The original 2D version |
 | `make-mac-app.sh` | Wraps the game as a Mac app |
 | `docs/ideas.md` | Ideas for making it even more fun, and which ones are built |
+| `tools/simulate.js` | Simulates thousands of games to set the round limits (`node tools/simulate.js`) |
+| `tools/build-artifact.js` | Builds a play-test copy to publish as a claude.ai Artifact (see `AGENTS.md`) |
+| `AGENTS.md` | Rules for anyone (or any AI agent) making changes, including the test build every pull request needs |

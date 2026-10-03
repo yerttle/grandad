@@ -23,6 +23,11 @@
     soup: '<svg viewBox="0 0 48 48"><path d="M17 12c-2-3 2-5 0-8M24 12c-2-3 2-5 0-8M31 12c-2-3 2-5 0-8" fill="none" stroke="#8a7a6a" stroke-width="2" stroke-linecap="round"/><path d="M5 21h38c0 10-8 18-19 18S5 31 5 21z" fill="#f3efe4" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><ellipse cx="24" cy="21" rx="19" ry="4.5" fill="#d9642c" stroke="#2b1a10" stroke-width="2"/><path d="M30 18l10-9" stroke="#8a9096" stroke-width="3" stroke-linecap="round"/><path d="M10 31h28" stroke="#2a7a8c" stroke-width="2.2"/></svg>',
     heater: '<svg viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="26" rx="3" fill="#8a9096" stroke="#2b1a10" stroke-width="2"/><rect x="10" y="16" width="28" height="5" rx="2.5" fill="#ff7a2e" stroke="#2b1a10" stroke-width="1.4"/><rect x="10" y="25" width="28" height="5" rx="2.5" fill="#ff7a2e" stroke="#2b1a10" stroke-width="1.4"/><path d="M11 37v5M37 37v5" stroke="#2b1a10" stroke-width="3" stroke-linecap="round"/><path d="M16 8c-1-2 1-3 0-5M24 8c-1-2 1-3 0-5M32 8c-1-2 1-3 0-5" stroke="#ff7a2e" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
   };
+  G.ITEM_ICON = ICON;
+  const EXTRA_ICON = {
+    skates: '<svg viewBox="0 0 48 48"><path d="M12 7h11v15l12 4c3.5 1 6 3.4 6 6.5V33H9V9.5A2.5 2.5 0 0 1 12 7z" fill="#e0667a" stroke="#2b1a10" stroke-width="2" stroke-linejoin="round"/><path d="M13 13h7M13 18h7" stroke="#f3e6c9" stroke-width="2" stroke-linecap="round"/><rect x="7" y="32" width="35" height="4.5" rx="2" fill="#f3e6c9" stroke="#2b1a10" stroke-width="2"/><circle cx="15" cy="41" r="4" fill="#2a9d8f" stroke="#2b1a10" stroke-width="2"/><circle cx="34" cy="41" r="4" fill="#2a9d8f" stroke="#2b1a10" stroke-width="2"/></svg>',
+    lucky: '<svg viewBox="0 0 48 48"><g transform="rotate(-12 22 26)"><rect x="8" y="12" width="28" height="28" rx="6" fill="#f3efe4" stroke="#2b1a10" stroke-width="2.2"/><g fill="#2b1a10"><circle cx="15" cy="19" r="2.6"/><circle cx="22" cy="26" r="2.6"/><circle cx="29" cy="33" r="2.6"/></g></g><path d="M39 4l1.8 4.4 4.4 1.8-4.4 1.8L39 16.4l-1.8-4.4-4.4-1.8 4.4-1.8z" fill="#e0a526" stroke="#2b1a10" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+  };
   const SPEAKER_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
   const SPEAKER_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
   const PAWN_CSS = ['var(--p1)', 'var(--p2)', 'var(--p3)', 'var(--p4)'];
@@ -47,9 +52,13 @@
       roll: null,
       players: Array.from({ length: settings.count }, (_, k) => ({
         name: (settings.names[k] || G.DEFAULT_NAMES[k]).trim() || G.DEFAULT_NAMES[k],
-        pos: 0, tokens: 0, skip: false, won: 0, got: [], charm: false,
+        pos: 0, tokens: 0, skip: false, won: 0, prizes: 0, got: [], charm: false,
+        // extras from the Fair Shop: what's in your pocket (one of each), and how many you've bought (each costs a token more)
+        pocket: { skates: false, lucky: false }, bought: { skates: 0, lucky: 0 },
       })),
       dealt: { ...G.dealt },
+      // the top prize hanging on each stall square: one of Grandad's things, or null
+      prizes: {},
       watching: false,
       nap: false,
       lastFind: {},
@@ -63,6 +72,7 @@
       ducks: 0,
       stalls: 0,
       tokensWon: 0,
+      prizesWon: 0,
     };
   }
   const curP = () => S.players[S.cur];
@@ -74,6 +84,55 @@
   const setOf = (p) => (versus() ? p.got : S.delivered);
   const hasIt = (p, key) => setOf(p).includes(key);
   const itemsLeftFor = (p) => G.ITEM_KEYS.filter((key) => !hasIt(p, key));
+  // ---------- Prizes ----------
+  // Every stall has one of Grandad's things hanging on it. A full score wins it; less pays tokens.
+  const prizeAt = (pos) => (stallAt(pos) && S.prizes[pos]) || null;
+  // the prize on a square, if it's one this player still needs (in Versus they might already have one)
+  const wantedAt = (p, pos) => { const key = prizeAt(pos); return key && !hasIt(p, key) ? key : null; };
+  // Co-op: Grandad hasn't got it yet. Versus: somebody still needs one for their set.
+  const stillWanted = (key) => (versus() ? S.players.some((q) => !q.got.includes(key)) : !S.delivered.includes(key));
+  const prizeStall = (key) => G.STALL_SQUARES.find((i) => S.prizes[i] === key);
+  // a new prize for a stall: something still wanted that isn't already hanging on another stall
+  // (and, if there's any choice, not the one that's just come down)
+  function drawPrize(avoid = null) {
+    const shown = Object.values(S.prizes);
+    const pool = G.ITEM_KEYS.filter((key) => stillWanted(key) && !shown.includes(key));
+    const fresh = pool.filter((key) => key !== avoid);
+    return fresh.length ? pick(fresh) : pool.length ? pool[0] : null;
+  }
+  function dealPrizes() {
+    S.prizes = {};
+    for (const i of G.shuffle(G.STALL_SQUARES)) S.prizes[i] = drawPrize();
+  }
+  // once nobody needs a stall's prize any more, it's swapped for something that's still wanted
+  async function refreshPrizes(except = null) {
+    const changed = [];
+    for (const i of G.STALL_SQUARES) {
+      if (i === except || !S.prizes[i] || stillWanted(S.prizes[i])) continue;
+      S.prizes[i] = null;
+      S.prizes[i] = drawPrize();
+      changed.push(i);
+    }
+    if (changed.length) await Promise.all(changed.map((i) => B.setPrize(i, S.prizes[i])));
+    render();
+  }
+  // where each roll of the die takes the current player
+  const destOf = (r) => G.wrap(curP().pos + r);
+  // the numbers that land on a prize the current player still needs
+  function winningRolls() {
+    const out = [];
+    for (let r = 1; r <= 6; r++) { const key = wantedAt(curP(), destOf(r)); if (key) out.push({ r, key, to: destOf(r) }); }
+    return out;
+  }
+  const orList = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} or ${a[a.length - 1]}` : a[0]);
+  function rollHint() {
+    const list = winningRolls();
+    const pocket = G.EXTRA_KEYS.filter((key) => curP().pocket[key]).map((key) => G.EXTRAS[key].name.toLowerCase());
+    const carrying = pocket.length ? ` In your pocket: ${pocket.join(' and ')}.` : '';
+    if (!list.length) return `Roll the dice to take your go. No prizes in reach this time.${carrying}`;
+    return `Roll ${orList(list.map(({ r, key }) => `a ${r} for the ${G.ITEMS[key].name}`))}.${carrying}`;
+  }
+
   const lossFor = (kind) => G.DIFFS[S.diff].loss[kind];
   const coldness = () => clamp((36.8 - S.temp) / 1.8, 0, 1);
   // rounds left, counting the one being played
@@ -90,7 +149,7 @@
     news: ['LATEST', ''], fair: ['AT THE FAIR', ''], won: ['WINNER', 'good'], lost: ['NO LUCK', 'bad'], deliver: ['DELIVERED', 'good'],
     thwack: ['THWACK', 'bad'], duck: ['DUCKED', 'good'], draught: ['DRAUGHT', 'bad'], swap: ['NEW STALL', ''], boiler: ['BOILER', ''],
     cat: ['CAT', 'bad'], ride: ['STAIRLIFT', ''], dazed: ['MISSED GO', 'bad'], warm: ['WARM TOWEL', 'good'], pinch: ['PINCHED', 'bad'],
-    buy: ['FAIR SHOP', 'good'], token: ['TOKENS', 'good'], tokenlost: ['TOKENS', 'bad'], door: ['POCKET MONEY', 'good'],
+    buy: ['FAIR SHOP', 'good'], extra: ['FAIR SHOP', ''], prize: ['TOP PRIZE', 'good'], skates: ['ROLLER SKATES', ''], lucky: ['LUCKY DICE', ''], token: ['TOKENS', 'good'], tokenlost: ['TOKENS', 'bad'], door: ['POCKET MONEY', 'good'],
     find: ['RUMMAGE', 'good'], dud: ['RUMMAGE', ''], findbad: ['RUMMAGE', 'bad'], charm: ['LUCKY CHARM', 'good'], nap: ['FORTY WINKS', 'good'],
   };
   function log(kind, text) {
@@ -145,16 +204,20 @@
   }
   // everyone goes clockwise round the house
   function describeDest() {
-    const p = curP();
-    const to = G.wrap(p.pos + S.roll);
+    const to = destOf(S.roll);
+    return { to, text: describeSquare(to) };
+  }
+  function describeSquare(to) {
     const sp = G.SPACES[to];
     const bits = [G.spaceName(to)];
-    if (stallAt(to)) bits.push('up to 3 tokens');
+    const want = wantedAt(curP(), to);
+    if (want) bits.push(`win the ${G.ITEMS[want].name}`);
+    else if (stallAt(to)) bits.push('up to 3 tokens');
     else if (sp.type === 'door') bits.push('+1 token');
     else if (sp.type === 'corner') bits.push(sp.short);
     else if (G.SPACE_FX[to]) bits.push(G.SPACE_FX[to].short);
     else if (canRummage(to)) bits.push('rummage');
-    return { to, text: bits.join(' · ') };
+    return bits.join(' · ');
   }
 
   function renderPanel() {
@@ -173,13 +236,13 @@
     renderThermo();
     const hints = {
       setup: 'Pick your players and how cold it is, then start.',
-      roll: 'Roll the dice to take your go.',
+      roll: rollHint(),
       rolling: 'Rolling...',
       choose: `You rolled a ${S.roll}. Next stop: ${describeDest().text}.`,
       moving: 'On the move...',
       fair: 'At the fair...',
       pinch: 'Pinch a token, or leave it?',
-      shop: 'At the Fair Shop: pick something for Grandad.',
+      shop: 'At the Fair Shop.',
       dodge: G.isTouch ? 'Duck! Tap the Duck button when the marker is in the green.' : 'Duck! Press Space when the marker is in the green.',
       over: 'Game over.',
     };
@@ -191,9 +254,9 @@
       return `<div class="player-row${j === k && S.players.length > 1 ? ' now' : ''}">
         <span class="chip" style="background:${PAWN_CSS[j]}"></span>
         <span class="pname">${esc(q.name)}</span>
-        <span class="pscore" title="Things bought for Grandad">${versus() ? `${q.got.length} of ${S.goal}` : `${q.got.length} bought`}</span>
+        <span class="pscore" title="Things won or bought for Grandad">${versus() ? `${q.got.length} of ${S.goal}` : `${q.got.length} for Grandad`}</span>
         <div class="carry">${carry}</div>
-        ${q.skip || q.charm ? `<span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span>' : ''}</span>` : ''}
+        ${q.skip || q.charm || q.pocket.skates || q.pocket.lucky ? `<span class="pmeta">${q.skip ? '<span class="badge">misses next go</span> ' : ''}${q.charm ? '<span class="badge lucky">lucky charm</span> ' : ''}${q.pocket.skates ? '<span class="badge kit">roller skates</span> ' : ''}${q.pocket.lucky ? '<span class="badge kit">lucky dice</span>' : ''}</span>` : ''}
       </div>`;
     }).join('');
     $('needsHead').textContent = versus() ? `${p.name}'s set · ${p.got.length} of ${S.goal}` : `Grandad needs ${S.goal} things · ${S.delivered.length} so far`;
@@ -201,7 +264,8 @@
       const it = G.ITEMS[key];
       const got = hasIt(p, key);
       const where = got ? (versus() ? 'Got it' : "Grandad's got it") : `${G.TOKEN_SVG} ${G.ITEM_COST}`;
-      return `<li class="${got ? 'done' : ''}">${ICON[key]}<span class="iname">${esc(it.name)}</span><span class="where">${where}</span></li>`;
+      const at = !got && prizeStall(key);
+      return `<li class="${got ? 'done' : at ? 'on-stall' : ''}">${ICON[key]}<span class="iname">${esc(it.name)}${at ? `<small>Top prize at ${esc(G.spaceName(at))}</small>` : ''}</span><span class="where">${where}</span></li>`;
     }).join('');
   }
 
@@ -275,8 +339,11 @@
     $('stage').style.setProperty('--cold', c.toFixed(3));
   }
   function renderTargets() {
+    if (S.phase === 'roll') { B.showTargets(winningRolls().map(({ r, to }) => ({ i: to, text: `${r}`, tone: 'prize' }))); return; }
     if (S.phase !== 'choose') { B.clearTargets(); return; }
-    B.showTargets([{ i: describeDest().to, text: `${S.roll}` }]);
+    const list = [{ i: describeDest().to, text: `${S.roll}` }];
+    if (Offer.open) Offer.list.filter((o) => o.kind === 'skates').forEach((o) => list.push({ i: o.to, text: `${S.roll + o.d} on skates`, tone: 'skates' }));
+    B.showTargets(list);
   }
   function render() {
     renderPanel();
@@ -364,21 +431,120 @@
     busy = true;
     S.phase = 'rolling';
     render();
+    await rollTheDie();
+    busy = false;
+    afterRoll();
+  }
+  async function rollTheDie() {
     Sound.play('dice');
     const v = 1 + rnd(6);
     await B.rollDie(v);
     S.roll = v;
+  }
+  // If you've missed a prize you need, you can use the roller skates or lucky dice in your pocket.
+  // Otherwise it's a moment to see what you rolled and where it takes you (Space hurries it along), then off you go.
+  async function afterRoll() {
     S.phase = 'choose';
-    busy = false;
-    render();
-    // a moment to see what you rolled and where it takes you (Space hurries it along), then off you go
     const g = S;
+    if (Offer.show()) { render(); return; }
+    render();
     await sleep(1100);
     if (S === g) go();
   }
 
+  // ---------- Roller skates and the lucky dice ----------
+  // Bought at the Fair Shop at the end of a go and carried until you use them. After a roll that misses a prize
+  // you need, you're offered whichever you're carrying: skates go one square further or one short (only when that
+  // lands on a prize you need), and the lucky dice roll again. Not carrying any? Then there's nothing to offer.
+  const Offer = {
+    open: false,
+    list: [],
+    build() {
+      const p = curP();
+      const list = [];
+      if (wantedAt(p, destOf(S.roll))) return list;
+      if (p.pocket.skates) {
+        for (const d of [1, -1]) {
+          const r = S.roll + d;
+          const key = r >= 1 && wantedAt(p, destOf(r));
+          if (key) list.push({ kind: 'skates', d, to: destOf(r), key });
+        }
+      }
+      if (p.pocket.lucky) list.push({ kind: 'lucky' });
+      return list;
+    },
+    show() {
+      this.list = this.build();
+      if (!this.list.length) return false;
+      this.open = true;
+      $('offerText').textContent = this.list.some((o) => o.kind === 'skates')
+        ? "So close to a prize! Use what's in your pocket?"
+        : "That's not a prize you need. Use your lucky dice to roll again?";
+      $('offerBtns').innerHTML = this.list.map((o) => {
+        if (o.kind === 'skates') {
+          const where = G.spaceName(o.to);
+          return `<button class="btn primary" type="button" data-offer="skates" data-d="${o.d}">Roller skates: ${o.d > 0 ? 'one square on' : 'stop one short'} <small>to ${esc(where)} for the ${esc(G.ITEMS[o.key].name)}</small><kbd>${o.d > 0 ? '→' : '←'}</kbd></button>`;
+        }
+        return `<button class="btn" type="button" data-offer="lucky">Lucky dice: roll again <small>${winningRolls().length ? 'Another go at hitting a prize' : 'No prizes in reach, but it might dodge a bad square'}</small><kbd>R</kbd></button>`;
+      }).join('') + '<button class="btn ghost" type="button" data-offer="go">No thanks, keep them for later <kbd>Space</kbd></button>';
+      $('offerBox').hidden = false;
+      // the offer takes the Roll button's place until you've decided
+      $('rollBtn').hidden = true;
+      // Space and Enter mean "no thanks", so that's the button that has the focus
+      setTimeout(() => { const b = $('offerBtns').querySelector('[data-offer="go"]'); if (this.open && b && !G.isTouch) b.focus({ preventScroll: true }); }, 60);
+      return true;
+    },
+    hide() {
+      this.open = false;
+      this.list = [];
+      $('offerBox').hidden = true;
+      $('rollBtn').hidden = false;
+    },
+  };
+  async function useSkates(d) {
+    const o = Offer.open && Offer.list.find((x) => x.kind === 'skates' && x.d === d);
+    if (busy || S.phase !== 'choose' || !o) return;
+    busy = true;
+    Offer.hide();
+    const g = S;
+    const p = curP();
+    const k = S.cur;
+    p.pocket.skates = false;
+    Sound.play('whoosh');
+    render();
+    await B.useExtra(k, 'skates');
+    if (S !== g) return;
+    S.roll += d;
+    toast(d > 0 ? 'Roller skates: one square on!' : 'Roller skates: stopping one short!');
+    log('skates', `${p.name} straps on the roller skates and ${d > 0 ? 'whizzes one square further' : 'stops one square short'}, to the ${G.spaceName(o.to)} stall.`);
+    busy = false;
+    render();
+    go();
+  }
+  async function useLucky() {
+    if (busy || S.phase !== 'choose' || !Offer.open || !Offer.list.some((x) => x.kind === 'lucky')) return;
+    busy = true;
+    Offer.hide();
+    const g = S;
+    const p = curP();
+    const k = S.cur;
+    p.pocket.lucky = false;
+    Sound.play('sparkle');
+    S.phase = 'rolling';
+    render();
+    await B.useExtra(k, 'lucky');
+    if (S !== g) return;
+    const was = S.roll;
+    await rollTheDie();
+    if (S !== g) return;
+    log('lucky', `${p.name} gives the lucky dice a kiss and rolls again: a ${S.roll} this time${S.roll === was ? '. Same again!' : '.'}`);
+    busy = false;
+    afterRoll();
+  }
+
   async function go() {
     if (busy || S.phase !== 'choose') return;
+    Offer.hide();
     const dir = 1;
     busy = true;
     const g = S;
@@ -390,6 +556,8 @@
     B.placePawns(S.players, S.cur, false);
     await resolveLanding(p, k, dir);
     if (S !== g) return;
+    // won the last thing he needed off a stall
+    if (allDone()) { S.winner = k; busy = false; return win(); }
     if (!frozen()) await maybeSwat(p, k);
     if (S !== g) return;
     // at the end of every go with enough tokens, it's off to the Fair Shop
@@ -417,9 +585,11 @@
     await gainTokens(p, k, G.LAP_TOKENS);
   }
 
-  // Every purchase is a little cutscene: the camera swoops in, the thing puts itself on Grandad and he cheers.
-  async function giveItem(p, k, key) {
+  // Every purchase or prize is a little cutscene: the camera swoops in, the thing puts itself on Grandad and he cheers.
+  // fromStall: the square of the stall it was won at (it flies off the stall), or null when it was bought
+  async function giveItem(p, k, key, fromStall = null) {
     const g = S;
+    const won = fromStall !== null;
     await Cine.begin(key);
     await B.deliveryShow(key, k, () => {
       p.got.push(key);
@@ -429,28 +599,37 @@
       render();
       Sound.play('fanfare');
       Cine.flash();
-      Cine.card(key, p);
+      Cine.card(key, p, won);
       if (Cine.talk) say(G.ITEMS[key].thanks, 3800);
-      log('buy', versus()
-        ? `${p.name} buys Grandad the ${G.ITEMS[key].name}. That's ${p.got.length} of ${S.goal} in their set.`
-        : `${p.name} buys Grandad the ${G.ITEMS[key].name} at the Fair Shop. That's ${S.delivered.length} of ${S.goal}.`);
-    });
+      const name = G.ITEMS[key].name;
+      const count = versus() ? `That's ${p.got.length} of ${S.goal} in their set.` : `That's ${S.delivered.length} of ${S.goal}.`;
+      if (won) log('prize', `${p.name} wins the ${name} off the ${G.spaceName(fromStall)} stall and takes it straight to Grandad. ${count}`);
+      else log('buy', versus() ? `${p.name} buys Grandad the ${name}. ${count}` : `${p.name} buys Grandad the ${name} at the Fair Shop. ${count}`);
+    }, fromStall);
     await B.cineHold(2600);
     if (S !== g) { Cine.end(); return; }
     // the last thing: win() carries the cutscene on into the fireworks
     if (allDone()) return;
     Cine.end();
-    await sleep(G.ms(750));
+    // anything nobody needs now comes down off its stall, and something else goes up
+    await refreshPrizes(fromStall);
+    if (S !== g) return;
+    await sleep(G.ms(500));
   }
 
   // ---------- The Fair Shop ----------
-  // At the end of your go, if you've got three tokens, you can buy Grandad something. Returns true once he's saved.
+  // At the end of your go you can buy Grandad one of his things, or extras for your pocket (roller skates and
+  // the lucky dice) to use on a later go. It opens whenever there's something you can afford. Returns true once he's saved.
+  const extraPrice = (p, key) => G.extraPrice(p.bought[key]);
+  const canBuyExtra = (p, key) => !p.pocket[key] && p.tokens >= extraPrice(p, key);
+  const canBuyItem = (p) => p.tokens >= G.ITEM_COST && itemsLeftFor(p).length > 0;
+  const canShop = (p) => canBuyItem(p) || G.EXTRA_KEYS.some((key) => canBuyExtra(p, key));
   async function shopVisit(p, k) {
     const g = S;
-    while (p.tokens >= G.ITEM_COST && itemsLeftFor(p).length && !allDone()) {
+    while (!allDone() && canShop(p)) {
       const key = await Shop.open(p);
       if (S !== g) return false;
-      if (!key) { log('news', `${p.name} saves their tokens for later.`); break; }
+      if (!key) { if (canBuyItem(p)) log('news', `${p.name} saves their tokens for later.`); break; }
       p.tokens -= G.ITEM_COST;
       Sound.play('till');
       S.phase = 'moving';
@@ -466,35 +645,72 @@
   }
   const Shop = {
     resolve: null,
+    p: null,
+    // resolves with one of Grandad's things to buy, or null to leave; extras are bought without leaving
     open(p) {
       return new Promise((resolve) => {
         S.phase = 'shop';
+        this.p = p;
         render();
         if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-        const multi = S.players.length > 1;
-        $('shopWho').textContent = multi ? `${p.name}'s tokens` : 'Your tokens';
-        $('shopPurse').innerHTML = `${Array.from({ length: Math.min(p.tokens, 12) }, () => G.TOKEN_SVG).join('')} <b>${G.tokenWord(p.tokens)}</b>`;
-        const need = S.goal - setOf(p).length;
-        $('shopNeed').textContent = versus()
-          ? `${p.name} needs ${need} more for a full set. Everything costs ${G.ITEM_COST} tokens.`
-          : `Grandad needs ${need} more thing${need === 1 ? '' : 's'}. Everything costs ${G.ITEM_COST} tokens.`;
-        let n = 0;
-        $('shopGrid').innerHTML = G.ITEM_KEYS.map((key) => {
-          const it = G.ITEMS[key];
-          const got = hasIt(p, key);
-          const num = got ? '' : String(++n > 9 ? '' : n);
-          const others = versus() ? S.players.filter((q) => q !== p && q.got.includes(key)).map((q) => q.name) : [];
-          return `<button type="button" class="shop-item${got ? ' got' : ''}" data-key="${key}"${got ? ' disabled' : ''}${num ? ` data-num="${num}"` : ''}>
-            <span class="si-icon">${ICON[key]}</span>
-            <span class="si-name">${esc(it.name)}</span>
-            <span class="si-fx">${got ? (versus() ? "It's in your set" : "Grandad's got it") : others.length ? `${esc(others.join(' and '))} ${others.length === 1 ? 'has' : 'have'} one` : esc(`“${it.thanks}”`)}</span>
-            <span class="si-price">${got ? '✓' : `${G.TOKEN_SVG}${G.ITEM_COST}`}</span>${num ? `<kbd>${num}</kbd>` : ''}
-          </button>`;
-        }).join('');
+        this.render();
         $('shop').hidden = false;
         Sound.play('coin');
-        this.resolve = (key) => { this.resolve = null; $('shop').hidden = true; resolve(key); };
+        this.resolve = (key) => { this.resolve = null; this.p = null; $('shop').hidden = true; resolve(key); };
       });
+    },
+    render() {
+      const p = this.p;
+      const multi = S.players.length > 1;
+      $('shopWho').textContent = multi ? `${p.name}'s tokens` : 'Your tokens';
+      $('shopPurse').innerHTML = p.tokens ? `${Array.from({ length: Math.min(p.tokens, 12) }, () => G.TOKEN_SVG).join('')} <b>${G.tokenWord(p.tokens)}</b>` : '<b>No tokens left</b>';
+      const need = S.goal - setOf(p).length;
+      $('shopNeed').textContent = `${versus() ? `${p.name} needs ${need} more for a full set.` : `Grandad needs ${need} more thing${need === 1 ? '' : 's'}.`} His things cost ${G.ITEM_COST} tokens, or win them free at their stalls.`;
+      $('shopExtras').innerHTML = G.EXTRA_KEYS.map((key) => {
+        const x = G.EXTRAS[key];
+        const price = extraPrice(p, key);
+        const have = p.pocket[key];
+        const can = canBuyExtra(p, key);
+        const fx = have ? 'In your pocket. You can use it after a roll.' : p.bought[key] ? `${x.does} Each one costs you a token more than the last.` : x.does;
+        return `<button type="button" class="shop-item${have ? ' got' : can ? '' : ' cant'}" data-extra="${key}"${can ? '' : ' disabled'}>
+            <span class="si-icon">${EXTRA_ICON[key]}</span>
+            <span class="si-name">${x.name}</span>
+            <span class="si-fx">${esc(fx)}</span>
+            <span class="si-price">${have ? '✓' : `${G.TOKEN_SVG}${price}`}</span>${can ? `<kbd>${x.key}</kbd>` : ''}
+          </button>`;
+      }).join('');
+      let n = 0;
+      const afford = p.tokens >= G.ITEM_COST;
+      $('shopGrid').innerHTML = G.ITEM_KEYS.map((key) => {
+        const it = G.ITEMS[key];
+        const got = hasIt(p, key);
+        const num = got || !afford ? '' : String(++n > 9 ? '' : n);
+        const others = versus() ? S.players.filter((q) => q !== p && q.got.includes(key)).map((q) => q.name) : [];
+        return `<button type="button" class="shop-item${got ? ' got' : afford ? '' : ' cant'}" data-key="${key}"${got || !afford ? ' disabled' : ''}${num ? ` data-num="${num}"` : ''}>
+            <span class="si-icon">${ICON[key]}</span>
+            <span class="si-name">${esc(it.name)}</span>
+            <span class="si-fx">${got ? (versus() ? "It's in your set" : "Grandad's got it") : others.length ? `${esc(others.join(' and '))} ${others.length === 1 ? 'has' : 'have'} one` : prizeStall(key) ? `Or win it at ${esc(G.spaceName(prizeStall(key)))}` : esc(`“${it.thanks}”`)}</span>
+            <span class="si-price">${got ? '✓' : `${G.TOKEN_SVG}${G.ITEM_COST}`}</span>${num ? `<kbd>${num}</kbd>` : ''}
+          </button>`;
+      }).join('');
+      $('shopLeave').innerHTML = `${canBuyItem(p) ? 'Save my tokens' : 'Done'} <kbd>Esc</kbd>`;
+    },
+    // a click or key: an extra goes straight in your pocket and the shop stays open; one of Grandad's things is bought
+    pick(key) {
+      const p = this.p;
+      if (!this.resolve || !key) return;
+      if (!G.EXTRAS[key]) { if (canBuyItem(p) && !hasIt(p, key)) this.resolve(key); return; }
+      if (!canBuyExtra(p, key)) return;
+      const price = extraPrice(p, key);
+      p.tokens -= price;
+      p.bought[key]++;
+      p.pocket[key] = true;
+      Sound.play('till');
+      log('extra', `${p.name} buys ${G.EXTRAS[key].a} for ${G.tokenWord(price)}, to use on a later go. Next time they'll cost ${G.tokenWord(price + 1)}.`);
+      render();
+      this.render();
+      // nothing else they can afford: close up
+      if (!canShop(p)) setTimeout(() => { if (this.resolve && this.p === p) this.resolve(null); }, G.ms(700));
     },
   };
 
@@ -537,7 +753,7 @@
       B.cineIn(key);
       await B.cineWait(450);
     },
-    card(key, p) {
+    card(key, p, won = false) {
       const set = setOf(p);
       const n = set.length;
       const it = G.ITEMS[key];
@@ -547,7 +763,7 @@
       $('cineTitle').textContent = TITLES[key] || `${it.name}!`;
       const togo = S.goal - n;
       $('cineSub').textContent = this.talk
-        ? `${multi ? `Bought by ${p.name} · ` : ''}${togo ? `${togo} more to go` : versus() ? 'A full set!' : "That's the lot!"}`
+        ? `${multi ? `${won ? 'Won' : 'Bought'} by ${p.name} · ` : won ? 'Won at the fair · ' : ''}${togo ? `${togo} more to go` : versus() ? 'A full set!' : "That's the lot!"}`
         : `“${it.thanks}”`;
       $('cineSub').classList.toggle('quote', !this.talk);
       // one slot for each thing Grandad needs, filled in the order you bought them
@@ -791,6 +1007,7 @@
   };
 
   async function playStall(p, k, pos) {
+    const g = S;
     const stall = stallAt(pos);
     const d = districtAt(pos);
     const title = G.Mini.GAMES[stall].title;
@@ -798,11 +1015,26 @@
     render();
     S.stalls++;
     log('fair', `${p.name} steps up to the ${title} stall in the ${d.name}.`);
-    say(pick(['Go on then, win some tokens.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win enough to buy me something warm!']));
+    const prize = wantedAt(p, pos);
+    const owned = prize ? null : prizeAt(pos);
+    say(prize ? pick([`Win me that ${G.ITEMS[prize].name}!`, `My ${G.ITEMS[prize].name}! On a fairground stall!`, `Go on, get me my ${G.ITEMS[prize].name} back.`])
+      : pick(['Go on then, win some tokens.', `A ${title}? In my ${d.name}?`, "Don't come back empty-handed!", 'Win enough to buy me something warm!']));
     await B.focusTile(pos);
-    const won = await G.Mini.play(stall, { diff: S.diff, playerName: p.name });
+    const won = await G.Mini.play(stall, { diff: S.diff, playerName: p.name, prize, owned });
     B.unfocus();
     render();
+    // a full score wins the prize hanging on the stall: straight over to Grandad
+    if (prize && won >= G.MAX_TOKENS) {
+      S.prizesWon++;
+      p.prizes++;
+      await sleep(G.ms(300));
+      await giveItem(p, k, prize, pos);
+      if (S !== g || allDone()) return;
+      // the stall packs up, and a new game goes up with a new prize
+      S.phase = 'moving';
+      await swapStall(pos);
+      return;
+    }
     if (won) {
       S.tokensWon += won;
       p.won += won;
@@ -810,17 +1042,20 @@
       await B.tokensFromStall(pos, k, won);
       p.tokens += won;
       render();
-      log('won', `${p.name} wins ${G.tokenWord(won)} at the ${title} stall.${p.tokens >= G.ITEM_COST ? ' Enough for the Fair Shop!' : ''}`);
-      say(won === 3 ? pick(['Three tokens! Now buy me something warm.', 'The top prize! That\'s my grandchild.']) : pick(['Every little helps.', 'Ooh, tokens. Hurry up and spend them on me.', 'About time somebody won something.']));
+      const missed = prize ? ` So close to the ${G.ITEMS[prize].name}, which will still be there for the next go.` : '';
+      log('won', `${p.name} wins ${G.tokenWord(won)} at the ${title} stall.${missed}${p.tokens >= G.ITEM_COST ? ' Enough for the Fair Shop!' : ''}`);
+      say(won === 3 ? pick(['Three tokens! Now buy me something warm.', 'The top prize! That\'s my grandchild.'])
+        : prize ? pick([`So close! I wanted that ${G.ITEMS[prize].name}.`, 'Nearly! Every little helps, I suppose.']) : pick(['Every little helps.', 'Ooh, tokens. Hurry up and spend them on me.', 'About time somebody won something.']));
     } else {
-      log('lost', `No tokens at the ${title} stall this time.`);
+      log('lost', `No tokens at the ${title} stall this time.${prize ? ` The ${G.ITEMS[prize].name} will still be there for the next go.` : ''}`);
       say(pick(['Useless! In my day we won everything.', 'Hmph. Try again, then.', "It's rigged, those stalls."]));
     }
     S.phase = 'moving';
     render();
     await sleep(G.ms(400));
-    // a stall that pays out packs up, and another game from the fair takes its place
-    if (won) await swapStall(pos);
+    // A stall packs up when its prize is won, and another game from the fair takes its place.
+    // While its prize is still up, it stays put, so the next player knows what they're up against.
+    if (won && !prizeAt(pos)) await swapStall(pos);
   }
   async function swapStall(pos) {
     const reserve = G.reserve();
@@ -829,14 +1064,18 @@
     const next = pick(reserve);
     G.dealt[pos] = next;
     S.dealt = { ...G.dealt };
+    const old = S.prizes[pos];
+    S.prizes[pos] = null;
+    S.prizes[pos] = drawPrize(old);
+    const prize = S.prizes[pos] && G.ITEMS[S.prizes[pos]].name;
     const from = G.Mini.GAMES[was].title;
     const to = G.Mini.GAMES[next].title;
     Sound.play('sparkle');
-    await B.swapStall(pos);
+    await B.swapStall(pos, S.prizes[pos]);
     render();
     const c = G.tileCentre(pos);
     floatAt(new THREE.Vector3(c.x, 3.4, c.z - 0.5), `New stall: ${to}!`, 'good slow');
-    log('swap', `The ${from} stall packs up, and ${to} sets up in its place.`);
+    log('swap', `The ${from} stall packs up, and ${to} sets up in its place${prize ? `, with the ${prize} as its top prize` : ''}.`);
     await sleep(G.ms(500));
   }
 
@@ -1109,7 +1348,7 @@
           : `The rounds ran out and Grandad's got hypothermia, so it's a blanket, a brew and a call to the doctor. You got ${S.delivered.length} of ${S.goal} things to him. Try again?`;
     $('statTemp').innerHTML = won ? `${spare}<small>of ${S.rounds}</small>` : `0<small>of ${S.rounds}</small>`;
     $('statTurns').textContent = S.turns;
-    $('statStalls').innerHTML = `${S.tokensWon}<small>from ${S.stalls} stall${S.stalls === 1 ? '' : 's'}</small>`;
+    $('statStalls').innerHTML = `${S.prizesWon}<small>and ${G.tokenWord(S.tokensWon)}</small>`;
     $('statDucks').textContent = `${S.ducks}/${S.swats}`;
     $('endRivalry').innerHTML = endSummary(won);
     $('endRivalry').hidden = !$('endRivalry').innerHTML;
@@ -1133,7 +1372,7 @@
     }
     const order = S.players.map((q, j) => ({ q, j }));
     if (versus()) order.sort((a, b) => (b.j === S.winner) - (a.j === S.winner) || b.q.got.length - a.q.got.length || b.q.won - a.q.won);
-    const rows = order.map(({ q, j }) => `<li><span class="chip" style="background:${PAWN_CSS[j]}"></span><span>${esc(q.name)}</span><span class="fav-meta">${G.tokenWord(q.won)} won</span><b>${versus() ? `${q.got.length} of ${S.goal}` : `${q.got.length} bought`}</b></li>`).join('');
+    const rows = order.map(({ q, j }) => `<li><span class="chip" style="background:${PAWN_CSS[j]}"></span><span>${esc(q.name)}</span><span class="fav-meta">${q.prizes} prize${q.prizes === 1 ? '' : 's'} · ${G.tokenWord(q.won)}</span><b>${versus() ? `${q.got.length} of ${S.goal}` : `${q.got.length} for Grandad`}</b></li>`).join('');
     const top = order[0].q;
     const kicker = versus() ? (won ? 'The race' : `${esc(top.name)} got closest`) : won ? 'Team effort' : 'How you did';
     return `<p class="fav-kicker">${kicker}</p><ol class="fav-table">${rows}</ol>`;
@@ -1153,8 +1392,8 @@
     $('mode' + (settings.mode === 'versus' ? 'Versus' : 'Coop')).checked = true;
     const r = G.roundsFor(settings.mode, settings.count, settings.goal);
     $('goalNote').textContent = mode === 'versus'
-      ? `Each of you needs a full set of ${settings.goal}. Grandad can last ${r} rounds, and everything costs 3 tokens.`
-      : `Grandad can last ${r} rounds${multi ? ' (everyone has a go each round)' : ''}. Everything at the Fair Shop costs 3 tokens.`;
+      ? `Each of you needs a full set of ${settings.goal}. Grandad can last ${r} rounds. Win his things at the stalls, or buy them for ${G.ITEM_COST} tokens.`
+      : `Grandad can last ${r} rounds${multi ? ' (everyone has a go each round)' : ''}. Win his things at the stalls, or buy them for ${G.ITEM_COST} tokens.`;
   }
   function syncSetupForm() {
     $('count' + settings.count).checked = true;
@@ -1191,8 +1430,11 @@
     $('setup').hidden = true;
     $('endOverlay').hidden = true;
     G.dealt = G.dealStalls(settings.shuffle);
+    Offer.hide();
     S = freshState();
+    dealPrizes();
     B.setStalls();
+    B.setPrizes(S.prizes);
     B.setFrozen(false);
     B.setNap(false);
     B.setPlayers(S.players);
@@ -1206,7 +1448,7 @@
     readNames();
     G.saveSettings(settings);
     $('setup').hidden = true;
-    await G.Mini.play(gameKey, { diff: settings.diff, prizeKey: null, practice: true });
+    await G.Mini.play(gameKey, { diff: settings.diff, practice: true });
     openSetup();
   }
 
@@ -1274,14 +1516,23 @@
     // stop iOS Safari zooming the whole page when you pinch the board
     document.addEventListener('gesturestart', (e) => e.preventDefault());
     $('pinchNo').addEventListener('click', () => { if (pinchResolve) pinchResolve(false); });
-    $('shopGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-key]'); if (b && !b.disabled && Shop.resolve) Shop.resolve(b.dataset.key); });
+    $('shopGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-key]'); if (b && !b.disabled) Shop.pick(b.dataset.key); });
+    $('shopExtras').addEventListener('click', (e) => { const b = e.target.closest('[data-extra]'); if (b && !b.disabled) Shop.pick(b.dataset.extra); });
     $('shopLeave').addEventListener('click', () => { if (Shop.resolve) Shop.resolve(null); });
     $('goalSeg').addEventListener('change', (e) => { if (e.target.name === 'goal') { settings.goal = +e.target.value; G.saveSettings(settings); renderSetupInfo(); } });
     $('fairGrid').addEventListener('click', (e) => { const b = e.target.closest('[data-game]'); if (b) practice(b.dataset.game); });
     B.onTileClick = (i) => {
       if (!S || S.phase !== 'choose') return;
       if (i === describeDest().to) go();
+      else if (Offer.open) { const o = Offer.list.find((x) => x.kind === 'skates' && x.to === i); if (o) useSkates(o.d); }
     };
+    $('offerBtns').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-offer]');
+      if (!b) return;
+      if (b.dataset.offer === 'skates') useSkates(+b.dataset.d);
+      else if (b.dataset.offer === 'lucky') useLucky();
+      else go();
+    });
 
     window.addEventListener('keydown', (e) => {
       if (G.Mini.active) { if (G.Mini.keyDown) G.Mini.keyDown(e); if (e.key === ' ') e.preventDefault(); return; }
@@ -1289,10 +1540,12 @@
       if (e.target.closest && e.target.closest('input, textarea, select')) return;
       if (!$('setup').hidden || !$('endOverlay').hidden) return;
       const key = e.key;
-      // the Fair Shop: number keys buy, Escape or N saves your tokens
+      // the Fair Shop: number keys buy Grandad's things, S and D the extras, Escape or N leaves
       if (Shop.resolve) {
         const btn = /^[1-9]$/.test(key) && document.querySelector(`#shopGrid [data-num="${key}"]`);
-        if (btn) { e.preventDefault(); Shop.resolve(btn.dataset.key); }
+        const extra = G.EXTRA_KEYS.find((x) => G.EXTRAS[x].key === key.toUpperCase());
+        if (btn) { e.preventDefault(); Shop.pick(btn.dataset.key); }
+        else if (extra) { e.preventDefault(); Shop.pick(extra); }
         else if (key === 'Escape' || key === 'n' || key === 'N') { e.preventDefault(); Shop.resolve(null); }
         else if (key === 'm' || key === 'M') toggleMute();
         return;
@@ -1309,6 +1562,14 @@
       }
       if (S.phase === 'dodge') {
         if (key === ' ' || key === 'Enter') { e.preventDefault(); if (!e.repeat && duckHandler) duckHandler(); }
+        return;
+      }
+      // roller skates and the lucky dice: arrows skate, R rolls again, Space, Enter, N or Escape says no thanks
+      if (S.phase === 'choose' && Offer.open) {
+        if (key === 'ArrowRight' || key === 'ArrowLeft') { e.preventDefault(); useSkates(key === 'ArrowRight' ? 1 : -1); }
+        else if (key === 'r' || key === 'R') { e.preventDefault(); useLucky(); }
+        else if (key === 'Escape' || key === 'n' || key === 'N' || ((key === ' ' || key === 'Enter') && !(e.target.closest && e.target.closest('button')))) { e.preventDefault(); if (!e.repeat) go(); }
+        else if (key === 'm' || key === 'M') toggleMute();
         return;
       }
       if (S.phase === 'pinch') {
@@ -1367,6 +1628,8 @@
     bindControls();
     setMuteButton();
     S = freshState();
+    dealPrizes();
+    B.setPrizes(S.prizes);
     B.setPlayers(S.players);
     B.setTemp(S.temp, true);
     log('news', 'COLDEST NIGHT SINCE 1963. Boiler packs in. Travelling fair sets up in Grandad\'s house. Grandad refuses to leave his chair.');
@@ -1385,10 +1648,18 @@
     skipCine: () => Cine.skip(),
     forceFind: (fx) => { forcedFind = fx; },
     shop: () => !!Shop.resolve,
-    buy: (key) => { if (Shop.resolve) Shop.resolve(key || document.querySelector('#shopGrid [data-key]:not([disabled])').dataset.key); },
+    // buy one of Grandad's things (the first you can, with no key), or leave if you can't afford one
+    buy: (key) => { if (!Shop.resolve) return; const b = document.querySelector('#shopGrid [data-key]:not([disabled])'); if (key || b) Shop.pick(key || b.dataset.key); else Shop.resolve(null); },
+    buyExtra: (key) => Shop.pick(key),
+    pocket: () => ({ ...curP().pocket }),
     leaveShop: () => { if (Shop.resolve) Shop.resolve(null); },
     render: () => render(),
     reveal: () => Reveal.active,
+    offers: () => (Offer.open ? Offer.list.map((o) => (o.kind === 'skates' ? `skates${o.d > 0 ? '+' : '-'}` : o.kind)) : []),
+    skates: (d) => useSkates(d),
+    lucky: () => useLucky(),
+    go: () => go(),
+    prizes: () => ({ ...S.prizes }),
     closeCard: () => { if (Reveal.skip) Reveal.skip(); },
   };
 

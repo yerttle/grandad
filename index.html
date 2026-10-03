@@ -279,6 +279,7 @@ body.minigame .frost, body.minigame .bubble, body.minigame .view-tools { display
 .find.bad .find-chip { background: var(--frost); }
 .find.dud .find-chip { background: rgb(43 26 16 / .12); }
 .badge.lucky { background: var(--good); }
+.badge.kit { background: #2a9d8f; }
 body.minigame .find { display: none; }
 
 /* ---------- The fair ---------- */
@@ -350,6 +351,9 @@ svg.token { width: 1.15em; height: 1.15em; vertical-align: -0.2em; }
 .mini-card .target { display: inline-block; margin: 0 0 6px; padding: 5px 12px; border-radius: 10px; background: var(--mustard); color: var(--ink); font-weight: 700; font-size: 16px; }
 .mini-card .target b { font-weight: 800; }
 .mini-card .prize-line { margin: 0 0 8px; font-size: 16px; }
+.mini-card .prize-icon { display: flex; justify-content: center; margin: 2px 0 6px; }
+.mini-card .prize-icon svg { width: 64px; height: 64px; }
+.mini-card .prize-icon.won svg { width: 84px; height: 84px; animation: tokenpop .6s cubic-bezier(.3, 1.8, .5, 1) both; }
 .mini-card .keys { font-size: 14px; color: var(--ink-soft); }
 .countdown {
   position: absolute;
@@ -526,6 +530,11 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .pscore { font: 700 15px/1 var(--font-news); color: var(--brown); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .pinch { margin-top: 10px; padding: 10px 12px; background: var(--board); border: 2px dashed var(--orange); border-radius: 10px; display: grid; gap: 8px; }
 .pinch p { margin: 0; font-size: 14px; }
+.offer { border-color: #2a9d8f; }
+.offer-row { display: grid; gap: 6px; }
+.offer-row .btn { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 8px; text-align: left; font-size: 15px; padding: 8px 12px; }
+.offer-row .btn small { grid-column: 1; font-weight: 600; font-size: 12px; opacity: .85; }
+.offer-row .btn kbd { grid-column: 2; grid-row: 1 / span 2; }
 .check { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; margin-top: 14px; padding: 10px 12px; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); cursor: pointer; }
 .check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--orange); }
 .check b { display: block; font: 400 17px/1.1 var(--font-display); color: var(--brown); }
@@ -549,6 +558,7 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .needs li .where { white-space: nowrap; }
 .needs li .where svg.token { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; }
 .needs .iname { font-weight: 700; font-size: 14px; }
+.needs .iname small { display: block; font-weight: 600; font-size: 11px; color: var(--orange); }
 .needs .where { font-size: 12px; color: var(--ink-soft); text-align: right; }
 .needs li.done .iname { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--ink-soft); }
 .needs li.done .where { color: var(--good); font-weight: 800; }
@@ -622,6 +632,10 @@ body.minigame .cine, body.minigame .warm-flash { display: none; }
 .shop-item kbd { position: absolute; right: 8px; bottom: 6px; }
 .shop-item.got { cursor: default; opacity: .55; box-shadow: none; background: rgb(43 26 16 / .06); }
 .shop-item.got .si-price { color: var(--good); }
+.shop-item.cant { cursor: not-allowed; opacity: .5; box-shadow: none; }
+.shop-sub { margin: 14px 0 8px; font: 800 12px/1.2 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.shop-need + .shop-sub { margin-top: 4px; }
+.shop-extras { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .find-box svg.token.big { width: 52px; height: 52px; vertical-align: 0; }
 
 /* ---------- Overlays ---------- */
@@ -963,6 +977,10 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
       <div class="actions">
         <button class="btn primary" id="rollBtn" type="button">Roll the dice <kbd>Space</kbd></button>
       </div>
+      <div class="pinch offer" id="offerBox" hidden>
+        <p id="offerText"></p>
+        <div class="offer-row" id="offerBtns"></div>
+      </div>
       <div class="pinch" id="pinchBox" hidden>
         <p id="pinchText"></p>
         <div class="dir-row">
@@ -996,7 +1014,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <h2 class="logo">Grandad's Cold Snap</h2>
     <div class="setup-cols">
     <div class="setup-main">
-    <p class="story">The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's selling all his cosy things at the Fair Shop. Race round the rooms winning tokens at the fairground games, and buy Grandad his things back before the rounds run out and he gets hypothermia. Watch out: the colder he gets, the grumpier he gets, and he's got a rolled-up newspaper.</p>
+    <p class="story">The boiler's packed in on the coldest night since 1963, a travelling fair has somehow set up in Grandad's house, and it's hung all his cosy things up as prizes. Race round the rooms winning them back at the fairground games (or win tokens and buy them at the Fair Shop) before the rounds run out and he gets hypothermia. Watch out: the colder he gets, the grumpier he gets, and he's got a rolled-up newspaper.</p>
     <div class="setup-grid">
       <fieldset>
         <legend>Players</legend>
@@ -1031,12 +1049,12 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
           <label><input type="radio" name="goal" id="goal9" value="9"><span>9<small>Long</small></span></label>
           <label><input type="radio" name="goal" id="goal12" value="12"><span>12<small>Marathon</small></span></label>
         </div>
-        <p class="note" id="goalNote">Everything at the Fair Shop costs 3 tokens. More things makes a longer game.</p>
+        <p class="note" id="goalNote">Win his things at the stalls, or buy them for 4 tokens. More things makes a longer game.</p>
       </fieldset>
     </div>
     <label class="check" for="shuffleStalls">
       <input type="checkbox" id="shuffleStalls" checked>
-      <span><b>Shuffle the stalls</b><small>Deal 10 of the 13 fairground stalls onto the board at random, so the house is different every game. Untick for the classic line-up. Either way, a stall that pays out swaps for another.</small></span>
+      <span><b>Shuffle the stalls</b><small>Deal 10 of the 13 fairground stalls onto the board at random, so the house is different every game. Untick for the classic line-up. Either way, when a stall's prize is won, it swaps for another.</small></span>
     </label>
     <div class="lid-actions">
       <button class="btn primary" id="startBtn" type="submit">Start the game</button>
@@ -1049,9 +1067,10 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <div class="howto">
       <h3>How to play</h3>
       <ol>
-        <li>Roll the dice and you move clockwise round the house.</li>
-        <li>Land on a fairground stall (the gold token floats over it) and play for <b>tokens</b>: up to 3 each go, depending on how well you do. When a stall pays out, it packs up and a different game from the fair takes its place.</li>
-        <li>At the end of your go, if you've got 3 tokens, you're off to the <b>Fair Shop</b> to buy Grandad something warm. Buy the number of things you picked at the start and he's saved.</li>
+        <li>Every fairground stall has one of Grandad's things floating over it as its <b>top prize</b>. Before you roll, the board shows which numbers land on one.</li>
+        <li>Roll the dice and you move clockwise round the house. Just missed? If you've got <b>roller skates</b> in your pocket, go one square on or stop one short. Got the <b>lucky dice</b>? Roll again.</li>
+        <li>At a stall, light up all 3 tokens to <b>win the prize</b> and take it straight to Grandad. Fewer, and you keep the tokens. When a prize is won, the stall packs up and a different game takes its place.</li>
+        <li>At the end of your go, spend your tokens at the <b>Fair Shop</b>: Grandad's things cost 4, and roller skates and lucky dice for a later go start at 1 (each one after costs a token more). Get him the number of things you picked at the start and he's saved.</li>
         <li>You've got a fixed number of <b>rounds</b> (everyone has one go a round). The thermometer counts them down, a notch at the end of every round. Get everything before it runs out, or Grandad gets hypothermia.</li>
         <li>Other squares win or lose you tokens, and every square says exactly what happened. Grandad's doors, the boiler and the airing cupboard pay a token, and so does walking past the boiler on your way round. The open window, draughts and Tiddles cost you tokens, and more on the harder settings. Magnifying-glass squares are a rummage.</li>
         <li>When Grandad swings his paper, <span class="k-only">press <kbd>Space</kbd></span><span class="t-only">tap <b>Duck!</b></span> as the marker crosses the green to duck. Get hit and you'll drop tokens, or miss a go if you've none.</li>
@@ -1074,10 +1093,13 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <h2 class="logo small" id="shopTitle">The Fair Shop</h2>
     <div class="shop-head"><span id="shopWho">Your tokens</span><span class="shop-purse" id="shopPurse"></span></div>
     <p class="shop-need" id="shopNeed"></p>
+    <h3 class="shop-sub">Extras for your pocket</h3>
+    <div class="shop-grid shop-extras" id="shopExtras"></div>
+    <h3 class="shop-sub">Grandad's things</h3>
     <div class="shop-grid" id="shopGrid"></div>
     <div class="lid-actions">
       <button class="btn" id="shopLeave" type="button">Save my tokens <kbd>Esc</kbd></button>
-      <span class="note k-only">Press a number to buy.</span>
+      <span class="note k-only">Press a number to buy Grandad something, or S or D for an extra.</span>
     </div>
   </div>
 </div>
@@ -1093,7 +1115,7 @@ html.touch body { -webkit-tap-highlight-color: transparent; overscroll-behavior:
     <dl class="stats">
       <div><dt>Rounds to spare</dt><dd id="statTemp">0</dd></div>
       <div><dt>Goes taken</dt><dd id="statTurns">0</dd></div>
-      <div><dt>Tokens won</dt><dd id="statStalls">0</dd></div>
+      <div><dt>Prizes won</dt><dd id="statStalls">0</dd></div>
       <div><dt>Swats ducked</dt><dd id="statDucks">0/0</dd></div>
     </dl>
     <div class="lid-actions">
