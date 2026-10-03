@@ -253,10 +253,10 @@ window.GCS = window.GCS || {};
   };
   // How many rounds Grandad can last before hypothermia (a round is everyone having one go).
   // Co-op: the team fills one list. Versus: everyone races to fill their own, so it takes longer.
-  // Set from simulated games so a steady player gets there about 9 times in 10 on Chilly Winter.
+  // Set from simulated games (tools/simulate.js) so a steady player gets there about 9 times in 10 on Chilly Winter.
   G.ROUNDS = {
-    coop:   { 1: { 3: 15, 6: 27, 9: 37, 12: 48 }, 2: { 3: 9, 6: 14, 9: 20, 12: 25 }, 3: { 3: 6, 6: 10, 9: 14, 12: 18 }, 4: { 3: 5, 6: 8, 9: 11, 12: 14 } },
-    versus: { 2: { 3: 11, 6: 22, 9: 32, 12: 42 }, 3: { 3: 10, 6: 20, 9: 30, 12: 39 }, 4: { 3: 9, 6: 19, 9: 28, 12: 38 } },
+    coop:   { 1: { 3: 15, 6: 27, 9: 40, 12: 53 }, 2: { 3: 8, 6: 14, 9: 21, 12: 27 }, 3: { 3: 6, 6: 10, 9: 14, 12: 19 }, 4: { 3: 5, 6: 8, 9: 11, 12: 15 } },
+    versus: { 2: { 3: 11, 6: 23, 9: 34, 12: 47 }, 3: { 3: 10, 6: 21, 9: 32, 12: 44 }, 4: { 3: 10, 6: 20, 9: 31, 12: 42 } },
   };
   G.MODES = { coop: 'Co-op', versus: 'Versus' };
   G.modeFor = (mode, players) => (players > 1 && mode === 'versus' ? 'versus' : 'coop');
@@ -295,7 +295,7 @@ window.GCS = window.GCS || {};
   G.STALL_SQUARES = [...G.DISTRICTS.map((d) => d.idx[1]), ...Object.keys(G.EXTRA_STALLS).map(Number)].sort((a, b) => a - b);
   // Which game stands on each stall square. The classic line-up is above; a game can deal
   // them at random from the whole fair instead. Games not on the board wait in the reserve,
-  // and a stall that pays out packs up and swaps with one of them.
+  // and a stall packs up and swaps with one of them when its prize is won (or, with no prize, when it pays out).
   G.CLASSIC_STALLS = { ...Object.fromEntries(G.DISTRICTS.map((d) => [d.idx[1], d.game])), ...G.EXTRA_STALLS };
   G.dealt = { ...G.CLASSIC_STALLS };
   G.shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = G.rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -326,11 +326,16 @@ window.GCS = window.GCS || {};
   };
 
   // ---------- Tokens ----------
-  // Stalls pay out fairground tokens, and everything at the Fair Shop costs three of them.
-  G.ITEM_COST = 3;
+  // Every stall has one of Grandad's things hanging on it as its top prize: a full score (3) wins it.
+  // Anything less pays that many fairground tokens, and everything at the Fair Shop costs four of them.
+  G.ITEM_COST = 4;
   // how many things Grandad needs before he's saved: chosen on the start screen
   G.GOALS = [3, 6, 9, 12];
   G.MAX_TOKENS = 3;
+  // paid on the spot, straight after you roll: roller skates go one square further or one back,
+  // and the lucky dice let you roll again (once a go)
+  G.SKATES_COST = 1;
+  G.LUCKY_COST = 1;
   G.DOOR_TOKENS = 1; // popping in to Grandad: he slips you a token from his cardigan pocket
   G.LAP_TOKENS = 1; // walking past the boiler (START) on the way round the house
   G.TOKEN_SVG = '<svg class="token" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.6" fill="#e0a526" stroke="#2b1a10" stroke-width="1.6"/><circle cx="12" cy="12" r="7.6" fill="none" stroke="#9a6a14" stroke-width="1.1"/><path d="M12 6.9l1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3-2.4-2.3 3.3-.5z" fill="#fff3c4" stroke="#8a5a12" stroke-width=".6" stroke-linejoin="round"/></svg>';

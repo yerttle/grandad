@@ -22,8 +22,25 @@
     return stall;
   }
   const props = [];
-  // a gold token spins over every stall: that's what you win there
+  // the top prize spins over every stall: one of Grandad's things, or a gold token when there's nothing left to win there
   const prizes = {};
+  function prizeModel(key) {
+    if (!key) { const m = G.makeToken(); m.scale.setScalar(0.75); return m; }
+    const holder = new THREE.Group();
+    const m = G.makeItem(key);
+    // the things stand on y = 0: lift their middle onto the spin axis
+    m.position.y = -0.35;
+    holder.add(m);
+    holder.scale.setScalar(0.9);
+    return holder;
+  }
+  function swapPrize(p, key) {
+    p.group.remove(p.model);
+    p.model.traverse((c) => { if (c.geometry) c.geometry.dispose(); });
+    p.model = prizeModel(key);
+    p.key = key;
+    p.group.add(p.model);
+  }
   const pawns = [];
   let targets = [];
   let shiverAmp = 0;
@@ -116,15 +133,14 @@
       const c = G.tileCentre(i);
       buildStall(i);
       const prize = new THREE.Group();
-      const model = G.makeToken();
-      model.scale.setScalar(0.75);
+      const model = prizeModel(null);
       prize.add(model);
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: G.tex.skyGlow(), transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
       glow.scale.setScalar(1.6);
       prize.add(glow);
       prize.position.set(c.x, 3.05, c.z - 0.55);
       scene.add(prize);
-      prizes[i] = { group: prize, model, base: prize.position.clone() };
+      prizes[i] = { group: prize, model, key: null, base: prize.position.clone() };
     }
 
     die = G.makeDie();
@@ -356,17 +372,20 @@
     }, G.ease.linear);
   };
 
-  // ---------- Direction choices ----------
+  // ---------- Where the die can take you ----------
+  // tone: 'go' for where you're heading, 'prize' for the numbers that win something, 'skates' for a roller-skate hop
+  const TARGET_TONES = { go: ['#c9531f', '#5a1a08'], prize: ['#e0a526', '#5a3a00'], skates: ['#2a9d8f', '#0c3a34'] };
   B.showTargets = (list) => {
     B.clearTargets();
-    list.forEach(({ i, text }) => {
+    list.forEach(({ i, text, tone = 'go' }) => {
+      const [col, glow] = TARGET_TONES[tone];
       const s = B.spot(i);
       const g = new THREE.Group();
       g.position.set(s.x, 0, s.z);
-      const ring = G.mesh(new THREE.RingGeometry(0.55, 0.8, 32), G.glow('#c9531f', { transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }), 0, 0.04, 0, false);
+      const ring = G.mesh(new THREE.RingGeometry(0.55, 0.8, 32), G.glow(col, { transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }), 0, 0.04, 0, false);
       ring.rotation.x = -PI / 2;
       g.add(ring);
-      const arrow = G.mesh(new THREE.ConeGeometry(0.28, 0.55, 12), G.shiny('#c9531f', { emissive: '#5a1a08' }), 0, 2.1, 0);
+      const arrow = G.mesh(new THREE.ConeGeometry(0.28, 0.55, 12), G.shiny(col, { emissive: glow }), 0, 2.1, 0);
       arrow.rotation.x = PI;
       g.add(arrow);
       const tex = labelCache[text] || (labelCache[text] = G.tex.label(text, { size: 56 }));
@@ -380,7 +399,8 @@
     });
   };
   B.clearTargets = () => {
-    targets.forEach((t) => drop(t.group));
+    // these get rebuilt every time the score pad redraws, so free their materials too (the label textures are cached)
+    targets.forEach((t) => { t.group.traverse((c) => { if (c.material) c.material.dispose(); }); drop(t.group); });
     targets = [];
     if (G.E.canvas) G.E.canvas.style.cursor = 'grab';
   };
@@ -424,14 +444,28 @@
     .then(() => G.spawnSparkles(scene, stackTop(k).add(new V3(0, 2.2, 0)), { n: 16, speed: 1.8, life: 0.7, size: 0.45 }));
   // a new deal of stalls for a new game
   B.setStalls = () => { for (const i of G.STALL_SQUARES) buildStall(i); B.refreshTop(); };
-  // a stall that paid out packs up (it squashes down into the board) and a new one pops up in its place
-  B.swapStall = async (i) => {
+  // what's hanging over each stall: { square: item key, or null for a token }
+  B.setPrizes = (map) => { for (const i of G.STALL_SQUARES) if (prizes[i].key !== (map[i] || null)) swapPrize(prizes[i], map[i] || null); };
+  // a new prize goes up on the same stall: the old one shrinks away and the new one pops up
+  B.setPrize = async (i, key) => {
+    const p = prizes[i];
+    key = key || null;
+    if (!p || p.key === key) return;
+    await G.tween(G.ms(260), (t) => p.group.scale.setScalar(Math.max(0.001, 1 - t)), G.ease.in);
+    swapPrize(p, key);
+    p.model.visible = true;
+    G.spawnSparkles(scene, p.group.position.clone(), { n: 14, speed: 1.6, life: 0.7, size: 0.4 });
+    await G.tween(G.ms(420), (t) => p.group.scale.setScalar(Math.max(0.001, t)), G.ease.back);
+  };
+  // a stall packs up (it squashes down into the board) and a new one pops up in its place, with its new prize
+  B.swapStall = async (i, key) => {
     const old = stalls[i];
     const prize = prizes[i];
     await G.tween(G.ms(380), (t) => {
       old.scale.set(1 + t * 0.25, Math.max(0.001, 1 - t), 1 + t * 0.25);
       if (prize) prize.group.scale.setScalar(Math.max(0.001, 1 - t));
     }, G.ease.in);
+    if (prize) { swapPrize(prize, key || null); prize.model.visible = true; }
     B.refreshTop();
     const fresh = buildStall(i);
     fresh.scale.set(1, 0.001, 1);
@@ -551,8 +585,11 @@
   }
   // The item lifts off the pawn with a trail of sparkles, hovers in front of Grandad glowing,
   // then puts itself on him. onArrive runs the moment it lands, so the game can update the score.
-  B.deliveryShow = async (key, k, onArrive) => {
-    const from = pawns[k] ? B.pawnWorld(k).add(new V3(0, 0.6, 0)) : new V3(0, 3, 8);
+  // fromStall: won at that stall, so it flies off the stall rather than out of the pawn's pocket
+  B.deliveryShow = async (key, k, onArrive, fromStall = null) => {
+    const prize = fromStall !== null && prizes[fromStall];
+    const from = prize ? prize.group.position.clone() : pawns[k] ? B.pawnWorld(k).add(new V3(0, 0.6, 0)) : new V3(0, 3, 8);
+    if (prize) prize.model.visible = false;
     // hover in clear air: above the fireplace or the side table, otherwise beside Grandad's head, nearer the camera
     const az = orbit.goal.az;
     const hover = key === 'logs' ? fire.group.localToWorld(new V3(0, 3.7, 1.4))
@@ -572,7 +609,7 @@
     await cineTween(1000, (t) => {
       holder.position.lerpVectors(from, hover, G.ease.inOut(t));
       holder.position.y += Math.sin(t * PI) * 2.4;
-      m.scale.setScalar(G.lerp(0.34, 0.9, G.ease.out(t)));
+      m.scale.setScalar(G.lerp(prize ? 0.8 : 0.34, 0.9, G.ease.out(t)));
       m.rotation.y = t * PI * 4;
       haloMat.opacity = t * 0.85;
       halo.scale.setScalar(0.5 + t * 1.9);

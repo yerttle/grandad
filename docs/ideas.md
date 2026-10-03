@@ -48,7 +48,7 @@ Favourite points for winning stalls, buying things and ducking his paper, with a
 
 ### Custard creams — Removed
 
-You started with two custard creams and could eat one to re-roll. It didn't feel like a real choice, so they've gone too. The Larder and the Sideboard, which used to give custard creams, are now stalls, and everyone simply rolls and moves clockwise.
+You started with two custard creams and could eat one to re-roll. It didn't feel like a real choice, so they've gone too. (Back then no number was better than any other, so a re-roll meant nothing. Now that the stalls have prizes to aim for, re-rolling is back as the lucky dice.) The Larder and the Sideboard, which used to give custard creams, are now stalls, and everyone simply rolls and moves clockwise.
 
 ### Co-op and Versus — Built
 
@@ -89,6 +89,12 @@ Once a room's prize has been won, its squares used to do nothing, so the end of 
 ### Tokens and the Fair Shop — Built
 
 The stalls now pay out fairground tokens instead of one fixed prize: up to 3 a go, depending on how well you do. On harder settings each token takes more (on Dodgems it's 1 bump per token on Mild, 2 on Chilly and 4 on the Big Freeze). At the end of your go, 3 tokens buys Grandad something at the Fair Shop, which now has 12 things, including new mittens, earmuffs, a bowl of soup and an electric heater. Every other square is a clear token swing: the doors, the boiler and the airing cupboard pay a token, and the open window, draughts and Tiddles cost tokens, more on harder settings. You pick how many things he needs (3, 6, 9 or 12), which sets how long the game lasts. Everyone goes clockwise round the house, and walking past the Boiler Cupboard (START) pays a token, like passing Go.
+
+### Prizes on the stalls, roller skates and lucky dice — Built
+
+Rolling the dice felt pointless: every stall paid the same and everything cost the same at one shop, so where you landed hardly mattered. Now every stall has one of Grandad's things spinning over it as its top prize. Before you roll, the board shows which numbers land on one ("Roll a 2 for the Slippers or a 5 for the Tea"). Light up all 3 tokens at that stall and the prize flies straight to Grandad; light fewer and you keep the tokens, and the prize stays up for the next go. In Versus that makes a race for it: "She missed! The slippers are still there, I need a 3!"
+
+The Fair Shop is still there as the slow, safe route, but things now cost 4 tokens, so winning at the stall is the shortcut. Straight after rolling you can pay a token on the spot for roller skates (one square on or one short, offered only when that reaches a prize you need) or the lucky dice (roll again, once a go). A stall only packs up when its prize is won, so after a miss the next player knows what they're facing. The round limits were re-run through a simulation, now kept in `tools/simulate.js`.
 
 ### Grandad's errands — Idea
 

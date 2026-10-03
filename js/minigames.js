@@ -1,4 +1,4 @@
-/* Grandad's Cold Snap: the fairground stall games. Each pays out 0 to 3 tokens for the Fair Shop. */
+/* Grandad's Cold Snap: the fairground stall games. A full score (3) wins the prize on the stall; less pays tokens. */
 (function (G) {
   'use strict';
   const V3 = THREE.Vector3;
@@ -67,8 +67,10 @@
   const plural = (one, many) => (n) => (n === 1 ? one : many);
 
   // ---------- Running a stall ----------
+  // prize: the thing hanging on the stall, if it's one this player still needs (a full score wins it);
+  // owned: the thing on the stall when they've already got one (so it's tokens for them)
   M.play = async (gameKey, opts = {}) => {
-    const { diff = 'chilly', practice = false, playerName = '' } = opts;
+    const { diff = 'chilly', practice = false, playerName = '', prize = null, owned = null } = opts;
     // test hook: skip the stall and pay out a fixed number of tokens (true/false mean 3/0)
     if (M.autoResult !== null) { await G.sleep(40); const r = M.autoResult; return r === true ? 3 : r === false ? 0 : r; }
     if (!hud.fade) grabHud();
@@ -80,8 +82,11 @@
     await fade(true);
     document.body.classList.add('minigame');
     const booth = G.makeBooth({ title: def.title, c1: def.c1, c2: def.c2 });
-    // three gold tokens hang in the prize slot
-    [-0.7, 0, 0.7].forEach((x) => { const tk = G.makeToken(); tk.position.x = x; tk.scale.setScalar(0.72); booth.prizeSlot.add(tk); });
+    // the prize spins on the shelf: Grandad's thing, or three gold tokens
+    if (prize) { const it = G.makeItem(prize); it.position.y = -0.3; it.scale.setScalar(1.1); booth.prizeSlot.add(it); }
+    else [-0.7, 0, 0.7].forEach((x) => { const tk = G.makeToken(); tk.position.x = x; tk.scale.setScalar(0.72); booth.prizeSlot.add(tk); });
+    const prizeName = prize && G.ITEMS[prize].name;
+    const icon = (key) => (G.ITEM_ICON && G.ITEM_ICON[key]) || '';
     let state = 'intro';
     let won = null;
     // tokens: games report a raw score and every p.per of it earns a token, up to three
@@ -97,7 +102,7 @@
     let nextNote = '';
     const showNext = (score) => {
       if (!def.unit) { hud.miniNext.textContent = nextNote; return; }
-      if (tokens >= G.MAX_TOKENS) { hud.miniNext.textContent = 'Top prize!'; return; }
+      if (tokens >= G.MAX_TOKENS) { hud.miniNext.textContent = prize ? `You've won the ${prizeName}!` : 'Top prize!'; return; }
       const need = per * (tokens + 1) - score;
       hud.miniNext.textContent = `${need} more ${unit(need)} for the next token`;
     };
@@ -137,7 +142,7 @@
       hits: (objs) => G.raycast(objs, G.ptr.ndc, booth.camera),
     };
     hud.miniTitle.textContent = def.title;
-    hud.miniPrize.textContent = practice ? 'Practice round · up to 3 tokens' : 'Win up to 3 tokens';
+    hud.miniPrize.textContent = practice ? 'Practice round · up to 3 tokens' : prize ? `Top prize: the ${prizeName}` : 'Win up to 3 tokens';
     hud.miniTokens.querySelectorAll('.slot').forEach((el) => el.classList.remove('on'));
     hud.miniNext.textContent = def.unit ? `${per} ${unit(per)} for each token` : def.note || '';
     hud.miniStatus.textContent = '';
@@ -174,8 +179,12 @@
     await card(`
       <p class="kicker">${practice ? 'Practice at the fair' : `${G.esc(playerName)} steps up to the stall`}</p>
       <h2 class="logo small">${def.title}</h2>
-      <p class="prize-line">${practice ? 'In the game this stall pays out' : 'Win'} up to <b>3 tokens</b> ${G.TOKEN_SVG}${G.TOKEN_SVG}${G.TOKEN_SVG} for the Fair Shop</p>
-      ${p.per && def.unit ? `<p class="target">Top prize: <b>${3 * p.per} ${def.unit(3 * p.per)}</b> for 3 tokens</p>` : ''}
+      ${prize
+    ? `<div class="prize-icon">${icon(prize)}</div><p class="prize-line">Light up all 3 tokens to win Grandad's <b>${G.esc(prizeName)}</b>. Fewer, and you keep the tokens for the Fair Shop.</p>`
+    : practice
+      ? `<p class="prize-line">In the game, lighting up all 3 tokens ${G.TOKEN_SVG}${G.TOKEN_SVG}${G.TOKEN_SVG} wins the prize hanging on the stall. Fewer, and you keep the tokens for the Fair Shop.</p>`
+      : `<p class="prize-line">${owned ? `You've already got the ${G.esc(G.ITEMS[owned].name)}, so you're playing for` : 'Win'} up to <b>3 tokens</b> ${G.TOKEN_SVG}${G.TOKEN_SVG}${G.TOKEN_SVG} for the Fair Shop</p>`}
+      ${p.per && def.unit ? `<p class="target">${prize ? 'Full score' : 'Top prize'}: <b>${3 * p.per} ${def.unit(3 * p.per)}</b>${prize ? ` wins the ${G.esc(prizeName)}` : ' for 3 tokens'}</p>` : ''}
       <p class="goal">${def.goal(p)}</p>
       <p>${def.how}</p>
       <p class="keys">${keysText}</p>
@@ -194,11 +203,16 @@
     G.Music.stop();
     hud.power.hidden = true;
     const coins = [0, 1, 2].map((k) => `<span class="${k < won ? 'on' : ''}">${G.TOKEN_SVG}</span>`).join('');
-    const heads = ['No tokens!', 'One token!', 'Two tokens!', 'Top prize!'];
+    const cost = G.ITEM_COST;
+    const name = G.esc(prizeName || '');
+    const heads = ['No tokens!', 'One token!', 'Two tokens!', prize ? `You win the ${name}!` : 'Top prize!'];
     const notes = practice
-      ? ['Have another go from the fair menu.', 'In the game that would be a token for the Fair Shop.', 'In the game that would be two tokens for the Fair Shop.', 'Three tokens: in the game that buys Grandad something straight away.']
-      : ['Better luck next time. Land on a stall again for another go.', 'Every token counts. Three buys Grandad something at the Fair Shop.', 'Nearly enough for something at the Fair Shop.', 'Three tokens: enough to buy Grandad something at the Fair Shop!'];
-    await card(`<p class="kicker">${def.title}</p><h2 class="logo small${won ? '' : ' cold'}">${heads[won]}</h2><div class="token-row">${coins}</div><p class="prize-line">${notes[won]}</p>`,
+      ? ['Have another go from the fair menu.', 'In the game that would be a token for the Fair Shop.', 'In the game that would be two tokens for the Fair Shop.', 'A full score: in the game that wins the prize hanging on the stall.']
+      : prize
+        ? [`Better luck next time. The ${name} will still be there for the next go.`, `One token for the Fair Shop, where everything costs ${cost}. The ${name} will still be there for the next go.`, `So close! Two tokens for the Fair Shop, and the ${name} will still be there for the next go.`, 'Straight off the stall and over to Grandad!']
+        : ['Better luck next time. Land on a stall again for another go.', `Every token counts. ${cost} buys Grandad something at the Fair Shop.`, `Two tokens towards the Fair Shop, where everything costs ${cost}.`, 'Three tokens for the Fair Shop!'];
+    const shown = prize && won >= G.MAX_TOKENS ? `<div class="prize-icon won">${icon(prize)}</div>` : `<div class="token-row">${coins}</div>`;
+    await card(`<p class="kicker">${def.title}</p><h2 class="logo small${won ? '' : ' cold'}">${heads[won]}</h2>${shown}<p class="prize-line">${notes[won]}</p>`,
       practice ? 'Back to the fair' : 'Back to the board');
     await fade(true);
     hud.miniHud.hidden = true;
