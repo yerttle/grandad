@@ -13,15 +13,20 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 DEST="${1:-$HOME/Applications}"
 APP="$DEST/Grandad's Cold Snap.app"
 
-if [ ! -f "$HERE/index.html" ]; then
-  echo "Can't find index.html next to this script." >&2
-  exit 1
-fi
+for need in index.html js vendor; do
+  if [ ! -e "$HERE/$need" ]; then
+    echo "Can't find $need next to this script. Run it from the game's folder." >&2
+    exit 1
+  fi
+done
 
 mkdir -p "$DEST"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$HERE/index.html" "$APP/Contents/Resources/index.html"
+# the game plus its scripts and an offline copy of the 3D library, so it works without internet
+cp "$HERE/index.html" "$APP/Contents/Resources/"
+cp -R "$HERE/js" "$HERE/vendor" "$APP/Contents/Resources/"
+[ -f "$HERE/classic.html" ] && cp "$HERE/classic.html" "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
